@@ -1,0 +1,1493 @@
+{
+  "metadata" : {
+    "totalClasses" : 47,
+    "relationshipCounts" : {
+      "IMPLEMENTS" : 1,
+      "CALLS" : 48,
+      "USES" : 51,
+      "CREATES" : 28
+    },
+    "relationshipTotalOccurrences" : {
+      "IMPLEMENTS" : 1,
+      "CALLS" : 97,
+      "USES" : 199,
+      "CREATES" : 65
+    }
+  },
+  "classes" : {
+    "com.coveros.training.authentication.LoginServlet" : {
+      "annotations" : [ "@WebServlet(name = \"LoginServlet\", urlPatterns = { \"/login\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "static LoginUtils loginUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 2,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.authentication.LoginUtils" : 2
+        },
+        "CREATES" : {
+          "com.coveros.training.authentication.LoginUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.authentication.LoginUtils" : {
+      "methods" : [ {
+        "signature" : "public boolean isUserRegistered(java.lang.String, java.lang.String)"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.LoginUtils createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.authentication.LoginUtils LoginUtils(com.coveros.training.persistence.IPersistenceLayer)"
+      }, {
+        "signature" : "public com.coveros.training.authentication.LoginUtils LoginUtils()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "private final IPersistenceLayer persistenceLayer"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.LoginServlet" : 2
+        },
+        "CALLS" : {
+          "com.coveros.training.helpers.CheckUtils" : 1,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "USES" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.authentication.RegisterServlet" : {
+      "annotations" : [ "@WebServlet(name = \"RegisterServlet\", urlPatterns = { \"/register\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private void forwardToResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final String PASSWORD_PARAM"
+      }, {
+        "declaration" : "private static final org.slf4j.Logger logger"
+      }, {
+        "declaration" : "private static final String USERNAME_PARAM"
+      }, {
+        "declaration" : "static RegistrationUtils registrationUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 2,
+          "com.coveros.training.authentication.domainobjects.RegistrationResult" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.authentication.domainobjects.RegistrationResult" : 1,
+          "com.coveros.training.authentication.RegistrationUtils" : 2
+        },
+        "CREATES" : {
+          "com.coveros.training.authentication.RegistrationUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.authentication.RegistrationUtils" : {
+      "methods" : [ {
+        "signature" : "public com.coveros.training.authentication.domainobjects.RegistrationResult processRegistration(java.lang.String, java.lang.String)"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.RegistrationUtils createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.domainobjects.PasswordResult isPasswordGood(java.lang.String)"
+      }, {
+        "signature" : "public boolean isUserInDatabase(java.lang.String)"
+      }, {
+        "signature" : "private void saveToDatabase(java.lang.String, java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.authentication.RegistrationUtils RegistrationUtils(com.coveros.training.persistence.IPersistenceLayer)"
+      }, {
+        "signature" : "public com.coveros.training.authentication.RegistrationUtils RegistrationUtils()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "private final IPersistenceLayer persistenceLayer"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.RegisterServlet" : 2
+        },
+        "CALLS" : {
+          "com.coveros.training.authentication.domainobjects.PasswordResult" : 4,
+          "com.coveros.training.helpers.CheckUtils" : 3,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "USES" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.authentication.domainobjects.PasswordResult" : 5,
+          "com.coveros.training.authentication.domainobjects.RegistrationResult" : 4,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.authentication.domainobjects.PasswordResult" : 2,
+          "com.coveros.training.authentication.domainobjects.RegistrationResult" : 3,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.authentication.domainobjects.PasswordResult" : {
+      "methods" : [ {
+        "signature" : "public static com.coveros.training.authentication.domainobjects.PasswordResult createDefault(com.coveros.training.authentication.domainobjects.PasswordResultEnums)"
+      }, {
+        "signature" : "public final boolean equals(java.lang.Object)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public final int hashCode()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public final java.lang.String toPrettyString()"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.domainobjects.PasswordResult createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.authentication.domainobjects.PasswordResult PasswordResult(com.coveros.training.authentication.domainobjects.PasswordResultEnums, java.lang.Double, java.lang.String, java.lang.String, java.lang.String)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final PasswordResultEnums status"
+      }, {
+        "declaration" : "private final Double entropy"
+      }, {
+        "declaration" : "public final String timeToCrackOffline"
+      }, {
+        "declaration" : "private final String timeToCrackOnline"
+      }, {
+        "declaration" : "private final String message"
+      }, {
+        "declaration" : "private static final String BASIC_PASSWORD_CHECKS_FAILED"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.RegistrationUtils" : 5
+        },
+        "USES" : {
+          "com.coveros.training.authentication.domainobjects.PasswordResultEnums" : 3
+        }
+      }
+    },
+    "com.coveros.training.authentication.domainobjects.PasswordResultEnums" : {
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.domainobjects.PasswordResult" : 3
+        }
+      }
+    },
+    "com.coveros.training.authentication.domainobjects.RegistrationResult" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public final java.lang.String toPrettyString()"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.domainobjects.RegistrationResult createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.authentication.domainobjects.RegistrationResult RegistrationResult(boolean, com.coveros.training.authentication.domainobjects.RegistrationStatusEnums, java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.authentication.domainobjects.RegistrationResult RegistrationResult(boolean, com.coveros.training.authentication.domainobjects.RegistrationStatusEnums)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final boolean wasSuccessfullyRegistered"
+      }, {
+        "declaration" : "public final RegistrationStatusEnums status"
+      }, {
+        "declaration" : "private final String message"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.RegistrationUtils" : 4,
+          "com.coveros.training.authentication.RegisterServlet" : 1
+        },
+        "USES" : {
+          "com.coveros.training.authentication.domainobjects.RegistrationStatusEnums" : 3
+        }
+      }
+    },
+    "com.coveros.training.authentication.domainobjects.RegistrationStatusEnums" : {
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.authentication.domainobjects.RegistrationResult" : 3
+        }
+      }
+    },
+    "com.coveros.training.authentication.domainobjects.User" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public static com.coveros.training.authentication.domainobjects.User createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.authentication.domainobjects.User User(java.lang.String, long)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final String name"
+      }, {
+        "declaration" : "public final long id"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.cartesianproduct.CartesianProduct" : {
+      "methods" : [ {
+        "signature" : "public static java.lang.String calculate(null)"
+      } ],
+      "relationships" : { }
+    },
+    "com.coveros.training.expenses.AlcoholCalculator" : {
+      "methods" : [ {
+        "signature" : "public static com.coveros.training.expenses.AlcoholResult calculate(com.coveros.training.expenses.DinnerPrices)"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.expenses.AlcoholResult" : 1
+        },
+        "USES" : {
+          "com.coveros.training.expenses.DinnerPrices" : 1,
+          "com.coveros.training.expenses.AlcoholResult" : 1
+        }
+      }
+    },
+    "com.coveros.training.expenses.AlcoholResult" : {
+      "methods" : [ {
+        "signature" : "public static com.coveros.training.expenses.AlcoholResult returnEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.expenses.AlcoholResult AlcoholResult(java.lang.Double, java.lang.Double, java.lang.Double)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final Double foodPrice"
+      }, {
+        "declaration" : "private final Double alcoholPrice"
+      }, {
+        "declaration" : "private final Double foodRatio"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.expenses.AlcoholCalculator" : 1
+        }
+      }
+    },
+    "com.coveros.training.expenses.DinnerPrices" : {
+      "methods" : [ {
+        "signature" : "public com.coveros.training.expenses.DinnerPrices DinnerPrices(double, double, double, double)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final double subTotal"
+      }, {
+        "declaration" : "private final double foodTotal"
+      }, {
+        "declaration" : "private final double tip"
+      }, {
+        "declaration" : "private final double tax"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.expenses.AlcoholCalculator" : 1
+        }
+      }
+    },
+    "com.coveros.training.helpers.AssertionException" : {
+      "methods" : [ {
+        "signature" : "public com.coveros.training.helpers.AssertionException AssertionException(java.lang.String)"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.helpers.CheckUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.helpers.CheckUtils" : {
+      "methods" : [ {
+        "signature" : "public static void IntParameterMustBePositive(long)"
+      }, {
+        "signature" : "public static void StringMustNotBeNullOrEmpty(java.lang.String)"
+      }, {
+        "signature" : "public static void mustBeTrueAtThisPoint(boolean, java.lang.String)"
+      }, {
+        "signature" : "private com.coveros.training.helpers.CheckUtils CheckUtils()"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.authentication.LoginUtils" : 1,
+          "com.coveros.training.authentication.RegistrationUtils" : 3,
+          "com.coveros.training.persistence.PersistenceLayer" : 15
+        },
+        "USES" : {
+          "com.coveros.training.helpers.AssertionException" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.helpers.AssertionException" : 1
+        }
+      }
+    },
+    "com.coveros.training.helpers.ServletUtils" : {
+      "methods" : [ {
+        "signature" : "public static void forwardToResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      }, {
+        "signature" : "public static void forwardToRestfulResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      }, {
+        "signature" : "private com.coveros.training.helpers.ServletUtils ServletUtils()"
+      } ],
+      "fields" : [ {
+        "declaration" : "public static final String RESTFUL_RESULT_JSP"
+      }, {
+        "declaration" : "public static final String RESULT_JSP"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.library.LibraryBookListAvailableServlet" : 1,
+          "com.coveros.training.library.LibraryBookListSearchServlet" : 1,
+          "com.coveros.training.persistence.DbServlet" : 1,
+          "com.coveros.training.authentication.LoginServlet" : 1,
+          "com.coveros.training.mathematics.AckServlet" : 1,
+          "com.coveros.training.mathematics.MathServlet" : 1,
+          "com.coveros.training.library.LibraryRegisterBookServlet" : 1,
+          "com.coveros.training.mathematics.FibServlet" : 1,
+          "com.coveros.training.authentication.RegisterServlet" : 1,
+          "com.coveros.training.library.LibraryBorrowerListSearchServlet" : 1,
+          "com.coveros.training.library.LibraryRegisterBorrowerServlet" : 1,
+          "com.coveros.training.library.LibraryLendServlet" : 1
+        }
+      }
+    },
+    "com.coveros.training.helpers.StringUtils" : {
+      "methods" : [ {
+        "signature" : "public static java.lang.String makeNotNullable(java.lang.String)"
+      }, {
+        "signature" : "public static java.lang.String escapeForJson(java.lang.String)"
+      }, {
+        "signature" : "private com.coveros.training.helpers.StringUtils StringUtils()"
+      } ],
+      "fields" : [ {
+        "declaration" : "static final byte SINGLE_QUOTE"
+      }, {
+        "declaration" : "static final byte DOUBLE_QUOTE"
+      }, {
+        "declaration" : "static final byte BACKSLASH"
+      }, {
+        "declaration" : "static final byte NEW_LINE"
+      }, {
+        "declaration" : "static final byte CARRIAGE_RETURN"
+      }, {
+        "declaration" : "static final byte TAB"
+      }, {
+        "declaration" : "static final byte BACKSPACE"
+      }, {
+        "declaration" : "static final byte FORM_FEED"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.library.LibraryBookListSearchServlet" : 2,
+          "com.coveros.training.persistence.DbServlet" : 1,
+          "com.coveros.training.authentication.LoginServlet" : 2,
+          "com.coveros.training.library.LibraryRegisterBookServlet" : 1,
+          "com.coveros.training.library.domainobjects.Borrower" : 1,
+          "com.coveros.training.library.domainobjects.Book" : 1,
+          "com.coveros.training.authentication.RegisterServlet" : 2,
+          "com.coveros.training.library.LibraryBorrowerListSearchServlet" : 2,
+          "com.coveros.training.library.LibraryRegisterBorrowerServlet" : 1,
+          "com.coveros.training.library.LibraryLendServlet" : 2,
+          "com.coveros.training.persistence.PersistenceLayer" : 8
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryBookListAvailableServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"LibraryBookListAvailableSearch\", urlPatterns = { \"/listavailable\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "public static final String RESULT"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.LibraryUtils" : 2,
+          "com.coveros.training.library.domainobjects.Book" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryBookListSearchServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"LibraryBookListSearch\", urlPatterns = { \"/book\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private java.lang.String searchByTitle(java.lang.String)"
+      }, {
+        "signature" : "private java.lang.String searchById(java.lang.String)"
+      }, {
+        "signature" : "private java.lang.String listAllBooks()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "public static final String RESULT"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 2,
+          "com.coveros.training.library.domainobjects.Book" : 4,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.LibraryUtils" : 2,
+          "com.coveros.training.library.domainobjects.Book" : 3
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryBorrowerListSearchServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"LibraryBorrowerListSearch\", urlPatterns = { \"/borrower\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private java.lang.String searchByName(java.lang.String)"
+      }, {
+        "signature" : "private java.lang.String searchById(java.lang.String)"
+      }, {
+        "signature" : "private java.lang.String listAllBorrowers()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "public static final String RESULT"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 2,
+          "com.coveros.training.library.domainobjects.Borrower" : 4,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.LibraryUtils" : 2,
+          "com.coveros.training.library.domainobjects.Borrower" : 3
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryLendServlet" : {
+      "annotations" : [ "@WebServlet(name = \"LibraryLendServlet\", urlPatterns = { \"/lend\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "java.sql.Date getDateNow()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.helpers.StringUtils" : 2,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.library.LibraryUtils" : 2
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryRegisterBookServlet" : {
+      "annotations" : [ "@WebServlet(name = \"LibraryRegisterBookServlet\", urlPatterns = { \"/registerbook\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.helpers.StringUtils" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.library.LibraryUtils" : 2
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryRegisterBorrowerServlet" : {
+      "annotations" : [ "@WebServlet(name = \"LibraryRegisterBorrowerServlet\", urlPatterns = { \"/registerborrower\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private static final Logger logger"
+      }, {
+        "declaration" : "static LibraryUtils libraryUtils"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.helpers.StringUtils" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 1,
+          "com.coveros.training.library.LibraryUtils" : 2
+        },
+        "CREATES" : {
+          "com.coveros.training.library.LibraryUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.LibraryUtils" : {
+      "methods" : [ {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults lendBook(java.lang.String, java.lang.String, java.sql.Date)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults lendBook(com.coveros.training.library.domainobjects.Book, com.coveros.training.library.domainobjects.Borrower, java.sql.Date)"
+      }, {
+        "signature" : "void createLoan(com.coveros.training.library.domainobjects.Book, com.coveros.training.library.domainobjects.Borrower, java.sql.Date)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults registerBorrower(java.lang.String)"
+      }, {
+        "signature" : "void saveNewBorrower(java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults registerBook(java.lang.String)"
+      }, {
+        "signature" : "void saveNewBook(java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Loan searchForLoanByBook(com.coveros.training.library.domainobjects.Book)"
+      }, {
+        "signature" : "public null searchForLoanByBorrower(com.coveros.training.library.domainobjects.Borrower)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Borrower searchForBorrowerByName(java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Book searchForBookByTitle(java.lang.String)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Book searchForBookById(long)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Borrower searchForBorrowerById(long)"
+      }, {
+        "signature" : "public static com.coveros.training.library.LibraryUtils createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults deleteBook(com.coveros.training.library.domainobjects.Book)"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.LibraryActionResults deleteBorrower(com.coveros.training.library.domainobjects.Borrower)"
+      }, {
+        "signature" : "public null listAllBooks()"
+      }, {
+        "signature" : "public null listAllBorrowers()"
+      }, {
+        "signature" : "public null listAvailableBooks()"
+      }, {
+        "signature" : "public com.coveros.training.library.LibraryUtils LibraryUtils(com.coveros.training.persistence.IPersistenceLayer)"
+      }, {
+        "signature" : "public com.coveros.training.library.LibraryUtils LibraryUtils()"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final IPersistenceLayer persistence"
+      }, {
+        "declaration" : "private static final Logger logger"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.library.LibraryBookListAvailableServlet" : 2,
+          "com.coveros.training.library.LibraryBookListSearchServlet" : 2,
+          "com.coveros.training.library.LibraryRegisterBookServlet" : 2,
+          "com.coveros.training.library.LibraryBorrowerListSearchServlet" : 2,
+          "com.coveros.training.library.LibraryRegisterBorrowerServlet" : 2,
+          "com.coveros.training.library.LibraryLendServlet" : 2
+        },
+        "CALLS" : {
+          "com.coveros.training.library.domainobjects.Loan" : 2,
+          "com.coveros.training.library.domainobjects.Borrower" : 6,
+          "com.coveros.training.library.domainobjects.Book" : 6,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "USES" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.library.domainobjects.LibraryActionResults" : 6,
+          "com.coveros.training.library.domainobjects.Loan" : 3,
+          "com.coveros.training.library.domainobjects.Borrower" : 31,
+          "com.coveros.training.library.domainobjects.Book" : 35,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.library.domainobjects.Borrower" : 1,
+          "com.coveros.training.library.domainobjects.Book" : 1,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.domainobjects.Book" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toOutputString()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public static com.coveros.training.library.domainobjects.Book createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Book Book(long, java.lang.String)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final String title"
+      }, {
+        "declaration" : "public final long id"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.library.LibraryBookListAvailableServlet" : 1,
+          "com.coveros.training.library.LibraryBookListSearchServlet" : 3,
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.library.domainobjects.Loan" : 2,
+          "com.coveros.training.library.LibraryUtils" : 35,
+          "com.coveros.training.persistence.PersistenceLayer" : 9
+        },
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.domainobjects.Borrower" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toOutputString()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public static com.coveros.training.library.domainobjects.Borrower createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Borrower Borrower(long, java.lang.String)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final long id"
+      }, {
+        "declaration" : "public final String name"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.library.domainobjects.Loan" : 2,
+          "com.coveros.training.library.LibraryUtils" : 31,
+          "com.coveros.training.library.LibraryBorrowerListSearchServlet" : 3,
+          "com.coveros.training.persistence.PersistenceLayer" : 9
+        },
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.domainobjects.LibraryActionResults" : {
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.library.LibraryUtils" : 6,
+          "com.coveros.training.library.LibraryRegisterBookServlet" : 1,
+          "com.coveros.training.library.LibraryRegisterBorrowerServlet" : 1,
+          "com.coveros.training.library.LibraryLendServlet" : 1
+        }
+      }
+    },
+    "com.coveros.training.library.domainobjects.Loan" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public static com.coveros.training.library.domainobjects.Loan createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public com.coveros.training.library.domainobjects.Loan Loan(com.coveros.training.library.domainobjects.Book, com.coveros.training.library.domainobjects.Borrower, long, java.sql.Date)"
+      } ],
+      "fields" : [ {
+        "declaration" : "public final java.sql.Date checkoutDate"
+      }, {
+        "declaration" : "public final Book book"
+      }, {
+        "declaration" : "public final Borrower borrower"
+      }, {
+        "declaration" : "public final long id"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.library.LibraryUtils" : 3,
+          "com.coveros.training.persistence.PersistenceLayer" : 3
+        },
+        "CALLS" : {
+          "com.coveros.training.library.domainobjects.Borrower" : 1,
+          "com.coveros.training.library.domainobjects.Book" : 1
+        },
+        "USES" : {
+          "com.coveros.training.library.domainobjects.Borrower" : 2,
+          "com.coveros.training.library.domainobjects.Book" : 2
+        }
+      }
+    },
+    "com.coveros.training.mathematics.AckServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"AckServlet\", urlPatterns = { \"/ackermann\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "private int putNumberInRequest(java.lang.String, javax.servlet.http.HttpServletRequest)"
+      }, {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "void forwardToResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      }, {
+        "signature" : "void regularRecursive(javax.servlet.http.HttpServletRequest, int, int)"
+      }, {
+        "signature" : "void tailRecursive(javax.servlet.http.HttpServletRequest, int, int)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "public static final String RESULT"
+      }, {
+        "declaration" : "static Logger logger"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.mathematics.Ackermann" : 1,
+          "com.coveros.training.mathematics.AckermannIterative" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.Ackermann" : {
+      "methods" : [ {
+        "signature" : "public static java.math.BigInteger ack(java.math.BigInteger, java.math.BigInteger)"
+      }, {
+        "signature" : "public static java.math.BigInteger calculate(int, int)"
+      }, {
+        "signature" : "private com.coveros.training.mathematics.Ackermann Ackermann()"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.AckServlet" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.AckermannIterative" : {
+      "innerClasses" : {
+        "$" : { },
+        "Field" : { },
+        "FunctionalAckermann" : {
+          "annotations" : [ "@FunctionalInterface" ]
+        }
+      },
+      "methods" : [ {
+        "signature" : "public static java.math.BigInteger calculate(int, int)"
+      }, {
+        "signature" : "public abstract java.math.BigInteger number1()"
+      }, {
+        "signature" : "public abstract java.math.BigInteger number2()"
+      }, {
+        "signature" : "public abstract null stack()"
+      }, {
+        "signature" : "public abstract boolean flag()"
+      }, {
+        "signature" : "private static com.coveros.training.mathematics.AckermannIterative tail(java.math.BigInteger, java.math.BigInteger, null, boolean)"
+      }, {
+        "signature" : "private static java.math.BigInteger main(java.math.BigInteger, java.math.BigInteger)"
+      }, {
+        "signature" : "public java.math.BigInteger number1()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public java.math.BigInteger number2()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null stack()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public boolean flag()",
+        "annotations" : [ "@Override" ]
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final BigInteger ZERO"
+      }, {
+        "declaration" : "private static final BigInteger ONE"
+      }, {
+        "declaration" : "private static final BigInteger TWO"
+      }, {
+        "declaration" : "private static final BigInteger THREE"
+      }, {
+        "declaration" : "private static final BinaryOperator<BigInteger> ACKERMANN"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.AckServlet" : 1
+        },
+        "CALLS" : {
+          "com.coveros.training.mathematics.TailRecursive" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.Calculator" : {
+      "innerClasses" : {
+        "iFoo" : { },
+        "Foo" : { },
+        "iBar" : { },
+        "Bar" : { },
+        "Baz" : { }
+      },
+      "methods" : [ {
+        "signature" : "public static int add(int, int)"
+      }, {
+        "signature" : "public static double add(double, double)"
+      }, {
+        "signature" : "public static java.lang.String toStringZeroToTen(int)"
+      }, {
+        "signature" : "public static null add(null, null)"
+      }, {
+        "signature" : "public static int calculateAndMore(int, int, null, null)"
+      }, {
+        "signature" : "public int calculateAndMorePart2(int)"
+      }, {
+        "signature" : "public void calculateAndMorePart3(int)"
+      }, {
+        "signature" : "public abstract int doComplexThing(int)"
+      }, {
+        "signature" : "public int doComplexThing(int)"
+      }, {
+        "signature" : "public abstract int doOtherComplexThing(int)"
+      }, {
+        "signature" : "public int doOtherComplexThing(int)"
+      }, {
+        "signature" : "public int doThirdPartyThing(int)"
+      }, {
+        "signature" : "public com.coveros.training.mathematics.Calculator Calculator()"
+      }, {
+        "signature" : "public com.coveros.training.mathematics.Calculator Calculator(null)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final Baz baz"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.MathServlet" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.FibServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"FibServlet\", urlPatterns = { \"/fibonacci\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "private int putNumberInRequest(java.lang.String, javax.servlet.http.HttpServletRequest)"
+      }, {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "void tailRecursiveAlgo2Calc(javax.servlet.http.HttpServletRequest, int)"
+      }, {
+        "signature" : "void tailRecursiveAlgo1Calc(javax.servlet.http.HttpServletRequest, int)"
+      }, {
+        "signature" : "void forwardToResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      }, {
+        "signature" : "void defaultRecursiveCalculation(javax.servlet.http.HttpServletRequest, int)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "public static final String RESULT"
+      }, {
+        "declaration" : "public static final String FIBONACCI_VALUE_IS"
+      }, {
+        "declaration" : "static Logger logger"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.mathematics.FibonacciIterative" : 2,
+          "com.coveros.training.mathematics.Fibonacci" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.Fibonacci" : {
+      "methods" : [ {
+        "signature" : "public static long calculate(long)"
+      }, {
+        "signature" : "private com.coveros.training.mathematics.Fibonacci Fibonacci()"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.FibServlet" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.FibonacciIterative" : {
+      "methods" : [ {
+        "signature" : "public static java.math.BigInteger fibAlgo1(long)"
+      }, {
+        "signature" : "public static java.math.BigInteger fibAlgo2(int)"
+      }, {
+        "signature" : "private com.coveros.training.mathematics.FibonacciIterative FibonacciIterative()"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.FibServlet" : 2
+        }
+      }
+    },
+    "com.coveros.training.mathematics.FunctionalField" : {
+      "annotations" : [ "@FunctionalInterface" ],
+      "methods" : [ {
+        "signature" : "public abstract java.lang.Object untypedField(null)"
+      }, {
+        "signature" : "public null field(null)",
+        "annotations" : [ "@SuppressWarnings(\"unchecked\")" ]
+      } ],
+      "relationships" : { }
+    },
+    "com.coveros.training.mathematics.MathServlet" : {
+      "annotations" : [ "@MultipartConfig", "@WebServlet(name = \"MathServlet\", urlPatterns = { \"/math\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "private int putNumberInRequest(java.lang.String, javax.servlet.http.HttpServletRequest)"
+      }, {
+        "signature" : "protected void doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "void forwardToResult(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.slf4j.Logger)"
+      }, {
+        "signature" : "void setResultToSum(javax.servlet.http.HttpServletRequest, int, int)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "static org.slf4j.Logger logger"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.mathematics.Calculator" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        }
+      }
+    },
+    "com.coveros.training.mathematics.TailRecursive" : {
+      "innerClasses" : {
+        "$" : { }
+      },
+      "methods" : [ {
+        "signature" : "public static null tailie(null, null, null, null)"
+      }, {
+        "signature" : "private static null epsilon(null, null, null)"
+      } ],
+      "relationships" : {
+        "CALLED_BY" : {
+          "com.coveros.training.mathematics.AckermannIterative" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.DbServlet" : {
+      "annotations" : [ "@WebServlet(name = \"DbServlet\", urlPatterns = { \"/flyway\" }, loadOnStartup = 1)" ],
+      "methods" : [ {
+        "signature" : "protected void doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public com.coveros.training.persistence.DbServlet DbServlet()"
+      }, {
+        "signature" : "public com.coveros.training.persistence.DbServlet DbServlet(com.coveros.training.persistence.IPersistenceLayer)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      }, {
+        "declaration" : "private final IPersistenceLayer pl"
+      }, {
+        "declaration" : "private static final String RESULT"
+      }, {
+        "declaration" : "private static final Logger logger"
+      } ],
+      "relationships" : {
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 1,
+          "com.coveros.training.helpers.ServletUtils" : 1
+        },
+        "USES" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.EmptyDataSource" : {
+      "methods" : [ {
+        "signature" : "public java.sql.Connection getConnection()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public java.sql.Connection getConnection(java.lang.String, java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null unwrap(null)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public boolean isWrapperFor(null)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public java.io.PrintWriter getLogWriter()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void setLogWriter(java.io.PrintWriter)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void setLoginTimeout(int)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public int getLoginTimeout()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public org.slf4j.Logger getParentLogger()",
+        "annotations" : [ "@Override" ]
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "USES" : {
+          "com.coveros.training.persistence.NotImplementedException" : 9
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.NotImplementedException" : 9
+        }
+      }
+    },
+    "com.coveros.training.persistence.IPersistenceLayer" : {
+      "methods" : [ {
+        "signature" : "public abstract long saveNewBorrower(java.lang.String)"
+      }, {
+        "signature" : "public abstract long createLoan(com.coveros.training.library.domainobjects.Book, com.coveros.training.library.domainobjects.Borrower, java.sql.Date)"
+      }, {
+        "signature" : "public abstract long saveNewBook(java.lang.String)"
+      }, {
+        "signature" : "public abstract void updateBorrower(long, java.lang.String)"
+      }, {
+        "signature" : "public abstract void deleteBook(long)"
+      }, {
+        "signature" : "public abstract void deleteBorrower(long)"
+      }, {
+        "signature" : "public abstract null getBorrowerName(long)"
+      }, {
+        "signature" : "public abstract null searchBorrowerDataByName(java.lang.String)"
+      }, {
+        "signature" : "public abstract null searchBooksByTitle(java.lang.String)"
+      }, {
+        "signature" : "public abstract null searchBooksById(long)"
+      }, {
+        "signature" : "public abstract null searchBorrowersById(long)"
+      }, {
+        "signature" : "public abstract null listAllBooks()"
+      }, {
+        "signature" : "public abstract null listAvailableBooks()"
+      }, {
+        "signature" : "public abstract null listAllBorrowers()"
+      }, {
+        "signature" : "public abstract null searchForLoanByBorrower(com.coveros.training.library.domainobjects.Borrower)"
+      }, {
+        "signature" : "public abstract null searchForLoanByBook(com.coveros.training.library.domainobjects.Book)"
+      }, {
+        "signature" : "public abstract long saveNewUser(java.lang.String)"
+      }, {
+        "signature" : "public abstract void updateUserWithPassword(long, java.lang.String)"
+      }, {
+        "signature" : "public abstract null searchForUserByName(java.lang.String)"
+      }, {
+        "signature" : "public abstract null areCredentialsValid(java.lang.String, java.lang.String)"
+      }, {
+        "signature" : "public abstract void runBackup(java.lang.String)"
+      }, {
+        "signature" : "public abstract void runRestore(java.lang.String)"
+      }, {
+        "signature" : "public abstract void cleanAndMigrateDatabase()"
+      }, {
+        "signature" : "public abstract void cleanDatabase()"
+      }, {
+        "signature" : "public abstract void migrateDatabase()"
+      }, {
+        "signature" : "public abstract boolean isEmpty()"
+      } ],
+      "relationships" : {
+        "USED_BY" : {
+          "com.coveros.training.persistence.DbServlet" : 2,
+          "com.coveros.training.library.LibraryUtils" : 2,
+          "com.coveros.training.tomcat.WebAppListener" : 2,
+          "com.coveros.training.authentication.LoginUtils" : 2,
+          "com.coveros.training.authentication.RegistrationUtils" : 2
+        },
+        "USES" : {
+          "com.coveros.training.library.domainobjects.Borrower" : 2,
+          "com.coveros.training.library.domainobjects.Book" : 2
+        },
+        "IMPLEMENTED_BY" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.NotImplementedException" : {
+      "fields" : [ {
+        "declaration" : "private static final long serialVersionUID"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.EmptyDataSource" : 9
+        }
+      }
+    },
+    "com.coveros.training.persistence.ParameterObject" : {
+      "methods" : [ {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public static null createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "com.coveros.training.persistence.ParameterObject ParameterObject(java.lang.Object, null)"
+      } ],
+      "fields" : [ {
+        "declaration" : "final Object data"
+      }, {
+        "declaration" : "final Class<T> type"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.SqlData" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.PersistenceLayer" : {
+      "innerClasses" : {
+        "ThrowingFunction" : {
+          "annotations" : [ "@FunctionalInterface" ]
+        }
+      },
+      "methods" : [ {
+        "signature" : "private static org.h2.jdbcx.JdbcConnectionPool obtainConnectionPool()"
+      }, {
+        "signature" : "void executeUpdateTemplate(java.lang.String, java.lang.String, java.lang.Object)"
+      }, {
+        "signature" : "public long executeInsertTemplate(java.lang.String, java.lang.String, java.lang.Object)"
+      }, {
+        "signature" : "long executeInsertOnPreparedStatement(null, null)"
+      }, {
+        "signature" : "private void executeUpdateOnPreparedStatement(null, null)"
+      }, {
+        "signature" : "private null prepareStatementWithKeys(null, null)"
+      }, {
+        "signature" : "null runQuery(null)"
+      }, {
+        "signature" : "public abstract null apply(null)"
+      }, {
+        "signature" : "static null throwingFunctionWrapper(null)"
+      }, {
+        "signature" : "private null createExtractor(null)"
+      }, {
+        "signature" : "public long saveNewBorrower(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public long createLoan(com.coveros.training.library.domainobjects.Book, com.coveros.training.library.domainobjects.Borrower, java.sql.Date)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public long saveNewBook(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void updateBorrower(long, java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void deleteBook(long)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void deleteBorrower(long)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null getBorrowerName(long)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchBorrowerDataByName(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchBooksByTitle(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchBooksById(long)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchBorrowersById(long)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null listAllBooks()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null listAvailableBooks()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private null listBooks(java.lang.String, java.lang.String)"
+      }, {
+        "signature" : "public null listAllBorrowers()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchForLoanByBorrower(com.coveros.training.library.domainobjects.Borrower)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchForLoanByBook(com.coveros.training.library.domainobjects.Book)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public long saveNewUser(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null searchForUserByName(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public null areCredentialsValid(java.lang.String, java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void updateUserWithPassword(long, java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private java.lang.String createHashedValueFromPassword(java.lang.String)"
+      }, {
+        "signature" : "private static java.lang.String bytesToHex(null)"
+      }, {
+        "signature" : "public static com.coveros.training.persistence.IPersistenceLayer createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void runBackup(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void runRestore(java.lang.String)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void cleanAndMigrateDatabase()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void cleanDatabase()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void migrateDatabase()",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "private org.flywaydb.core.Flyway configureFlyway()"
+      }, {
+        "signature" : "public com.coveros.training.persistence.PersistenceLayer PersistenceLayer()"
+      }, {
+        "signature" : "com.coveros.training.persistence.PersistenceLayer PersistenceLayer(javax.sql.DataSource)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final DataSource dataSource"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.DbServlet" : 1,
+          "com.coveros.training.library.LibraryUtils" : 1,
+          "com.coveros.training.tomcat.WebAppListener" : 1,
+          "com.coveros.training.authentication.LoginUtils" : 1,
+          "com.coveros.training.authentication.RegistrationUtils" : 1
+        },
+        "IMPLEMENTS" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 1
+        },
+        "CALLS" : {
+          "com.coveros.training.helpers.StringUtils" : 8,
+          "com.coveros.training.helpers.CheckUtils" : 15
+        },
+        "USES" : {
+          "com.coveros.training.persistence.SqlRuntimeException" : 8,
+          "com.coveros.training.persistence.IPersistenceLayer" : 1,
+          "com.coveros.training.library.domainobjects.Loan" : 3,
+          "com.coveros.training.persistence.SqlData" : 13,
+          "com.coveros.training.library.domainobjects.Borrower" : 9,
+          "com.coveros.training.authentication.domainobjects.User" : 1,
+          "com.coveros.training.library.domainobjects.Book" : 9,
+          "com.coveros.training.persistence.EmptyDataSource" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.SqlRuntimeException" : 8,
+          "com.coveros.training.library.domainobjects.Loan" : 2,
+          "com.coveros.training.persistence.SqlData" : 13,
+          "com.coveros.training.library.domainobjects.Borrower" : 4,
+          "com.coveros.training.authentication.domainobjects.User" : 1,
+          "com.coveros.training.library.domainobjects.Book" : 4,
+          "com.coveros.training.persistence.EmptyDataSource" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.SqlData" : {
+      "methods" : [ {
+        "signature" : "private void generateParams(null)"
+      }, {
+        "signature" : "void addParameter(java.lang.Object, null)"
+      }, {
+        "signature" : "void applyParametersToPreparedStatement(java.sql.PreparedStatement)"
+      }, {
+        "signature" : "public final boolean equals(java.lang.Object)"
+      }, {
+        "signature" : "public final int hashCode()"
+      }, {
+        "signature" : "public final java.lang.String toString()"
+      }, {
+        "signature" : "public static null createEmpty()"
+      }, {
+        "signature" : "public boolean isEmpty()"
+      }, {
+        "signature" : "com.coveros.training.persistence.SqlData SqlData(java.lang.String, java.lang.String, java.lang.Object)"
+      }, {
+        "signature" : "com.coveros.training.persistence.SqlData SqlData(java.lang.String, java.lang.String, null, java.lang.Object)"
+      } ],
+      "fields" : [ {
+        "declaration" : "final String description"
+      }, {
+        "declaration" : "final String preparedStatement"
+      }, {
+        "declaration" : "private final List<ParameterObject<?>> params"
+      }, {
+        "declaration" : "public final Function<ResultSet,Optional<R>> extractor"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 13
+        },
+        "USES" : {
+          "com.coveros.training.persistence.SqlRuntimeException" : 1,
+          "com.coveros.training.persistence.ParameterObject" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.SqlRuntimeException" : 1,
+          "com.coveros.training.persistence.ParameterObject" : 1
+        }
+      }
+    },
+    "com.coveros.training.persistence.SqlRuntimeException" : {
+      "methods" : [ {
+        "signature" : "public com.coveros.training.persistence.SqlRuntimeException SqlRuntimeException(java.lang.Exception)"
+      }, {
+        "signature" : "public com.coveros.training.persistence.SqlRuntimeException SqlRuntimeException(java.lang.String)"
+      } ],
+      "relationships" : {
+        "CREATED_BY" : {
+          "com.coveros.training.persistence.SqlData" : 1,
+          "com.coveros.training.persistence.PersistenceLayer" : 8
+        }
+      }
+    },
+    "com.coveros.training.tomcat.WebAppListener" : {
+      "annotations" : [ "@WebListener" ],
+      "methods" : [ {
+        "signature" : "public void contextInitialized(javax.servlet.ServletContextEvent)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public void contextDestroyed(javax.servlet.ServletContextEvent)",
+        "annotations" : [ "@Override" ]
+      }, {
+        "signature" : "public com.coveros.training.tomcat.WebAppListener WebAppListener()"
+      }, {
+        "signature" : "public com.coveros.training.tomcat.WebAppListener WebAppListener(com.coveros.training.persistence.IPersistenceLayer)"
+      } ],
+      "fields" : [ {
+        "declaration" : "private final IPersistenceLayer pl"
+      } ],
+      "relationships" : {
+        "USES" : {
+          "com.coveros.training.persistence.IPersistenceLayer" : 2,
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        },
+        "CREATES" : {
+          "com.coveros.training.persistence.PersistenceLayer" : 1
+        }
+      }
+    }
+  }
+}
