@@ -1,0 +1,10 @@
+| Component Name | Responsibility | Interfaces (key endpoints or methods) | Depends On (other modules) | Technologies (frameworks, DBs, patterns) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Authentication Service** | Manages user (librarian) registration, login, and password strength validation. | `POST /demo/register`<br>`POST /demo/login`<br>`RegistrationUtils.isPasswordGood()` | Persistence Layer | Java Servlet, H2 (AUTH schema), SHA-256, Nbvcxz |
+| **Library Service** | Manages library inventory (books), members (borrowers), and the lending process (loans). | `POST /demo/registerbook`<br>`POST /demo/lend`<br>`GET /demo/books`<br>`GET /demo/listavailable` | Persistence Layer | Java Servlet, H2 (LIBRARY schema) |
+| **Mathematics Service** | Provides stateless, computational endpoints for various mathematical calculations. | `POST /demo/math`<br>`POST /demo/ack`<br>`POST /demo/fib` | None | Java Servlet, BigInteger |
+| **Expense Service** | Calculates the alcohol-related portion of a restaurant bill in a stateless manner. | `AlcoholCalculator.java` (internal business logic) | None | Java |
+| **Persistence Layer** | Centralized Data Access Object (DAO) that abstracts all JDBC calls and manages schema migrations. | `IPersistenceLayer` (e.g., `createUser`, `saveBook`)<br>`GET /demo/db?action=...` | H2 Database | JDBC, H2 (PostgreSQL mode), Flyway, DAO Pattern |
+| **Web Frontend** | Renders the user interface and handles client-side interactions and API calls. | `index.html`<br>`library.html`<br>`library.js` (AJAX to backend endpoints) | Authentication Service, Library Service | HTML, CSS, JavaScript, JSP, AJAX |
+| **AutoInsurance Desktop App** | Standalone GUI application for calculating auto insurance premiums. | Main UI: `AutoInsuranceUI`<br>Core Logic: `AutoInsuranceProcessor.process()`<br>Test Automation: TCP Server on Port 8000 | None | Java Swing |
+| **CI/CD Pipeline** | Automates the build, multi-layered testing, analysis, and deployment of the web application. | `Jenkinsfile`<br>Git `post-receive` hook | Git, Jenkins, SonarQube, Tomcat, OWASP ZAP | Jenkins, Gradle, JUnit, Selenium, JMeter, SonarQube, OWASP Suite |
