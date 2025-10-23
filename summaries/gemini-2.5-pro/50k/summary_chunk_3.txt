@@ -1,0 +1,149 @@
+This document provides a comprehensive architectural summary of the codebase chunk (Part 3 of 3), focusing on information critical for microservice decomposition analysis. The chunk consists entirely of unit, integration, and UI tests, from which the architecture of the application components is inferred.
+
+### 1. Overall Architecture
+
+The system is a monolithic Java web application built on the **Java Servlet API**. It follows a classic **3-Tier (Layered) Architecture**:
+
+*   **Presentation/API Layer:** Composed of `HttpServlet` classes that expose API endpoints. They handle HTTP request/response, parse parameters, and delegate to the business logic layer.
+*   **Business Logic Layer:** Implemented as "Utils" classes (e.g., `LibraryUtils`, `RegistrationUtils`). These components contain the core business rules and algorithms, orchestrating calls to the persistence layer.
+*   **Persistence Layer:** Abstracted by an interface, `IPersistenceLayer`. This layer is responsible for all database interactions. The application uses a database migration tool (inferred to be Flyway from the `/flyway` endpoint) for schema management.
+
+**Deployment & Lifecycle:**
+The application runs on a Tomcat server (inferred from `WebAppListener`). A `WebAppListener` is configured to automatically clean and migrate the database on application startup, indicating a "database-as-code" approach suitable for CI/CD environments.
+
+---
+
+### 2. Bounded Contexts & Domain Analysis
+
+The codebase can be clearly divided into four distinct domains, each a strong candidate for a microservice.
+
+#### 2.1. Authentication & User Management Domain
+
+This domain is responsible for user registration and login. It manages user credentials and authentication state.
+
+**Components & Responsibilities:**
+
+*   **`RegisterServlet`**:
+    *   **Responsibility**: Exposes the user registration endpoint.
+    *   **API Endpoint**: `POST /register` (inferred from UI test `ApiCalls.java`)
+    *   **Interface**:
+        *   Request Parameters: `username` (String), `password` (String).
+        *   Logic: Validates that username and password are not empty. Delegates processing to `RegistrationUtils`. Forwards to `result.jsp` with the registration outcome.
+*   **`LoginServlet`**:
+    *   **Responsibility**: Exposes the user login endpoint.
+    *   **API Endpoint**: `POST /login` (inferred)
+    *   **Interface**:
+        *   Request Parameters: `username` (String), `password` (String).
+        *   Logic: Validates inputs. Delegates credential checking to `LoginUtils`. Forwards to `result.jsp` with the message "access granted" or "access denied".
+*   **`RegistrationUtils`**:
+    *   **Responsibility**: Contains the core logic for user registration.
+    *   **Key Business Logic**:
+        1.  **Password Strength Check**: Implements an algorithm `isPasswordGood()` to validate password complexity/entropy (e.g., checks for length).
+        2.  **User Existence Check**: Ensures the username is not already taken by calling `isUserInDatabase()`.
+        3.  **User Creation**: Persists the new user if validation passes.
+    *   **Dependencies**: `IPersistenceLayer`.
+*   **`LoginUtils`**:
+    *   **Responsibility**: Handles the business logic for user login.
+    *   **Key Business Logic**: `isUserRegistered()` method that validates credentials against the persisted data.
+    *   **Dependencies**: `IPersistenceLayer`.
+
+**Data Models & Inferred DB Schema:**
+
+*   **`User`**: `(long id, String name)`
+*   **`RegistrationResult`**: A domain object representing the outcome of a registration attempt, containing a boolean success flag and a `RegistrationStatusEnums` status.
+*   **`PasswordResult`**: A domain object detailing the results of a password strength check.
+*   **Inferred Schema**: A `users` table is implied with columns like `id` (PK), `name` (UNIQUE), and a hashed `password`.
+
+#### 2.2. Library Management Domain
+
+This domain handles all library-related operations: managing books, borrowers, and the lending process.
+
+**Components & Responsibilities:**
+
+*   **Servlets (API Layer)**:
+    *   **`LibraryRegisterBookServlet`**: `POST /registerbook`. Param: `book` (title).
+    *   **`LibraryRegisterBorrowerServlet`**: `POST /registerborrower`. Param: `borrower` (name).
+    *   **`LibraryLendServlet`**: `POST /lend`. Params: `book` (title), `borrower` (name).
+    *   **`LibraryBookListSearchServlet`**: `GET /listbooks` (inferred). Optional params: `id`, `title`. Returns a JSON array of `Book` objects.
+    *   **`LibraryBookListAvailableServlet`**: `GET /listavailablebooks` (inferred). No params. Returns a JSON array of `Book` objects not currently on loan.
+    *   **`LibraryBorrowerListSearchServlet`**: `GET /listborrowers` (inferred). Optional params: `id`, `name`. Returns a JSON array of `Borrower` objects.
+*   **`LibraryUtils`**:
+    *   **Responsibility**: Central component for all library business logic.
+    *   **Key Business Logic**:
+        *   `registerBook(title)`: Checks if a book exists before saving.
+        *   `registerBorrower(name)`: Checks if a borrower exists before saving.
+        *   `lendBook(book, borrower, date)`: Main transaction logic. Verifies book and borrower are registered and that the book is not already checked out. Creates a `Loan` record.
+        *   Provides search (`searchFor...`), list (`listAll...`), and delete (`delete...`) functionalities.
+    *   **Dependencies**: `IPersistenceLayer`.
+
+**Data Models & Inferred DB Schema:**
+
+*   **`Book`**: `(long id, String title)`
+*   **`Borrower`**: `(long id, String name)`
+*   **`Loan`**: `(long id, Book book, Borrower borrower, Date borrowDate)`
+*   **`LibraryActionResults`**: Enum representing the outcome of library operations (e.g., `SUCCESS`, `BOOK_CHECKED_OUT`).
+*   **Inferred Schema**:
+    *   `books` table: `id` (PK, long), `title` (varchar).
+    *   `borrowers` table: `id` (PK, long), `name` (varchar).
+    *   `loans` table: `id` (PK, long), `book_id` (FK to books.id), `borrower_id` (FK to borrowers.id), `borrow_date` (date).
+
+#### 2.3. Mathematical Calculations Domain
+
+A stateless domain providing complex mathematical computations. This is a pure function-as-a-service candidate.
+
+**Components & Responsibilities:**
+
+*   **`MathServlet`**: `POST /math` (inferred). Params: `item_a`, `item_b`. Performs simple addition.
+*   **`AckServlet`**: `POST /ack` (inferred). Params: `ack_param_m`, `ack_param_n`, `ack_algorithm_choice`.
+*   **`FibServlet`**: `POST /fib` (inferred). Params: `fib_param_n`, `fib_algorithm_choice`.
+*   **Business Logic Classes**:
+    *   `Ackermann`, `AckermannIterative`: Implements recursive and iterative versions of the Ackermann function using `BigInteger` for large results.
+    *   `Fibonacci`, `FibonacciIterative`: Implements recursive and two different iterative versions of the Fibonacci sequence, also using `BigInteger`.
+*   **Dependencies**: This domain has no dependencies on the persistence layer or other domains.
+
+**Data Models**: No specific data models; input is primitive, and output is a `BigInteger` or numeric result.
+
+#### 2.4. System Administration Domain
+
+This domain provides administrative functions, primarily for managing the database state. It's essential for development and testing but would require strong security in production.
+
+**Components & Responsibilities:**
+
+*   **`DbServlet`**:
+    *   **Responsibility**: Exposes an endpoint to manage the database schema.
+    *   **API Endpoint**: `GET /flyway` (inferred from UI test setup scripts).
+    *   **Interface**:
+        *   Request Parameter: `action` (String, optional). Values can be `clean`, `migrate`. The default action is to clean and then migrate.
+    *   **Dependencies**: `IPersistenceLayer`.
+
+---
+
+### 3. Persistence Layer Details (Inferred)
+
+The persistence layer is defined by the `IPersistenceLayer` interface, which provides a clean separation of concerns.
+
+**Interface Methods (Inferred from Utils Tests):**
+*   **Authentication**: `areCredentialsValid(user, pass)`, `searchForUserByName(name)`, `saveNewUser(...)`
+*   **Library**: `searchBooksById(id)`, `searchBooksByTitle(title)`, `searchBorrowerDataByName(name)`, `searchForLoanByBook(book)`, `searchForLoanByBorrower(borrower)`, `saveNewBook(title)`, `saveNewBorrower(name)`, `createLoan(book, borrower, date)`, `deleteBook(id)`, `deleteBorrower(id)`, `listAllBooks()`, `listAllBorrowers()`, `listAvailableBooks()`
+*   **Admin**: `cleanDatabase()`, `migrateDatabase()`, `cleanAndMigrateDatabase()`
+
+**SQL Handling:**
+The `SqlData` and `ParameterObject` classes suggest a lightweight, custom SQL execution framework where prepared statements are built dynamically and parameters are applied with type safety.
+
+---
+
+### 4. UI & End-to-End Testing Framework
+
+The codebase includes an extensive suite of UI tests that confirm user workflows and system behavior.
+
+*   **Multi-Framework Strategy**: Tests are written in multiple languages and frameworks:
+    *   **Python (Behave)**: Behavior-Driven Development (BDD) tests using Gherkin (`.feature` files) to describe user stories. `environment.py` handles WebDriver setup and calls the `/flyway` endpoint for database resets before each scenario.
+    *   **Java (Selenium & HtmlUnit)**: Provides both browser-based (Selenium) and headless (HtmlUnit) testing. Critically, it includes an `ApiCalls.java` helper, which performs direct HTTP requests to the backend for test setup (e.g., registering users/books), confirming the API contract.
+    *   **JavaScript (Mocha & Selenium)**
+    *   **C# (NUnit & Selenium)**
+    *   **Python (Pytest & Selenium)**: Includes an implementation of the **Page Object Model (POM)** pattern (`LibraryPageObjectModel`), which provides a structured, reusable abstraction over the UI.
+
+*   **Key Tested Workflows**:
+    1.  **User Authentication**: Registering a new user and logging in successfully.
+    2.  **Book Lending**: Registering a borrower and a book, then successfully lending the book to the borrower.
+    3.  **Mathematical Functions**: Calculating Ackermann and Fibonacci values via the UI.

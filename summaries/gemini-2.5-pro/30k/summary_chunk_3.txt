@@ -1,0 +1,218 @@
+An architectural summary of the provided codebase chunk (Part 3 of 5) is below. This summary is structured for microservice decomposition analysis, preserving critical details about components, data, APIs, and dependencies.
+
+### 1. Overall Architecture
+
+This codebase chunk represents a portion of a **Java-based monolithic web application**. It exposes business logic through a **Java Servlet API**. The architecture is layered, with Servlets acting as the entry point (Controller), utility classes (`*Utils`) containing business logic (Service), and a dedicated Persistence Layer (`PersistenceLayer`) acting as a Data Access Object (DAO) to handle all database interactions.
+
+-   **Frameworks/Libraries**:
+    -   Java Servlet API for web endpoints.
+    -   SLF4J for logging.
+    -   H2 Database for integration testing.
+    -   Flyway for database schema migration (inferred from test setup and schema history table).
+    -   **Nbvcxz**: A Java library for password strength estimation.
+    -   JUnit and Mockito for testing.
+
+### 2. Core Components & Responsibilities
+
+The application is logically divided into distinct domains: **Authentication**, **Library Management**, **Mathematics**, and a core **Persistence** layer.
+
+#### 2.1. Persistence Layer
+
+This is the foundational component responsible for all database communication, abstracting SQL operations from the business logic.
+
+-   **Component Names**:
+    -   `IPersistenceLayer`: The crucial interface defining the contract for all data operations. This abstraction allows for mocking and dependency injection.
+    -   `PersistenceLayer`: The concrete implementation of `IPersistenceLayer`. It manages JDBC connections, executes SQL queries, and maps results to domain objects.
+    -   `DbServlet`: An administrative servlet providing endpoints to manage the database schema.
+
+-   **Responsibilities**:
+    -   Provide a centralized, abstracted API for all CRUD (Create, Read, Update, Delete) operations.
+    -   Manage database connections (using `DataSource`).
+    -   Handle database schema migrations using Flyway (`cleanDatabase`, `migrateDatabase`).
+    -   Provide database backup and restore functionality for testing (`runBackup`, `runRestore`).
+
+-   **API Endpoints**:
+    -   `GET /flyway?action=clean`: Wipes all data and schema from the database.
+    -   `GET /flyway?action=migrate`: Applies Flyway migration scripts to build the schema.
+    -   `GET /flyway`: Default action is to clean and then migrate the database.
+
+-   **Configuration & Deployment**:
+    -   The integration tests configure a file-based H2 database: `jdbc:h2:./build/db/training;AUTO_SERVER=TRUE;MODE=PostgreSQL`.
+    -   It uses SQL scripts stored in `src/integration_test/resources/db_sample_files/` to set up specific test data states.
+
+#### 2.2. Authentication Domain
+
+This domain handles user registration and login.
+
+-   **Component Names**:
+    -   `RegisterServlet`: Handles new user registration requests.
+    -   `LoginServlet`: Handles user authentication requests.
+    -   `RegistrationUtils`: Contains the business logic for registering a user, including password validation.
+    -   `LoginUtils`: Contains the business logic for verifying user credentials.
+
+-   **Responsibilities**:
+    -   Register new users if the username is not already taken.
+    -   Validate password strength and complexity during registration.
+    -   Authenticate existing users against stored credentials.
+
+-   **API Endpoints**:
+    -   `POST /register`: Registers a new user.
+        -   **Request parameters**: `username`, `password`.
+        -   **Response**: A string indicating the result (e.g., "successfully registered", "already registered").
+    -   `POST /login`: Authenticates a user.
+        -   **Request parameters**: `username`, `password`.
+        -   **Response**: "access granted" or "access denied".
+
+-   **Key Business Logic & Algorithms**:
+    -   **Password Strength Check (`RegistrationUtils.isPasswordGood`)**:
+        -   Uses the `Nbvcxz` library to estimate password entropy and time-to-crack.
+        -   Enforces minimum length (10 chars) and maximum length (100 chars).
+        -   Rejects passwords that don't meet a minimum entropy threshold.
+    -   **Registration Flow (`RegistrationUtils.processRegistration`)**:
+        1.  Validates input.
+        2.  Checks if the user already exists via `persistenceLayer.searchForUserByName`.
+        3.  Validates password strength.
+        4.  Saves the new user (`persistenceLayer.saveNewUser`) and then updates their password hash (`persistenceLayer.updateUserWithPassword`).
+
+-   **Dependencies**:
+    -   Both `RegistrationUtils` and `LoginUtils` have a direct dependency on `IPersistenceLayer` to interact with user data.
+
+#### 2.3. Library Management Domain
+
+This domain manages the core functionality of a library: books, borrowers, and loans.
+
+-   **Component Names**:
+    -   `LibraryUtils`: Contains all business logic for library operations.
+    -   `LibraryRegisterBookServlet`: Registers a new book.
+    -   `LibraryRegisterBorrowerServlet`: Registers a new borrower.
+    -   `LibraryLendServlet`: Lends a book to a borrower.
+    -   `LibraryBookListSearchServlet`: Searches for or lists all books.
+    -   `LibraryBorrowerListSearchServlet`: Searches for or lists all borrowers.
+    -   `LibraryBookListAvailableServlet`: Lists all books available for checkout.
+
+-   **Responsibilities**:
+    -   Maintain a catalog of books.
+    -   Maintain a registry of borrowers.
+    -   Track the lending of books (loans).
+    -   Prevent lending of already checked-out books or to unregistered borrowers.
+    -   Provide search capabilities for books and borrowers.
+
+-   **API Endpoints**:
+    -   `POST /registerbook`: Adds a new book.
+        -   **Request parameter**: `book` (title).
+    -   `POST /registerborrower`: Adds a new borrower.
+        -   **Request parameter**: `borrower` (name).
+    -   `POST /lend`: Creates a loan record.
+        -   **Request parameters**: `book` (title), `borrower` (name).
+    -   `GET /book`: Lists/searches books.
+        -   **Request parameters (optional)**: `id`, `title`. Returns a JSON array.
+    -   `GET /borrower`: Lists/searches borrowers.
+        -   **Request parameters (optional)**: `id`, `name`. Returns a JSON array.
+    -   `GET /listavailable`: Lists all books not currently on loan. Returns a JSON array.
+
+-   **Key Business Logic (`LibraryUtils`)**:
+    -   **Lending Logic (`lendBook`)**:
+        1.  Verifies the book is registered.
+        2.  Verifies the borrower is registered.
+        3.  Verifies the book is not already on loan by calling `persistenceLayer.searchForLoanByBook`.
+        4.  Creates a new loan record via `persistenceLayer.createLoan`.
+    -   **Registration Logic (`registerBook`, `registerBorrower`)**:
+        -   Checks if the entity already exists before creating a new one to prevent duplicates.
+
+-   **Dependencies**:
+    -   `LibraryUtils` has a strong dependency on `IPersistenceLayer` for all its operations.
+
+#### 2.4. Mathematics Domain
+
+A functionally independent domain providing various mathematical calculations.
+
+-   **Component Names**:
+    -   `MathServlet`, `AckServlet`, `FibServlet`: Servlets exposing the calculations.
+    -   `Calculator`, `Ackermann`, `AckermannIterative`, `Fibonacci`, `FibonacciIterative`: Classes containing the calculation logic.
+
+-   **Responsibilities**:
+    -   Perform simple addition.
+    -   Calculate Ackermann's function using multiple algorithms.
+    -   Calculate Fibonacci numbers using multiple algorithms.
+
+-   **API Endpoints**:
+    -   `POST /math`: Adds two numbers.
+        -   **Request parameters**: `item_a`, `item_b`.
+    -   `POST /ackermann`: Calculates Ackermann's function.
+        -   **Request parameters**: `ack_param_m`, `ack_param_n`, `ack_algorithm_choice` (`tail_recursive` or default).
+    -   `POST /fibonacci`: Calculates a Fibonacci number.
+        -   **Request parameters**: `fib_param_n`, `fib_algorithm_choice` (`tail_recursive_1`, `tail_recursive_2`, or default).
+
+-   **Dependencies**: This domain is self-contained and has **no dependency** on the persistence layer or other business domains.
+
+### 3. Database Schema and Data Models
+
+The database is split into three schemas: `ADMINISTRATIVE`, `AUTH`, and `LIBRARY`. This separation is a strong indicator for potential microservice boundaries.
+
+#### 3.1. Schemas & Tables
+
+-   **Schema: `AUTH`**
+    -   **Table: `USER`**
+        -   `ID` (INT, PK, Auto-increment)
+        -   `NAME` (VARCHAR(100), NOT NULL)
+        -   `PASSWORD_HASH` (VARCHAR(100))
+-   **Schema: `LIBRARY`**
+    -   **Table: `BOOK`**
+        -   `ID` (INT, PK, Auto-increment)
+        -   `TITLE` (VARCHAR(100), NOT NULL)
+    -   **Table: `BORROWER`**
+        -   `ID` (INT, PK, Auto-increment)
+        -   `NAME` (VARCHAR(100), NOT NULL)
+    -   **Table: `LOAN`**
+        -   `ID` (INT, PK, Auto-increment)
+        -   `BOOK` (INT, NOT NULL, FK -> `LIBRARY.BOOK.ID`)
+        -   `BORROWER` (INT, NOT NULL, FK -> `LIBRARY.BORROWER.ID`)
+        -   `BORROW_DATE` (DATE, NOT NULL)
+-   **Schema: `ADMINISTRATIVE`**
+    -   **Table: `flyway_schema_history`**: Standard Flyway table to track schema versioning.
+
+#### 3.2. Data Models (Domain Objects)
+
+-   **`com.coveros.training.authentication.domainobjects.User`**: Represents a system user. Maps to `AUTH.USER`.
+    -   `long id`
+    -   `String name`
+-   **`com.coveros.training.library.domainobjects.Book`**: Represents a library book. Maps to `LIBRARY.BOOK`.
+    -   `long id`
+    -   `String title`
+-   **`com.coveros.training.library.domainobjects.Borrower`**: Represents a person who can borrow books. Maps to `LIBRARY.BORROWER`.
+    -   `long id`
+    -   `String name`
+-   **`com.coveros.training.library.domainobjects.Loan`**: Represents a loan transaction. Maps to `LIBRARY.LOAN`.
+    -   `long id`
+    -   `Book book`
+    -   `Borrower borrower`
+    -   `java.sql.Date checkoutDate`
+
+### 4. Service Dependencies & Communication
+
+-   **Internal Communication**: Standard Java method calls. The business logic (`*Utils`) classes are tightly coupled to the `IPersistenceLayer` interface. Servlets are coupled to their respective `*Utils` classes.
+-   **External Communication**: All external communication is via HTTP through the Java Servlets. The REST-like GET endpoints for searching produce simple JSON arrays. The POST endpoints are form-based and redirect to a result page.
+-   **Data Flow**: `Servlet` -> `*Utils` (Business Logic) -> `PersistenceLayer` -> `Database`.
+
+### 5. Architectural Patterns & Analysis for Decomposition
+
+-   **Architectural Pattern**: A classic **N-Tier Layered Monolith**.
+-   **Decomposition Analysis**:
+    -   **Candidate Service 1: `Authentication Service`**
+        -   **Domain**: User registration and login.
+        -   **Components**: `LoginServlet`, `RegisterServlet`, `LoginUtils`, `RegistrationUtils`.
+        -   **Data**: Owns the `AUTH.USER` table.
+        -   **Analysis**: Strong candidate. It has a clear, bounded context and its own data schema (`AUTH`).
+    -   **Candidate Service 2: `Library Service`**
+        -   **Domain**: Managing books, borrowers, and loans.
+        -   **Components**: All `Library*` servlets and `LibraryUtils`.
+        -   **Data**: Owns the `LIBRARY.BOOK`, `LIBRARY.BORROWER`, and `LIBRARY.LOAN` tables.
+        -   **Analysis**: Very strong candidate. A well-defined domain with its own schema (`LIBRARY`).
+    -   **Candidate Service 3: `Mathematics Service`**
+        -   **Domain**: Performing complex mathematical calculations.
+        -   **Components**: `MathServlet`, `AckServlet`, `FibServlet` and all calculation classes.
+        -   **Data**: Stateless. It has no database dependencies.
+        -   **Analysis**: Easiest candidate to extract. It's completely decoupled from the other domains and has no persistent state.
+    -   **Shared Dependencies/Challenges**:
+        -   Both the `Authentication` and `Library` domains currently reside in a single database. A decomposition would require either splitting the database or careful management of a shared one.
+        -   There is an implicit link between a `User` and a `Borrower` (e.g., a librarian is a `User`, a patron is a `Borrower`). The current implementation does not link them, but in a real-world scenario, this relationship would need to be managed, possibly via an API gateway or inter-service communication (e.g., the Library Service querying the Auth Service to validate a user before creating a borrower).

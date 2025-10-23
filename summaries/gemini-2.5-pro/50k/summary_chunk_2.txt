@@ -1,0 +1,108 @@
+An architectural summary of the provided codebase chunk is detailed below, focusing on information relevant for microservice decomposition analysis.
+
+### 1. Architectural Style and Patterns
+
+*   **Overall Architecture:** The application is a classic **Monolithic Architecture**. All business domains (Authentication, Library Management, Mathematics) are tightly coupled within a single Java web application, deployed as a single unit.
+*   **Internal Pattern:** It follows a traditional **3-Tier (Layered) Architecture**:
+    *   **Presentation/API Layer:** Implemented using Java Servlets (`javax.servlet.http.HttpServlet`). Each servlet defines a web endpoint.
+    *   **Business Logic Layer:** Encapsulated in `*Utils` classes (e.g., `LibraryUtils`, `RegistrationUtils`, `LoginUtils`). This layer contains the core application logic and orchestrates calls to the data access layer.
+    *   **Data Access Layer (DAL):** A custom micro-ORM implemented in the `PersistenceLayer` class, which is the sole component responsible for database interactions via JDBC. The `IPersistenceLayer` interface is used, allowing for dependency injection and easier testing.
+*   **Database Management:** Database schema evolution is managed using the **Flyway** migration framework. Scripts are executed automatically on application startup.
+
+### 2. Component Breakdown and Responsibilities
+
+The codebase is organized into distinct feature domains, which are strong candidates for decomposition into microservices.
+
+#### A. Authentication Service
+This component is responsible for user registration and login.
+*   **`LoginServlet`**: Exposes the `/login` endpoint for user authentication.
+*   **`RegisterServlet`**: Exposes the `/register` endpoint for new user registration.
+*   **`LoginUtils`**: Contains the business logic to verify user credentials against the database.
+*   **`RegistrationUtils`**: Contains business logic for the registration process, including username validation and password complexity checks.
+*   **Dependencies**:
+    *   It depends on the `PersistenceLayer` to store and retrieve user data.
+    *   It uses the `me.gosimple.nbvcxz` library for password strength analysis.
+
+#### B. Library Service
+This is the most complex domain, handling the management of books, borrowers, and loans.
+*   **`LibraryUtils`**: The core business logic class. It manages lending, registering books/borrowers, and searching for library entities.
+*   **Servlets (API Endpoints)**:
+    *   `LibraryRegisterBookServlet` (`/registerbook`): Adds a new book to the inventory.
+    *   `LibraryRegisterBorrowerServlet` (`/registerborrower`): Adds a new borrower.
+    *   `LibraryLendServlet` (`/lend`): Creates a loan record for a book and a borrower.
+    *   `LibraryBookListSearchServlet` (`/book`): Lists all books or searches by title/ID.
+    *   `LibraryBorrowerListSearchServlet` (`/borrower`): Lists all borrowers or searches by name/ID.
+    *   `LibraryBookListAvailableServlet` (`/listavailable`): Lists only books that are not currently loaned out.
+*   **Dependencies**: It is heavily dependent on the `PersistenceLayer` for all CRUD operations related to books, borrowers, and loans.
+
+#### C. Mathematics Service
+This component provides various mathematical calculation endpoints. It is stateless and functionally distinct from the other domains.
+*   **Servlets (API Endpoints)**:
+    *   `MathServlet` (`/math`): Performs simple addition.
+    *   `AckServlet` (`/ackermann`): Calculates Ackermann's function using different algorithms.
+    *   `FibServlet` (`/fibonacci`): Calculates Fibonacci numbers using different algorithms.
+*   **Business Logic/Algorithms**:
+    *   `Calculator`: Simple arithmetic.
+    *   `Ackermann`, `AckermannIterative`: Recursive and iterative implementations of the Ackermann function.
+    *   `Fibonacci`, `FibonacciIterative`: Recursive and iterative implementations for Fibonacci sequence calculation.
+*   **Dependencies**: This component is self-contained and has no dependencies on other business components or the persistence layer.
+
+#### D. Persistence Component (Shared Infrastructure)
+This is a cross-cutting concern that serves as the data access layer for all stateful services.
+*   **`PersistenceLayer`**: Implements the `IPersistenceLayer` interface. It manages the JDBC `DataSource`, creates and executes prepared SQL statements, and maps `ResultSet` data to domain objects. It is the single gateway to the H2 database.
+*   **`DbServlet`**: Exposes the `/flyway` endpoint for manual database management (clean, migrate).
+
+#### E. Incomplete/Placeholder Components
+*   **`cartesianproduct`**: Contains a placeholder `CartesianProduct` class with an empty implementation.
+*   **`expenses`**: Contains `AlcoholCalculator` and related classes, all of which return empty/default values. These represent potential future features but are not currently functional.
+
+### 3. API Endpoints and Interfaces
+
+| Method | Endpoint               | Servlet Class                        | Parameters                                | Responsibility                                           |
+| :----- | :--------------------- | :----------------------------------- | :---------------------------------------- | :------------------------------------------------------- |
+| POST   | `/login`               | `LoginServlet`                       | `username`, `password`                    | Authenticate a user.                                     |
+| POST   | `/register`            | `RegisterServlet`                    | `username`, `password`                    | Register a new user.                                     |
+| POST   | `/registerbook`        | `LibraryRegisterBookServlet`         | `book` (title)                            | Add a new book.                                          |
+| POST   | `/registerborrower`    | `LibraryRegisterBorrowerServlet`     | `borrower` (name)                         | Add a new borrower.                                      |
+| POST   | `/lend`                | `LibraryLendServlet`                 | `book` (title), `borrower` (name)         | Lend a book to a borrower.                               |
+| GET    | `/book`                | `LibraryBookListSearchServlet`       | `id` (optional), `title` (optional)       | List all books or search by ID/title.                    |
+| GET    | `/borrower`            | `LibraryBorrowerListSearchServlet`   | `id` (optional), `name` (optional)        | List all borrowers or search by ID/name.                 |
+| GET    | `/listavailable`       | `LibraryBookListAvailableServlet`    | (none)                                    | List all available (un-loaned) books.                    |
+| POST   | `/math`                | `MathServlet`                        | `item_a`, `item_b`                        | Add two integers.                                        |
+| POST   | `/fibonacci`           | `FibServlet`                         | `fib_param_n`, `fib_algorithm_choice`     | Calculate a Fibonacci number.                            |
+| POST   | `/ackermann`           | `AckServlet`                         | `ack_param_m`, `ack_param_n`, `ack_algorithm_choice` | Calculate Ackermann's function.                      |
+| GET    | `/flyway`              | `DbServlet`                          | `action` (`clean`, `migrate`)             | Manage the database schema state.                        |
+| GET/POST| `/console/*`           | `org.h2.server.web.WebServlet`       | (H2 Console specific)                     | Provides a web-based console for the H2 database.        |
+
+### 4. Database Schema and Data Models
+
+*   **Database Engine:** H2 (configured for in-memory use at runtime, file-based for integration tests).
+*   **Schemas:** `AUTH`, `LIBRARY`, `ADMINISTRATIVE`.
+
+| Table          | Schema  | Columns                                                                   | Java Domain Object | Description                                                                 |
+| :------------- | :------ | :------------------------------------------------------------------------ | :----------------- | :-------------------------------------------------------------------------- |
+| `USER`         | `AUTH`  | `id` (SERIAL, PK), `name` (VARCHAR), `password_hash` (VARCHAR)              | `User`             | Stores user credentials. The password is a SHA-256 hash.                  |
+| `BOOK`         | `LIBRARY`| `id` (SERIAL, PK), `title` (VARCHAR)                                      | `Book`             | Stores library book inventory.                                              |
+| `BORROWER`     | `LIBRARY`| `id` (SERIAL, PK), `name` (VARCHAR)                                       | `Borrower`         | Stores registered library patrons.                                          |
+| `LOAN`         | `LIBRARY`| `id` (SERIAL, PK), `book` (INT, FK to BOOK), `borrower` (INT, FK to BORROWER), `borrow_date` (DATE) | `Loan`             | Tracks which book is loaned to which borrower and when. `ON DELETE CASCADE` is enabled for both foreign keys. |
+| `flyway_schema_history` | ADMINISTRATIVE | (Flyway standard columns)                               | N/A                | Tracks which database migrations have been applied.                         |
+
+### 5. Key Business Logic and Algorithms
+
+*   **User Registration Password Hashing**: `RegistrationUtils` uses `SHA-256` to hash passwords before they are stored in the database via `PersistenceLayer.updateUserWithPassword`.
+*   **Password Strength Check**: `RegistrationUtils.isPasswordGood` uses the `Nbvcxz` library to enforce password complexity rules based on length (10-100 chars) and entropy, preventing weak passwords.
+*   **Book Lending Logic**: `LibraryUtils.lendBook` enforces several business rules:
+    1.  The book must exist in the system.
+    2.  The borrower must be registered.
+    3.  The book must not already be on loan (by checking for an existing loan record).
+*   **Recursive vs. Iterative Algorithms**: The `mathematics` component provides both naive recursive and more performant iterative/tail-recursive algorithms for Fibonacci and Ackermann functions, selectable via an API parameter.
+
+### 6. Configuration and Deployment
+
+*   **Deployment Unit:** A standard WAR (Web Application Archive) file.
+*   **Application Server:** A servlet container like Apache Tomcat is required.
+*   **Startup Process:** The `WebAppListener` class is configured via `@WebListener` to execute on startup. Its `contextInitialized` method calls `pl.cleanAndMigrateDatabase()`, which uses Flyway to completely reset and re-apply the database schema every time the application starts. This makes the application stateless between restarts.
+*   **Database Connection:** The JDBC connection URL is hardcoded in `PersistenceLayer` for runtime (`jdbc:h2:mem:training`) and in `PersistenceLayerTests` for integration testing (`jdbc:h2:./build/db/training`).
+*   **Logging:** Configured via `src/main/resources/log4j2.xml` to log `INFO` level and above to the console.
+*   **Web Configuration:** `src/main/webapp/WEB-INF/web.xml` configures the H2 console servlet and disables URL-based sessions in favor of cookies.
+*   **UI:** A simple set of HTML/CSS/JS files provides a basic user interface for interacting with the library and database administration endpoints (`library.html`, `endpointcatalog.html`). The JavaScript in `catalog.js` and `library.js` makes asynchronous API calls (`XMLHttpRequest`) to the backend servlets.

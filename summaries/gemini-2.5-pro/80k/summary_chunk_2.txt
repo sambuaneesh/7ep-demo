@@ -1,0 +1,114 @@
+An architectural summary of the provided codebase chunk is as follows.
+
+### 1. Overall Architecture
+
+The codebase represents a **monolithic Java web application**. It is built using the standard **Java Servlet API** for web endpoints and does not use a high-level framework like Spring or Jakarta EE. The application features distinct domains for mathematical calculations and a library management system with user authentication. It uses an in-memory **H2 database** with its schema managed by **Flyway**. The frontend is a mix of server-rendered pages and JavaScript-driven dynamic UI enhancements over AJAX.
+
+### 2. Component Names and Responsibilities
+
+The application is logically divided into several packages/domains:
+
+*   **`com.coveros.training.mathematics` (Mathematics Domain)**
+    *   **`Calculator`**: Provides simple, static methods for arithmetic operations (e.g., `add`).
+    *   **`Fibonacci` / `FibonacciIterative`**: Contains algorithms for calculating Fibonacci numbers. `Fibonacci` uses a naive recursive approach, while `FibonacciIterative` provides more performant iterative solutions.
+    *   **`MathServlet` / `FibServlet`**: Java Servlets that expose the mathematics logic as public HTTP API endpoints.
+
+*   **`com.coveros.training.persistence` (Persistence Domain)**
+    *   **`IPersistenceLayer`**: Defines the data access contract (interface) for the entire application. It acts as a **Gateway/Repository** interface, abstracting all database operations. This is a critical architectural boundary.
+    *   **`PersistenceLayer`**: The concrete implementation of `IPersistenceLayer`. It manages the H2 database connection pool, executes raw SQL queries using JDBC, and integrates with Flyway for schema migration. It also contains the password hashing logic.
+    *   **`SqlData` / `ParameterObject`**: Helper classes forming a custom **micro-ORM** or **Data Mapper** utility to reduce JDBC boilerplate for executing prepared statements.
+    *   **`DbServlet`**: A web endpoint providing administrative control over the database, allowing it to be cleaned and migrated on demand.
+    *   **`EmptyDataSource`**: An implementation of the **Null Object Pattern** for `javax.sql.DataSource` to avoid null references.
+
+*   **`com.coveros.training.tomcat` (Deployment/Configuration Domain)**
+    *   **`WebAppListener`**: A `ServletContextListener` that hooks into the application's startup lifecycle. Its primary responsibility is to **initialize the database by cleaning and migrating the schema using Flyway** every time the application starts.
+
+*   **Frontend (`src/main/webapp`)**
+    *   **HTML Files** (`library.html`, `endpointcatalog.html`): Define the primary user interfaces, including forms for all major application features.
+    *   **`library.js`**: Contains significant client-side logic for the library page. It fetches data from backend APIs to dynamically render UI components like dropdowns and autocomplete search boxes, providing a richer user experience.
+    *   **`catalog.js`**: A generic script that hijacks standard form submissions and converts them into AJAX requests using `XMLHttpRequest`.
+
+### 3. API Endpoints and Interfaces
+
+#### 3.1. HTTP API Endpoints
+
+The application exposes the following endpoints, identified from the servlets, frontend code, and tests:
+
+| Method | Path               | Parameters                                                              | Responsibility                                  | Response Type  |
+| :----- | :----------------- | :---------------------------------------------------------------------- | :---------------------------------------------- | :------------- |
+| `POST` | `/math`            | `item_a` (int), `item_b` (int)                                          | Adds two integers.                              | Plain Text     |
+| `POST` | `/fibonacci`       | `fib_param_n` (int), `fib_algorithm_choice` (string)                    | Calculates a Fibonacci number using a chosen algorithm. | Plain Text     |
+| `GET`  | `/flyway`          | `action` ("clean", "migrate")                                           | Manages the database schema (clean, migrate, or both). | HTML           |
+| `GET`  | `/book`            | Optional: `id` (long) or `title` (string)                               | Lists all books or searches for a specific book. | JSON           |
+| `GET`  | `/borrower`        | Optional: `id` (long) or `name` (string)                                | Lists all borrowers or searches for a specific one. | JSON           |
+| `GET`  | `/listavailable`   | None                                                                    | Lists all books currently available for loan.   | JSON           |
+| `POST` | `/login`           | `username` (string), `password` (string)                                | Authenticates a librarian.                      | HTML           |
+| `POST` | `/register`        | `username` (string), `password` (string)                                | Registers a new librarian.                      | HTML           |
+| `POST` | `/lend`            | `book` (string), `borrower` (string)                                    | Creates a new loan record.                      | HTML           |
+| `POST` | `/registerbook`    | `book` (string)                                                         | Adds a new book to the library.                 | HTML           |
+| `POST` | `/registerborrower`| `borrower` (string)                                                     | Adds a new borrower to the library.             | HTML           |
+| `ANY`  | `/console/*`       | -                                                                       | Provides access to the H2 Database Console.     | HTML           |
+
+#### 3.2. Key Java Interfaces
+
+*   **`IPersistenceLayer`**: This is the most significant internal interface, defining the complete set of data operations for the application. It decouples the business logic from the specific database implementation. Its methods are grouped into:
+    *   **Library Functions**: `saveNewBook`, `saveNewBorrower`, `createLoan`, `searchBooksByTitle`, `listAvailableBooks`, etc.
+    *   **Authentication Functions**: `saveNewUser`, `updateUserWithPassword`, `areCredentialsValid`, `searchForUserByName`.
+    *   **Utility Functions**: `cleanAndMigrateDatabase`, `runBackup`, `runRestore`.
+
+### 4. Database Schema and Data Models
+
+*   **Database**: H2 in-memory database running in PostgreSQL compatibility mode.
+*   **Schema Management**: Flyway, with SQL migration scripts located in `src/main/resources/db/migration/`.
+*   **Database Schemas**: `auth` and `library`.
+
+*   **Tables**:
+    *   `auth.USER`: Stores librarian credentials.
+        *   `id` (SERIAL, PK), `name` (VARCHAR), `password_hash` (VARCHAR)
+    *   `library.BOOK`: Stores book information.
+        *   `id` (SERIAL, PK), `title` (VARCHAR)
+    *   `library.BORROWER`: Stores borrower information.
+        *   `id` (SERIAL, PK), `name` (VARCHAR)
+    *   `library.LOAN`: Tracks which book is loaned to which borrower.
+        *   `id` (SERIAL, PK), `book` (INT, FK to `BOOK.id`), `borrower` (INT, FK to `BORROWER.id`), `borrow_date` (DATE).
+        *   Foreign keys are configured with `ON DELETE CASCADE`.
+
+*   **Data Models (POJOs)**:
+    *   `User { long id, String name }`
+    *   `Book { long id, String title }`
+    *   `Borrower { long id, String name }`
+    *   `Loan { long id, Book book, Borrower borrower, Date borrowDate }`
+
+### 5. Service Dependencies and Communication Patterns
+
+*   **Internal Communication**:
+    *   Servlets act as controllers, receiving HTTP requests.
+    *   They delegate to business logic classes (e.g., `LibraryUtils`, `RegistrationUtils`, `Calculator`).
+    *   All business logic requiring data persistence communicates through the `IPersistenceLayer` interface. `PersistenceLayer` is the single point of contact with the database.
+
+*   **Frontend-Backend Communication**:
+    *   The frontend (`library.js`) actively polls backend endpoints (`GET /listavailable`, `GET /borrower`) to fetch data for rendering dynamic UI elements. This is an example of a client-side data-fetching pattern over AJAX.
+    *   Other interactions are handled by AJAX-ified form posts, which return HTML fragments or data to be displayed on the page.
+
+### 6. Key Business Logic and Algorithms
+
+*   **Password Security**: The `PersistenceLayer` implements password hashing using **SHA-256**. It never stores or handles plaintext passwords for existing users.
+*   **Fibonacci Calculation**: The `/fibonacci` endpoint exposes multiple algorithms with different performance characteristics:
+    *   A naive, exponential-time recursive algorithm.
+    *   An efficient **O(log n)** matrix exponentiation algorithm (`fibAlgo1`).
+    *   A simple linear-time **O(n)** iterative algorithm (`fibAlgo2`).
+*   **Dynamic UI Logic**: `library.js` contains logic to alter the UI for book/borrower selection based on the number of records in the database:
+    *   **0 records**: The input field is disabled.
+    *   **1-9 records**: A standard HTML `<select>` dropdown is rendered.
+    *   **10+ records**: An input field with autocomplete functionality is provided.
+
+### 7. Configuration and Deployment Details
+
+*   **Deployment Unit**: A standard Java WAR (Web Application Archive) file.
+*   **Database Configuration**:
+    *   **JDBC URL**: `jdbc:h2:mem:training;MODE=PostgreSQL`. The database is transient and exists only in memory for the application's lifecycle.
+    *   **Initialization**: The `WebAppListener` ensures the database is wiped clean and re-created from Flyway migration scripts on every application startup. This guarantees a consistent starting state.
+*   **Web Server Configuration (`web.xml`)**:
+    *   The H2 database console is exposed at the `/console/*` path.
+    *   Session tracking is configured to use cookies only, disabling URL rewriting (`jsessionid`).
+*   **Testing**: The project includes a comprehensive, multi-language test suite for UI testing (Selenium with Java, Python, JavaScript, C#; BDD with Behave), unit testing (JUnit, Mockito), and end-to-end testing (Selenified). The base URL for tests is configured as `http://localhost:8080/demo/`.

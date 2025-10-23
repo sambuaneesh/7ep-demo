@@ -1,0 +1,133 @@
+An architectural summary of the provided codebase chunk is below, structured for microservice decomposition analysis.
+
+### 1. Overall System Architecture
+
+This codebase consists of two primary applications: a monolithic Java web application and a standalone Java Swing desktop application. The project serves as a demonstration vehicle for various software development, testing, and CI/CD practices.
+
+*   **Technology Stack**:
+    *   **Web Backend**: Java 8+, raw Servlets (no Spring/Jakarta EE), Gretty for local development.
+    *   **Web Frontend**: Basic HTML, CSS, JavaScript.
+    *   **Desktop**: Java Swing.
+    *   **Database**: H2 (in-memory/file-based).
+    *   **Build/Dependencies**: Gradle, Pipenv (for Python test dependencies).
+    *   **CI/CD**: Jenkins (`Jenkinsfile`), SonarQube, JMeter, OWASP DependencyCheck.
+*   **Architectural Style**: The web application is a classic **Monolith**, bundling multiple distinct business domains into a single deployable WAR file. It exhibits a simple **Layered Architecture** (Presentation/Servlet -> Business Logic -> Data Access). The desktop application is a standalone executable.
+
+---
+
+### 2. Component: Web Application Monolith (`/src`)
+
+This is the core application, containing several distinct business domains.
+
+#### 2.1. Domains / Potential Microservices
+
+##### 2.1.1. Authentication Domain
+*   **Component Name**: `com.coveros.training.authentication`
+*   **Responsibilities**: Manages user registration and login.
+*   **API Endpoints** (`web.xml`):
+    *   `POST /demo/register`: Registers a new user.
+        *   Request Parameters: `username`, `password`
+        *   Implementation: `RegisterServlet.java` -> `RegistrationUtils.java`
+    *   `POST /demo/login`: Authenticates a user.
+        *   Request Parameters: `username`, `password`
+        *   Implementation: `LoginServlet.java` -> `LoginUtils.java`
+*   **Data Models**:
+    *   `User.java`: `(long id, String name)` - Represents a registered user.
+    *   `RegistrationResult.java`, `PasswordResult.java`: DTOs encapsulating the result of operations.
+*   **Dependencies**: Tightly coupled with the shared `PersistenceLayer`.
+*   **Microservice Candidate**: **Strong**. This is a self-contained, critical function (Identity and Access Management) that is a prime candidate for extraction into a dedicated `AuthService`.
+
+##### 2.1.2. Library Domain
+*   **Component Name**: `com.coveros.training.library`
+*   **Responsibilities**: Manages a simple library system for books, borrowers, and loans.
+*   **API Endpoints** (`web.xml`):
+    *   `POST /demo/registerbook`: Adds a new book title. (Param: `book`)
+    *   `POST /demo/registerborrower`: Adds a new borrower. (Param: `borrower`)
+    *   `POST /demo/lend`: Records a book being loaned to a borrower. (Params: `book`, `borrower`)
+    *   `GET /demo/books`: Lists all available books.
+    *   `POST /demo/listbooks`: Searches for books by title. (Param: `search`)
+    *   `POST /demo/listborrowers`: Searches for borrowers by name. (Param: `search`)
+*   **Business Logic**: `LibraryUtils.java` centralizes all library-related operations like searching, registration, and lending.
+*   **Data Models**:
+    *   `Book.java`: `(long id, String title)`
+    *   `Borrower.java`: `(long id, String name)`
+    *   `Loan.java`: `(long id, Book book, Borrower borrower, Date checkoutDate, Date returnDate)`
+*   **Dependencies**: Tightly coupled with the shared `PersistenceLayer`.
+*   **Microservice Candidate**: **Strong**. This is a clear, cohesive business domain with its own data and logic, suitable for extraction into a `LibraryService`.
+
+##### 2.1.3. Mathematics Domain
+*   **Component Name**: `com.coveros.training.mathematics`
+*   **Responsibilities**: Provides endpoints for various mathematical calculations.
+*   **API Endpoints** (`web.xml`):
+    *   `POST /demo/math`: Adds two integers. (Params: `item_a`, `item_b`)
+    *   `POST /demo/ack`: Calculates the Ackermann function. (Params: `item_a`, `item_b`)
+    *   `POST /demo/fib`: Calculates a Fibonacci number. (Param: `item_a`)
+*   **Business Logic**: Contains stateless, pure functions for calculations (`Calculator.java`, `Ackermann.java`, `Fibonacci.java`).
+*   **Data Models**: None; operates on primitive types.
+*   **Dependencies**: None.
+*   **Microservice Candidate**: **Medium**. As a set of stateless, computational utilities, it could be a `CalculatorService`. However, its simplicity means it could also remain a shared library.
+
+#### 2.2. Cross-Cutting Concerns
+
+##### 2.2.1. Persistence Layer
+*   **Component Name**: `com.coveros.training.persistence`
+*   **Responsibilities**: Acts as a generic Data Access Layer (DAL) for the entire monolith, abstracting direct JDBC calls.
+*   **Interfaces**: `IPersistenceLayer.java` defines the data access contract (e.g., `saveNewUser`, `getBooks`, `createLoan`).
+*   **Implementation**: `PersistenceLayer.java` provides the concrete implementation using raw JDBC, managing connections and executing hand-written SQL. It acts as a **Data Mapper**. No ORM (like JPA/Hibernate) is used.
+*   **Key Challenge for Decomposition**: This shared layer is a major point of coupling between all domains. Splitting the monolith requires breaking this component apart, giving each new microservice its own dedicated persistence logic and database connection.
+*   **Utility Endpoint**: `GET /demo/db?action=clear` provides a way to wipe the database, used for testing.
+
+##### 2.2.2. Database Schema
+*   **Framework**: **Flyway** (`/src/main/resources/db/migration`) is used for database versioning and migrations.
+*   **Tables**:
+    *   `users`: `id` (PK), `name` (UNIQUE) - *Used by Authentication*
+    *   `books`: `id` (PK), `title` - *Used by Library*
+    *   `borrowers`: `id` (PK), `name` - *Used by Library*
+    *   `loans`: `id` (PK), `book` (FK), `borrower` (FK), `checkout_date`, `return_date` - *Used by Library*
+*   **Key Challenge for Decomposition**: The domains currently share a single database schema. A microservice architecture would require splitting this into separate schemas/databases, one per service, to ensure data autonomy.
+
+#### 2.3. Frontend
+*   **Component Name**: `/src/main/webapp`
+*   **Responsibilities**: Provides a simple user interface and static documentation for the API.
+*   **Key Files**:
+    *   `index.html`: Main entry point.
+    *   `library.html`, `library.js`: UI for interacting with the library domain.
+    *   `endpointcatalog.html`: Static HTML documentation of the available API endpoints.
+    *   `WEB-INF/web.xml`: The application's deployment descriptor, mapping URL patterns to Java Servlet classes.
+
+---
+
+### 3. Component: AutoInsurance Desktop Application (`/desktop_app`)
+
+*   **Responsibilities**: A standalone GUI application that calculates auto insurance premium adjustments based on driver age and number of previous claims.
+*   **Key Components**:
+    *   `AutoInsuranceUI.java`: The main View class, built with **Java Swing**. It is the application entry point (`main` method).
+    *   `AutoInsuranceProcessor.java`: The core business logic (the "Model"). It contains a stateless `process(claims, age)` method that implements the calculation rules.
+    *   `AutoInsuranceAction.java`: A DTO that represents the result of a calculation (premium increase, warning letter, policy cancellation).
+*   **Service Dependencies**: None. It is fully self-contained with no database or external network calls.
+*   **Communication Patterns**:
+    *   **Unique Feature**: Implements a **custom test automation server** (`AutoInsuranceScriptServer.java`).
+    *   **Mechanism**: On startup, it opens a `ServerSocket` on TCP port **8000**.
+    *   **Interface**: It accepts plain-text commands (`set age 22`, `click calculate`, `get label`) to remotely control the UI components. This provides a scriptable API for the GUI, enabling robust automation without visual screen scraping.
+*   **Microservice Candidate**: **Strong**. The core business logic in `AutoInsuranceProcessor` is stateless and well-defined. It could be extracted, wrapped in a REST API, and deployed as a `QuotingService`. The desktop app would then be refactored to be a client of this new service.
+
+---
+
+### 4. Configuration, Deployment, and Operations
+
+*   **Build System**: **Gradle**. `gradlew` scripts and `gradle.properties` define the build environment. `README.md` documents key tasks like `apprun` (run webapp), `check` (run tests), `runAllTests` (run e2e tests).
+*   **CI/CD Pipeline**: A comprehensive pipeline is defined in `jenkins/Jenkinsfile` and documented in `/docs/ci_and_cd`.
+    *   **Orchestration**: Jenkins.
+    *   **Triggers**: `git push` via a `post-receive` hook.
+    *   **Stages**: The pipeline automates build, multi-level testing, static analysis, security scanning, and reporting.
+*   **Deployment**: The web application is packaged as a WAR file and deployed to a servlet container (e.g., Tomcat). The `WebAppListener.java` class hooks into the servlet container's lifecycle to initialize the database connection pool.
+*   **Testing Strategy**: The project has an extensive and multi-faceted testing strategy, which is critical for validating behavior before and after any decomposition effort.
+    *   **Unit**: JUnit & Mockito (`/src/test`).
+    *   **Integration**: `PersistenceLayerTests.java` tests the DAL against an H2 database.
+    *   **API**: Python/pytest, Postman collection, SoapUI project, and curl scripts (`/src/api_tests`, `/docs/api_testing`).
+    *   **BDD**: Cucumber/Gherkin tests for business features (`/src/bdd_test`).
+    *   **UI (Web)**: Selenium with Behave (Python) (`/src/ui_tests`).
+    *   **UI (Desktop)**: A custom client/server framework (`AutoInsuranceScriptClient`/`Server`).
+    *   **Security**: OWASP DependencyCheck.
+    *   **Performance**: JMeter.
+    *   **Static Analysis**: SonarQube.

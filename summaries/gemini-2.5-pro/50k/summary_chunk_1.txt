@@ -1,0 +1,152 @@
+This document provides a comprehensive architectural summary of the provided codebase chunk, focusing on details relevant to microservice decomposition analysis.
+
+### 1. Overall Architecture Overview
+
+The codebase consists of a monolithic application composed of two main, independent components: a Java-based web application and a Java Swing desktop application. The project serves as a demonstration of software development best practices, particularly in testing and CI/CD.
+
+*   **Technology Stack**:
+    *   **Backend**: Java 11+, Java Servlets, JSP
+    *   **Build & Dependency Management**: Gradle, Pipenv (for Python test dependencies)
+    *   **Database**: H2 (in-memory and file-based) with Flyway for schema migrations.
+    *   **Web Server**: Embedded Tomcat (managed by the Gretty Gradle plugin).
+    *   **Desktop UI**: Java Swing.
+*   **Architectural Style**: The web application is a classic N-tier monolith with server-side rendering. The domains (Authentication, Library, Math) are logically separated by package structure but are deployed as a single unit. The desktop application is a standalone thick client.
+*   **Key Principles**: The architecture emphasizes immutability, avoidance of nulls, and a clear separation of concerns between web, business logic, and data access layers.
+
+---
+
+### 2. Web Application Component (`7ep-demo/src`)
+
+This is the primary component, a multi-domain web application.
+
+#### 2.1. Component Responsibilities & Business Domains
+
+The web application provides functionalities across several distinct business domains, making it a prime candidate for decomposition.
+
+*   **Authentication**: Manages user registration and login.
+*   **Library**: A simple library management system for registering books, borrowers, and processing loans.
+*   **Mathematics**: Exposes endpoints for simple arithmetic, Fibonacci sequence, and Ackermann function calculations.
+*   **Expenses**: Contains logic for a simple expense calculation (calculating alcohol cost from a dinner bill).
+*   **Persistence**: A centralized data access layer for all domains.
+
+#### 2.2. API Endpoints and Interfaces
+
+The application exposes its functionality via standard Java Servlets. All endpoints are prefixed with `/demo`.
+
+| Endpoint Path                  | Class                                   | HTTP Method(s) | Responsibility                                      |
+| ------------------------------ | --------------------------------------- | -------------- | --------------------------------------------------- |
+| `/register`                    | `RegisterServlet.java`                  | POST           | Registers a new user.                               |
+| `/login`                       | `LoginServlet.java`                     | POST           | Authenticates a user.                               |
+| `/registerbook`                | `LibraryRegisterBookServlet.java`       | POST           | Registers a new book in the library.                |
+| `/registerborrower`            | `LibraryRegisterBorrowerServlet.java`   | POST           | Registers a new borrower.                           |
+| `/lend`                        | `LibraryLendServlet.java`               | POST           | Creates a loan record for a book and borrower.      |
+| `/library-books-available`     | `LibraryBookListAvailableServlet.java`  | GET            | Lists all books not currently on loan.              |
+| `/library-books-search`        | `LibraryBookListSearchServlet.java`     | GET            | Searches for books.                                 |
+| `/library-borrowers-search`    | `LibraryBorrowerListSearchServlet.java` | GET            | Searches for borrowers.                             |
+| `/math`                        | `MathServlet.java`                      | POST           | Performs simple addition.                           |
+| `/fibonacci`                   | `FibServlet.java`                       | POST           | Calculates a Fibonacci number.                      |
+| `/ackermann`                   | `AckServlet.java`                       | POST           | Calculates an Ackermann number.                     |
+| `/flyway`                      | `DbServlet.java`                        | GET            | Resets the database (for testing purposes).         |
+
+#### 2.3. Database Schema and Data Models
+
+The application uses a single H2 database shared by all business domains. Schema is managed by Flyway.
+
+*   **Schema Definition (`V2__Rest_of_tables_for_auth_and_library.sql`)**:
+    *   `users`: (id, name, hash) - Stores user credentials. `name` is unique.
+    *   `books`: (id, title) - Stores book information.
+    *   `borrowers`: (id, name) - Stores borrower information.
+    *   `loans`: (id, book, borrower, checkout_date, loan_period_days) - Stores loan records, linking books and borrowers.
+
+*   **Data Models (`domainobjects` packages)**:
+    *   `User.java`: Represents a row in the `users` table.
+    *   `Book.java`, `Borrower.java`, `Loan.java`: Represent rows in their respective library tables.
+    *   Status/Result Enums and objects are used extensively to avoid returning nulls (e.g., `RegistrationResult`, `PasswordResultEnums`, `LibraryActionResults`).
+
+#### 2.4. Service Dependencies and Communication Patterns
+
+*   **Internal Communication**: Follows a strict layered pattern.
+    1.  **Web Layer** (`*Servlet.java`): Handles HTTP requests/responses.
+    2.  **Business Logic Layer** (`*Utils.java`): Contains the core logic for each domain (e.g., `LibraryUtils`, `RegistrationUtils`).
+    3.  **Data Access Layer** (`PersistenceLayer.java`): A single class implementing the `IPersistenceLayer` interface that handles all JDBC interactions with the database. This represents a classic Repository/DAO pattern and is a central point of coupling to the shared database.
+*   **External Dependencies**: The application itself does not make calls to external services.
+
+#### 2.5. Key Business Logic and Algorithms
+
+*   **Authentication (`RegistrationUtils`, `LoginUtils`)**:
+    *   User registration with checks for existing usernames.
+    *   Password validation logic to check for sufficient complexity/entropy.
+    *   Authentication via password hash comparison.
+*   **Library (`LibraryUtils`)**:
+    *   CRUD operations for Books and Borrowers.
+    *   Business rules for lending books (e.g., cannot lend a book that is already checked out, cannot lend to an unregistered borrower).
+    *   Search and listing functionality for available books.
+*   **Mathematics (`Calculator`, `Fibonacci`, `Ackermann`)**:
+    *   Contains both iterative and recursive implementations for Fibonacci and Ackermann functions.
+
+---
+
+### 3. Desktop Application Component (`7ep-demo/desktop_app`)
+
+A self-contained Java Swing application for a different business domain.
+
+#### 3.1. Component Responsibilities
+
+Calculates auto insurance premium adjustments based on a driver's age and number of prior claims. It determines premium increase, whether a warning letter should be sent, or if the policy should be canceled.
+
+#### 3.2. API Endpoints and Interfaces
+
+The application exposes a programmatic interface via a custom TCP socket server for test automation purposes.
+
+*   **`AutoInsuranceScriptServer.java`**: Listens on **TCP port 8000**.
+*   **Command Protocol**: A simple, text-based request-response protocol.
+    *   **SET commands**: `set age <int>`, `set claims <int>`, `set label <string>`
+    *   **GET commands**: `get age`, `get claims`, `get label`
+    *   **Action commands**: `click calculate`
+    *   **Control commands**: `quit`
+
+#### 3.3. Data Models
+
+This component is stateless and has no database.
+*   **`AutoInsuranceAction.java`**: The primary domain object representing the outcome of a calculation.
+    *   `premiumIncreaseDollars` (int)
+    *   `warningLetterEnum` (Enum: `NONE`, `LTR1`, `LTR2`, `LTR3`)
+    *   `isPolicyCanceled` (boolean)
+*   **`InvalidClaimsException.java`**: Custom exception for invalid input.
+
+#### 3.4. Key Business Logic (`AutoInsuranceProcessor.java`)
+
+Contains a rules engine that maps inputs (`claims`, `age`) to an `AutoInsuranceAction` output.
+*   **Rule Example**: If `claims >= 2` and `claims <= 4` and `age >= 16` and `age <= 25`, then `premiumIncrease` is $400 and `warningLetter` is `LTR2`.
+*   **Rule Example**: If `claims >= 5`, then `isPolicyCanceled` is `true`.
+
+---
+
+### 4. Configuration, Deployment, and CI/CD
+
+These cross-cutting concerns define how the application is built, tested, and deployed.
+
+#### 4.1. Configuration and Deployment
+
+*   **Build System**: Gradle (`gradlew`). Project properties are defined in `gradle.properties`.
+*   **Deployment**: The web application is packaged as a WAR file. The `gradlew apprun` command starts an embedded Tomcat server, making the app available at `http://localhost:8080/demo`.
+*   **Test Dependencies**: Python test dependencies are managed via `Pipfile` and `pipenv`.
+
+#### 4.2. CI/CD Pipeline (`jenkins/Jenkinsfile`)
+
+The project includes a sophisticated Jenkins pipeline that automates a comprehensive quality assurance process. This is a critical architectural asset.
+
+*   **Trigger**: Configured to run on Git push via a `post-receive` hook that calls the Jenkins CLI.
+*   **Key Stages**:
+    1.  **Build**: Compiles code and assembles the WAR file.
+    2.  **Unit & DB Tests**: Runs fast, isolated tests and then tests requiring database interaction.
+    3.  **BDD Tests**: Executes Cucumber feature tests and generates reports.
+    4.  **Static Analysis**: Integrates with SonarQube and enforces a quality gate.
+    5.  **Deploy to Test**: Deploys the application to a test environment.
+    6.  **End-to-End Testing**: Runs a suite of **API Tests** (Python), **UI BDD Tests** (Behave/Selenium), and other **UI Tests** (Java/Selenium).
+    7.  **Security Testing**:
+        *   **Dependency Analysis**: Uses OWASP DependencyCheck to scan for vulnerable libraries.
+        *   **Dynamic Scanning (DAST)**: Routes all test traffic through an OWASP ZAP proxy (running on port 8888) and generates a security report.
+    8.  **Performance Tests**: Executes JMeter tests against the deployed application.
+    9.  **Mutation Tests**: Uses Pitest to assess the quality of the test suite.
+    10. **Deploy to Prod**: A final, placeholder stage representing production deployment.

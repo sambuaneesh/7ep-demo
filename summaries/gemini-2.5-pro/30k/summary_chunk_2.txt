@@ -1,0 +1,153 @@
+An architectural summary of the provided codebase chunk (Part 2 of 5) is provided below. This summary focuses on details relevant to microservice decomposition analysis.
+
+### 1. Overall Architecture
+
+The codebase chunk describes a monolithic Java web application with server-side rendering, designed as an educational tool. The architecture emphasizes a comprehensive CI/CD pipeline, extensive automated testing, and clear separation of concerns in the source code.
+
+*   **Application Style**: Monolithic Web Application.
+*   **Technology Stack**:
+    *   **Backend**: Java
+    *   **Application Server**: Apache Tomcat
+    *   **Database**: H2 (used in both in-memory and file-based modes)
+    *   **Build Tool**: Gradle 7.0
+*   **Architectural Principles**:
+    *   **Domain-driven packaging**: Code is organized into packages by business domain (e.g., `com.coveros.training.library`).
+    *   **Centralized Persistence Layer**: All database access is funneled through a single component (`PersistenceLayer.java`).
+    *   **Immutability**: Data structures are designed to be immutable where possible.
+    *   **Avoidance of `null`**: A stated design goal to improve robustness.
+    *   **Database Migrations**: FlywayDB is used for managing and versioning the database schema.
+
+### 2. Component Breakdown & Responsibilities
+
+The system can be logically divided into distinct business domains and a supporting DevOps infrastructure.
+
+#### 2.1. Application Components (Business Domains)
+
+These are potential candidates for microservices.
+
+*   **Authentication Service**:
+    *   **Responsibility**: Manages user registration and login.
+    *   **Key Logic**: Handles username uniqueness checks and enforces password complexity rules (entropy-based).
+    *   **Code Location**: `src/bdd_test/java/com/coveros/training/authentication/`, `src/bdd_test/resources/authentication/`
+
+*   **Library Management Service**:
+    *   **Responsibility**: Manages the core library functions: inventory of books, list of borrowers, and loans.
+    *   **Entities**: `Book`, `Borrower`, `Loan`.
+    *   **Key Logic**:
+        *   CRUD operations for books and borrowers.
+        *   Lending a book, which creates a `Loan` record and makes the book unavailable.
+        *   Business rules: a book can only be loaned to one person at a time; only registered borrowers can check out books.
+        *   Cascading deletes: Deleting a book or borrower also deletes any associated loans.
+        *   Search and listing capabilities (e.g., list all books, list only available books).
+    *   **Code Location**: `src/bdd_test/java/com/coveros/training/library/`, `src/bdd_test/resources/library/`
+
+*   **Mathematical Utilities Service**:
+    *   **Responsibility**: Provides various mathematical calculation capabilities.
+    *   **Key Logic**:
+        *   Integer addition.
+        *   Ackermann's function calculation.
+        *   Fibonacci number calculation.
+    *   **Code Location**: `src/bdd_test/java/com/coveros/training/math/`, `src/bdd_test/resources/math/`
+
+*   **Expense Calculation Service**:
+    *   **Responsibility**: Calculates the alcohol-related portion of a restaurant bill.
+    *   **Key Logic**: Splits a bill (subtotal, food total, tip, tax) into food and alcohol portions, correctly attributing the proportional tip and tax to the alcohol cost.
+    *   **Code Location**: `src/bdd_test/java/com/coveros/training/expenses/`, `src/bdd_test/resources/expenses/`
+
+#### 2.2. DevOps and Testing Infrastructure Components
+
+These components support the development, testing, and deployment lifecycle of the application.
+
+*   **`jenkinsbox` (CI/CD Server)**:
+    *   **Responsibility**: The central hub for Continuous Integration and Continuous Delivery.
+    *   **Components**: Jenkins, SonarQube, a local Git repository, H2O web server.
+    *   **Details**: Runs on a CentOS 7 VM with a static IP (`192.168.56.101`). Jenkins orchestrates the entire build, test, and analysis pipeline. SonarQube provides static code analysis. The local Git repo uses a `post-receive` hook to trigger Jenkins builds automatically. H2O serves test reports.
+
+*   **`uitestbox` (Test Environment Server)**:
+    *   **Responsibility**: Hosts the running application for testing and provides tools for UI and security testing.
+    *   **Components**: Apache Tomcat, OWASP ZAP, Google Chrome, Chromedriver, Python 3.7, Pipenv, Java 11.
+    *   **Details**: Runs on a CentOS 7 VM with KDE desktop and a static IP (`192.168.56.102`). Tomcat runs the deployed application WAR. OWASP ZAP runs as a daemon proxy on port `8888` to perform security scanning during automated tests.
+
+### 3. API Endpoints and Interfaces
+
+The application exposes a set of HTTP endpoints. These are tested via Python scripts.
+
+*   **Database Management**:
+    *   `GET /demo/flyway`: Resets the database to a clean state by running Flyway migrations.
+*   **Authentication**:
+    *   `POST /demo/register`: Registers a new user.
+        *   **Payload**: `username`, `password`
+        *   **Response**: Contains `successfully registered: true` on success or error messages like `no password provided`.
+    *   `POST /demo/login`: Authenticates a user.
+        *   **Payload**: `username`, `password`
+        *   **Response**: Contains `access granted` on success.
+*   **Library Management**:
+    *   `POST /demo/registerbook`: Adds a new book to the library.
+        *   **Payload**: `book` (title)
+        *   **Response**: `SUCCESS` or `ALREADY_REGISTERED_BOOK`.
+    *   `POST /demo/registerborrower`: Adds a new borrower.
+        *   **Payload**: `borrower` (name)
+        *   **Response**: `SUCCESS` or `ALREADY_REGISTERED_BORROWER`.
+    *   `POST /demo/lend`: Lends a book to a borrower.
+        *   **Payload**: `borrower`, `book`
+        *   **Response**: `SUCCESS` or `BOOK_CHECKED_OUT`.
+*   **Utilities**:
+    *   `POST /demo/math`: Adds two integers.
+        *   **Payload**: `item_a`, `item_b`
+        *   **Response**: The sum, or `Error: only accepts integers`.
+
+### 4. Database Schema and Data Models
+
+The schema is managed by FlywayDB. Based on the tests, the following entities can be inferred:
+
+*   **`users` table**:
+    *   `id` (PK)
+    *   `name` (VARCHAR, UNIQUE)
+    *   `hash` (VARCHAR, for storing hashed password)
+*   **`books` table**:
+    *   `id` (PK, auto-increment)
+    *   `title` (VARCHAR)
+*   **`borrowers` table**:
+    *   `id` (PK, auto-increment)
+    *   `name` (VARCHAR)
+*   **`loans` table**:
+    *   `id` (PK, auto-increment)
+    *   `book` (FK to `books.id`)
+    *   `borrower` (FK to `borrowers.id`)
+    *   `checkout_date` (DATE)
+
+### 5. Service Dependencies and Communication Patterns
+
+*   **Runtime**: As a monolith, all components communicate in-process via Java method calls. There are no runtime network dependencies between the business components.
+*   **CI/CD Pipeline**:
+    *   **Git -> Jenkins**: A Git `post-receive` hook on `jenkinsbox` triggers a Jenkins build via the `jenkins-cli.jar` over HTTP (`http://localhost:8080/`).
+    *   **Jenkins -> SonarQube**: The Jenkins pipeline executes a Gradle task (`sonarqube`) which sends analysis data to the SonarQube server running on the same box.
+    *   **Jenkins -> `uitestbox`**: The pipeline deploys the application WAR file to the Tomcat instance on `uitestbox`.
+    *   **Tests -> Application**: Automated tests (API, UI) running from the Jenkins agent communicate with the application on `uitestbox` via HTTP.
+    *   **Tests -> ZAP -> Application**: Security-conscious tests (API, UI BDD) are configured to proxy their HTTP traffic through the OWASP ZAP instance on `uitestbox` for passive and active security scanning. The Jenkins pipeline collects the final report from ZAP via an HTTP call.
+
+### 6. Key Business Logic and Algorithms
+
+*   **Password Validation**: `RegistrationUtils.isPasswordGood(password)` checks password strength based on entropy, not just simple rules. Passwords that are too short, common, or have low entropy are rejected.
+*   **Book Lending**: The `LibraryUtils.lendBook` method encapsulates the core logic: it checks if the book is available and if the borrower is registered before creating a loan record.
+*   **Expense Calculation**: The `AlcoholCalculator` uses a ratio-based approach to distribute shared costs (tax and tip) proportionally between food and alcohol based on their subtotals.
+*   **Mathematical Functions**: Standard implementations for Fibonacci and the recursive Ackermann function.
+
+### 7. Configuration and Deployment Details
+
+*   **Infrastructure**: The entire dev/test environment is built on VirtualBox VMs (`jenkinsbox`, `uitestbox`). The setup documentation is comprehensive, specifying OS (CentOS 7), networking (Host-only `192.168.56.0/24` subnet), memory, and disk sizes. Security is explicitly disabled (firewall, SELinux) for educational ease of use.
+*   **CI/CD Pipeline (`Jenkinsfile`)**: This is the heart of the deployment process. It defines a multi-stage pipeline that automates:
+    1.  **Build**: Compiling and packaging the application (`.war`).
+    2.  **Testing**: Executes a full spectrum of tests: Unit, Integration (DB), BDD, API, UI (Java & Python/Behave), Performance (JMeter), and Mutation (Pitest).
+    3.  **Analysis**: Static analysis (SonarQube) and dependency vulnerability scanning (OWASP DependencyCheck).
+    4.  **Deployment**: Deploys the application to the `uitestbox` test environment.
+    5.  **Reporting**: Collects and archives test results (JUnit XML format) and security reports (ZAP HTML).
+*   **SSL/TLS**: A process is documented for creating self-signed certificates with `openssl` and configuring them in Tomcat's `server.xml` to enable HTTPS on port `8443`.
+
+### 8. Architectural Patterns and Frameworks
+
+*   **Data Access Object (DAO)**: The `PersistenceLayer.java` class acts as a centralized DAO, abstracting all database interactions.
+*   **CI/CD Pipeline**: A mature pipeline-as-code pattern is implemented using a declarative `Jenkinsfile`.
+*   **Behavior-Driven Development (BDD)**: Cucumber (Java) and Behave (Python) are used to align business requirements with tests, using Gherkin (`.feature`) files as the single source of truth for behavior.
+*   **Security Scanning Proxy**: OWASP ZAP is used as a transparent proxy during testing to integrate security scanning directly into the functional testing process.
+*   **Test Pyramid Implementation**: The codebase shows a clear and deliberate separation of test types (`unit`, `integration`, `api`, `ui`, `bdd`), reflecting a robust testing strategy.
