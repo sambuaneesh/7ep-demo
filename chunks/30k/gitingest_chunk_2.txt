@@ -1,0 +1,3386 @@
+
+
+
+================================================
+FILE: docs/ci_and_cd/jenkins_box_guide.txt
+================================================
+Console-only Jenkins, SonarQube, Git repo
+-----------------------------------------
+
+You need a few things to get started.
+
+Download the Centos install DVD iso:
+http://isoredirect.centos.org/centos/7/isos/x86_64/CentOS-7-x86_64-DVD-1810.iso
+
+Download the VirtualBox software:
+https://www.virtualbox.org/wiki/Downloads
+
+Go ahead and install VirtualBox using its installer.  The default
+settings will suffice.
+
+These instructions were tested using VirtualBox 6.
+
+Prerequisite: Modify the networking configuration.
+Follow ON THE HOST BOX in virtualbox_networking.txt
+
+1. Open VirtualBox.  Click on New.  Name it "jenkinsbox".
+
+Make sure to choose Mac osX 64 bit for the operating system.  It's not a Mac, but for
+some reason this makes mouse integration work beautifully.
+
+Click Next.
+
+2. Give it 4096 megabytes of ram.  Click Next.
+
+3. Keep clicking next until it gives you a choice for hard-drive size.  Set it
+   to 12 gigabytes.  Click Next.
+
+Click "settings" for the new Centos_Jenkins_machine box, do the following:
+  Click on Storage and on the icon for the empty disc drive, and
+  on the icon on the right, click and you should see an option to:
+  "Choose Virtual Optical Disk File...".  Click that and choose the iso file
+  for Centos you downloaded previously.
+  
+in the network tab, for adapter 1 choose Host-only adapter, and for
+adapter 2 choose NAT.
+
+  Click Ok.
+
+Start it up.
+
+Choose "install Centos 7" instead of "test this media and
+install centos7".
+
+Choose English for the languages.
+
+Under system, click on "installation destination" and then click Done
+on the page it opens up.  (it defaults properly)
+
+Click on the network & Host name icon.
+
+This is an ***important*** section.  Take it slow.
+
+First, change the Host name to jenkinsbox.
+
+Then, toggle the enp0s8 network adapter to ON.  That's the NAT network, so it
+should just automatically work.
+
+But let's make sure it's configured properly.  Click on Configure for it,
+and Under the General tab, check the box next to "Automatically connect
+to this network when it is available".  Then save it.
+
+Select the enp0s17 network adapter.  This one we have to manually configure.  Click the
+[Configure...] button in the bottom right.
+
+Under the General tab, check the box next to "Automatically connect to this network when it is available"
+
+Click on the IPV4 Settings tab, and change the method from automatic to manual.
+
+Click the [Add] button.  Enter the following data:
+Address:          Netmask:           Gateway:
+192.168.56.101    255.255.255.0      192.168.56.1
+
+DNS Servers: 192.168.56.1
+
+Click on the checkbox next to "Require IPV4 addressing for this connection to complete"
+
+Click Save.
+
+toggle this adapter from off to on.  If done correctly, it should very quickly indicate "Connected"
+with some data similar to this:
+Hardware address: 08:00:27:09:16:BC
+Speed 1000 Mb/s
+IP Address 192.168.56.101
+Subnet Mask 255.255.255.0
+Default Route 192.168.56.1
+DNS 192.168.56.1
+
+
+Phew, done!  Click Done in the top left.
+
+Leave the software selection at "minimal install"
+
+Click on the "Begin Installation" button in the bottom right.
+
+While it is installing, you will see options to set the root password
+and create a user.  We're not too concerned about security, since this
+box is just for educational purposes.  However, it won't let you
+complete installation until you create a user.  Make a user for
+yourself.  See the following...
+
+CREATE USER DURING INSTALL
+--------------------------
+Click on "User Creation"
+
+Full Name: Coveros User
+User name: cuser
+
+Enable it as an administrator user (check the
+box) and make it not require a password (uncheck that box).
+
+Click Done.
+
+Wait for the install to finish...
+
+Finally, it finishes, and you can click the button labeled "reboot".  Do so.
+
+Once it finishes rebooting, you will see a console window waiting for
+you to enter your username.  It should look similar to this:
+
+---------------------------------------------------
+
+CentOS Linux 7 (Core)
+Kernel 3.10.0-957.el7.x86_64 on an x86_64
+
+jenkinsbox login: _
+
+---------------------------------------------------
+
+First, log in as cuser.  You didn't set a password, so
+you shouldn't need to enter a password for it.  It's an admin user, so
+you can just run sudo <whatever> to act as root.
+
+DISABLE FIREWALL
+----------------
+
+First, let's turn off the firewall and SELinux (its security system).
+It's a pain in the rear, and remember, this is for educational
+purposes, so security is *not* a concern.  Ease of use is.  
+
+$ #turn off the firewall and disable it
+$ sudo systemctl stop firewalld
+$ sudo systemctl disable firewalld
+
+DISABLE SELINUX
+---------------
+
+To disable SELinux, open /etc/selinux/config and set SELINUX mode to
+disabled.  You can do that with an editor, or you can run this
+command:
+
+sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+ENABLE SSH WITH NO PASSWORD
+---------------------------
+
+Let's also change the settings on sshd (the ssh daemon) so it will
+allow us to log in without a password.
+
+sudo sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
+
+DISABLE STRICT HOST KEY CHECKING
+--------------------------------
+
+change the setting in ssh_config to not ask about host keys.  This needs to be done
+because many of the conversations between our boxes will use ssh, and will halt
+and ask the user if the host isn't current trusted.  Problem with that is
+everything is automated, there isn't anyone to answer yes.  This should fix that.
+
+sudo sed -i 's/#   StrictHostKeyChecking ask/StrictHostKeyChecking no/' /etc/ssh/ssh_config
+
+
+now, reboot.
+
+$ sudo reboot
+
+You should be able to ssh into your centos box by running ssh against the url "jenkinsbox".
+
+(if not, there may have been a mistake made when configuring the network settings.  Networking
+is a real pain.)
+
+I am using Putty, because I am on a Windows machine, but you can
+use any ssh client.
+
+Putty can be downloaded from: https://the.earth.li/~sgtatham/putty/latest/w32/putty.exe
+
+From here on out, all commands should be run from ssh.
+
+INSTALL JAVA
+------------
+
+$ sudo yum install java-11-openjdk-devel
+
+INSTALL GIT
+-----------
+
+$ sudo yum -y install git
+
+INSTALLING JENKINS
+------------------
+
+Jenkins is our tool for running continuous integration.
+
+$ curl --silent --location http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo | sudo tee /etc/yum.repos.d/jenkins.repo
+$ sudo rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key
+$ sudo yum install -y jenkins
+$ sudo systemctl start jenkins
+$ sudo systemctl enable jenkins
+
+(after this is done, when you are notified to update the Jenkins program, just run:
+
+$ sudo yum update jenkins
+
+then restart the server:
+
+$ sudo systemctl restart jenkins
+
+In your browser, go to Jenkins at this URL: http://jenkinsbox:8080/
+
+Once Jenkins boots up, you will need the password for the new Jenkins, here:
+
+$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+Copy that password and use it when prompted.  Follow the prompts, install Jenkins.
+Choose "Install Suggested Plugins"
+
+I created an admin with the following characteristics:
+username: admin
+password: admin
+email: admin@test.com
+
+Click Save and Continue.
+
+Click Save and Finish.
+Click Start using Jenkins
+
+Install the Sidebar-Link plugin.  Go to:
+
+http://jenkinsbox:8080/pluginManager/available
+
+and search for "sidebar".  Choose Sidebar Link and Install without restart.
+
+MAKE A GIT REPO
+---------------
+
+Now that Jenkins is up and running, let's make this same box
+our Git repo, so that Git can easily notify Jenkins when it
+receives a push.
+
+Back on the ssh command line...
+
+First, go to your home directory:
+
+$ cd
+
+Create a directory to store the repo:
+
+$ mkdir demo
+$ cd demo
+
+Make a "bare" git repo:
+
+$ git init --bare
+
+Back in the directory where you have been working with Demo, (on the other
+machine) run these commands:
+
+the following will remove the Github origin
+$ git remote remove origin
+
+this will add your new repository location as "origin":
+$ git remote add origin ssh://cuser@jenkinsbox/home/cuser/demo
+
+this will push all your branches to that repo
+$ git push --set-upstream --all origin
+
+Now, back on the jenkinsbox command line...
+
+make our home directory accessible by the Jenkins user:
+$ chmod 775 /home/cuser
+
+Now, we want to have the ability to notify Jenkins whenever we push
+to our new repo.  Jenkins has a capability of running builds whenever
+a certain endpoint is hit.  But, like all things, it's not that easy because
+of security considerations.  Here's the breakdown:
+
+CONFIGURE PIPELINE TO RUN AT GIT RECEIVE
+----------------------------------------
+
+Download the command-line-interface (CLI) tool from Jenkins:
+
+curl http://localhost:8080/jnlpJars/jenkins-cli.jar > ~/jenkins-cli.jar
+
+Now, create the following file, at ~/demo/hooks/post-receive
+
+------------------------ FILE START
+#!/bin/sh
+
+exec java -jar ~/jenkins-cli.jar -s http://localhost:8080/ -auth admin:admin build demo
+------------------------ FILE END
+
+make that file executable:
+
+$ chmod 775 ~/demo/hooks/post-receive
+
+And now we'll try running it.  Back in the browser, in Jenkins, create a new job.  Give it
+the name "Demo" and make it a "pipeline" job and click OK.
+
+Then scroll down and click save.
+
+You should find yourself on the Pipeline page for the "demo" project.  Back in the command
+line, run this to kick off a build in Jenkins:
+
+$ ~/demo/hooks/post-receive
+
+You should observe a new build appear in the webpage in Jenkins.  If so, you have configured
+it properly.  Whenever you push a branch, it will now run Jenkins.  That's pretty close to perfect.
+
+Now let's modify our pipeline so it does some actual work.
+
+- In Jenkins, on the pipeline page for Demo, click on Configure.
+- Check the box for "discard old builds",
+    Strategy: log rotation
+    Max # of builds to keep: 5
+- Check the box labeled "Do not allow concurrent builds".  (We don't want race conditions
+    in our pipeline, and we don't want excessive memory usage on this demo machine)
+- Check the box for "Sidebar links". Add a link.  Enter this:
+
+  Link URL: http://jenkinsbox/reports/bdd/cucumber-html-reports/overview-features.html
+  Link Text: Cucumber report.
+
+  Click Add Link.
+
+  Link URL: http://jenkinsbox:9000/
+  Link Text: SonarQube
+
+  Click Add Link.
+
+  Link URL: http://jenkinsbox/reports/dependency-check-report.html
+  Link Text: Dependency check report
+
+  Click Add Link.
+
+  Link URL: http://jenkinsbox/reports/zap_report.html
+  Link Text: Zap security report
+
+- Under Pipeline, click on the dropdown and select Pipeline script from SCM.
+- on the dropdown next to SCM, select Git.
+- fill in these values:
+     In Repositories:
+     Repository URL: /home/cuser/demo
+     In Branches to Build:
+     Branch specifier: refs/heads/master
+     In Script Path: jenkins/Jenkinsfile
+
+     Click save
+
+We're not quite done yet, we need to install some other parts of our system
+before this will all work.  Now that our Jenkins pipeline is running, and
+we have a Git repo, and we have a database running, let's throw in another application - SonarQube!
+
+INSTALL SONARQUBE
+-----------------
+
+download it to your home directory:
+
+$ curl https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-8.0.zip > ~/sonarqube-8.0.zip
+
+install the unzip command:
+
+$ sudo yum install -y unzip
+
+make a new directory and unzip it to there
+(importantly, don't do this as root.  It will fail):
+
+$ mkdir ~/sonarqube
+$ sudo unzip ~/sonarqube-8.0.zip -d ~/sonarqube/
+
+move the directory to opt:
+
+$ sudo mv ~/sonarqube/sonarqube-8.0 /opt/sonarqube
+
+create a sonarqube user:
+
+$ sudo adduser sonarqube
+
+change the ownership of the sonarqube directory to sonarqube's user:
+
+$ sudo chown -R sonarqube:sonarqube /opt/sonarqube
+
+Create the file /etc/systemd/system/sonar.service with this content:
+
+------------------------------- FILE START
+[Unit]
+Description=SonarQube service
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=sonarqube
+Group=sonarqube
+PermissionsStartOnly=true
+ExecStart=/bin/nohup /bin/java -Xms32m -Xmx32m -Djava.net.preferIPv4Stack=true -jar /opt/sonarqube/lib/sonar-application-8.0.jar
+StandardOutput=syslog
+LimitNOFILE=65536
+LimitNPROC=8192
+TimeoutStartSec=5
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+------------------------------- FILE END
+
+Start Sonarqube and register it to start at boot:
+
+$ sudo systemctl start sonar
+$ sudo systemctl enable sonar
+
+You can view the logs for Sonarqube running at /var/log/messages.  It will take
+a few minutes, but watch to see if Sonarqube is up and running.
+
+(wait... and.. )
+
+go to http://jenkinsbox:9000/about and check if you see the Sonarqube dashboard.
+
+If that is up and running, let's go back to Jenkins and install a
+plugin so we can run SonarQube on our code from there.  Go to:
+
+http://jenkinsbox:8080/pluginManager/available
+
+and search for Sonarqube in the top right.  You should see "SonarQube scanner"
+as an option.  Check that on, then Install without restart.
+
+
+INSTALL WEB SERVER
+------------------
+
+create and edit a new file at /etc/yum.repos.d/bintray-tatsushid-h2o-rpm.repo
+
+-------------------- FILE START
+#bintray-tatsushid-h2o-rpm - packages by tatsushid from Bintray
+[bintray-tatsushid-h2o-rpm]
+name=bintray-tatsushid-h2o-rpm
+baseurl=https://dl.bintray.com/tatsushid/h2o-rpm/centos/$releasever/$basearch/
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+--------------------- FILE ENDS
+
+install it:
+$ sudo yum install -y h2o
+
+Once the installation finishes successfully, you can see a
+configuration file at /etc/h2o/h2o.conf
+
+Edit that file, make it as follows.
+
+("file.dirlisting: ON" means that if you go to the URL
+without specifying a page, it will show you the contents of the directory.)
+
+-------------------------------------- FILE START
+user: cuser
+file.dirlisting: ON
+hosts:
+  "localhost:80":
+    listen:
+      port: 80
+      host: 0.0.0.0
+    paths:
+   paths:
+      "/reports":
+        file.dir: /var/lib/jenkins/workspace/demo/build/reports/
+access-log: /var/log/h2o/access.log
+error-log: /var/log/h2o/error.log
+pid-file: /var/run/h2o/h2o.pid
+-------------------------------------- FILE END
+
+The value in file.dir is meant to point to the place where we are storing the
+output of our Cucumber report generation.  This way, you can view the status of
+your BDD tests.
+
+To start h2o:
+
+$ sudo systemctl enable h2o.service
+$ sudo systemctl start h2o.service
+
+CUSTOMIZE HOSTS FILE
+--------------------
+
+Edit /etc/hosts and add a new entry to point to uitestbox:
+
+192.168.56.102 uitestbox
+
+
+CONGRATULATIONS!!!!  You're done with building the Jenkins box.  Now go over to the
+document to build the ui_test_box.
+
+
+
+================================================
+FILE: docs/ci_and_cd/ssl.txt
+================================================
+Setting up Tomcat to use certificates
+
+https://stackoverflow.com/a/41366949/713809
+openssl req -x509 -newkey rsa:4096 -sha256 -days 8000 -nodes -keyout training.key -out training.crt -subj "/CN=training" -addext "subjectAltName=DNS:training,IP:10.0.0.1"
+
+(Note that 8000 in the command above means 8000 days, which should keep us in business for a while)
+
+https://tomcat.apache.org/tomcat-9.0-doc/ssl-howto.html#Configuration
+openssl pkcs12 -export -in training.crt -inkey training.key -out training.p12 -name tomcat -CAfile training.crt -caname root -chain
+
+when running this command, it will ask you for a password:
+"Enter Export Password:"
+
+(I used 3Qzyge7H31QavDANTUL3hY0d)
+
+Whatever you enter there, you will include as the passowrd in server.xml:
+    <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+               maxThreads="200" SSLEnabled="true"
+			   scheme="https" secure="true"
+			   keystoreFile="${user.home}/training.p12" keystorePass="3Qzyge7H31QavDANTUL3hY0d"
+			   clientAuth="false" sslProtocol="TLS"
+			   >
+
+Once that is done, go to https://localhost:8443 in Chrome and it will complain about insecurity.  Click advanced
+and go to the "unsafe" site.  When you get there, it is possible to click on the icon to the left of the URL to
+get details about the cert.  On the second tab there, click on copy to file, use the default .der configuration
+and save it to the desktop as cert.der
+
+Double-click on that file on the desktop and click on Install Certificate.  Choose local machine, place all certificates
+in the following store, browse, and choose Trusted Root Certification Authorities.
+
+Restart Chrome, and try to connect to https://localhost:8443, it should work fine now.
+
+
+================================================
+FILE: docs/ci_and_cd/ui_test_box.txt
+================================================
+making a box for UI-level testing
+
+(First create the Jenkins box.  See jenkins_box_guide.txt, then come back)
+
+In VirtualBox, click on New.
+
+Create a new system "uitestbox"
+
+Make sure to choose Mac osX 64 bit for the operating system.  It's not a Mac, but for
+some reason this makes mouse integration work beautifully.
+
+Set it to use 6144 megabytes of ram and 12 gigs hard drive.
+
+Alter its settings:
+  in the network tab, for adapter 1 choose Host-only adapter, and for
+  adapter 2 choose NAT.
+  Put the CentOS7 disc in the virtual drive.
+
+Start the server.
+
+Choose to install Centos7.  (No need to check the media first)
+
+Choose English as the language
+Click Installation Destination and click Done on the followup screen to return
+
+Click on the network & Host name icon.
+
+This is an ***important*** section.  Take it slow.
+
+First, change the Host name to uitestbox.
+
+Then, toggle the enp0s8 network adapter to ON.  That's the NAT network, so it
+should just automatically work.
+
+But let's make sure it's configured properly.  Click on Configure for it,
+and Under the General tab, check the box next to "Automatically connect
+to this network when it is available".  Then save it.
+
+Select the enp0s17 network adapter.  This one we have to manually configure.  Click the
+[Configure...] button in the bottom right.
+
+Under the General tab, check the box next to "Automatically connect to this network when it is available"
+
+Click on the IPV4 Settings tab, and change the method from automatic to manual.
+
+Click the [Add] button.  Enter the following data:
+Address:          Netmask:           Gateway:
+192.168.56.102    255.255.255.0      192.168.56.1
+
+DNS Servers: 192.168.56.1
+
+Click on the checkbox next to "Require IPV4 addressing for this connection to complete"
+
+Click Save.
+
+toggle this adapter from off to on.  If done correctly, it should very quickly indicate "Connected"
+with some data similar to this:
+Hardware address: 08:00:27:09:16:BC
+Speed 1000 Mb/s
+IP Address 192.168.56.102
+Subnet Mask 255.255.255.0
+Default Route 192.168.56.1
+DNS 192.168.56.1
+
+Phew, done!  Click Done in the top left.
+
+Click Software selection and choose KDE Plasma Workspaces, then click Done.  After
+doing that, it can take a while for the system to be done processing.  Wait.
+
+Click Begin Installation
+
+While it is installing, you will see options to set the root password
+and create a user.  We're not too concerned about security, since this
+box is just for educational purposes.  However, it won't let you
+complete installation until you create a user.  Make a user for
+yourself.  See the following...
+
+CREATE USER DURING INSTALL
+--------------------------
+Click on "User Creation"
+
+Full Name: Coveros User
+User name: cuser
+
+Enable it as an administrator user (check the
+box) and make it not require a password (uncheck that box).
+
+Click Done.
+
+Wait for the install to finish...
+
+... wait for the install to complete...
+
+... keep waiting...
+
+click on reboot.
+
+Click on Licensing.  Accept.  Click Done.  Click Finish Installation.
+
+Login.
+
+Turn off the power saving feature (which would blank our screen).  Click the icon on
+the bottom left and search for "energy", then click on Energy Saving.  Uncheck the box
+for Screen Energy Saving on all tabs - AC Power, Batter, Low Battery.  In Battery and Low
+Battery, uncheck "Suspend Session"
+
+Right-click the screen and click on Konsole to get a command-line terminal.
+
+DISABLE FIREWALL
+----------------
+
+First, let's turn off the firewall and SELinux (its security system).
+It's a pain in the rear, and remember, this is for educational
+purposes, so security is *not* a concern.  Ease of use is.
+
+$ #turn off the firewall and disable it
+$ sudo systemctl stop firewalld
+$ sudo systemctl disable firewalld
+
+DISABLE SELINUX
+---------------
+
+To disable SELinux, open /etc/selinux/config and set SELINUX mode to
+disabled.  You can do that with an editor, or you can run this
+command:
+
+sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+ENABLE SSH WITH NO PASSWORD
+---------------------------
+
+Let's also change the settings on sshd (the ssh daemon) so it will
+allow us to log in without a password.
+
+sudo sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
+
+DISABLE STRICT HOST KEY CHECKING
+--------------------------------
+
+change the setting in ssh_config to not ask about host keys.  This needs to be done
+because many of the conversations between our boxes will use ssh, and will halt
+and ask the user if the host isn't current trusted.  Problem with that is
+everything is automated, there isn't anyone to answer yes.  This should fix that.
+
+sudo sed -i 's/#   StrictHostKeyChecking ask/StrictHostKeyChecking no/' /etc/ssh/ssh_config
+
+now, reboot.
+
+Now you can connect to your uitestbox by SSH.
+Do the rest of this in ssh by connecting to "uitestbox"
+
+Install Chrome:
+
+ $ sudo yum install -y wget
+ $ wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+ $ sudo yum localinstall -y google-chrome-stable_current_x86_64.rpm
+
+Start Chrome by selecting it from the bottom left-hand button and entering
+the text "Chrome", then click on the icon.  Choose a means of securing information,
+(I used Classic, blowfish encrypted file because it was easier to set up.  Remember,
+you aren't doing anything on this box but UI testing)
+and get through until you see the chrome://welcome page.  Test it by going to Google.com
+
+INSTALL JAVA
+------------
+
+$ sudo yum -y install java-11-openjdk-devel
+
+INSTALL GIT
+-----------
+
+$ sudo yum -y install git
+
+
+INSTALL PYTHON 3
+----------------
+
+$ sudo yum install -y gcc openssl-devel bzip2-devel libffi-devel
+$ wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tgz
+$ tar xzf Python-3.7.0.tgz
+$ cd Python-3.7.0
+$ ./configure --enable-optimizations
+$ sudo make altinstall
+
+INSTALL PIP
+-----------
+
+$ curl https://bootstrap.pypa.io/get-pip.py -o ~/get-pip.py
+
+INSTALL PYTHON ENVIRONMENT
+---------------------------
+
+$ sudo /usr/local/bin/python3.7 ~/get-pip.py
+$ sudo /usr/local/bin/pip3.7 install pipenv
+
+Download Chromedriver from here: http://chromedriver.chromium.org/downloads.  At the
+time of writing this, the URL went as follows:
+
+$ curl https://chromedriver.storage.googleapis.com/2.45/chromedriver_linux64.zip > ~/chromedriver_linux64.zip
+
+Download and unzip it on your path.  I recommend a place that is
+already on your path, /usr/local/sbin
+
+$ sudo unzip ~/chromedriver_linux64.zip -d /usr/local/sbin
+
+
+install Tomcat 9:
+
+$TOMCAT_URL = figure out where to download tomcat from: https://tomcat.apache.org/download-90.cgi
+$TOMCAT_FILE_NAME = the name of the tomcat file
+
+for example:
+$ wget http://www.gtlib.gatech.edu/pub/apache/tomcat/tomcat-9/v9.0.14/bin/apache-tomcat-9.0.14.tar.gz
+$ tar zxf apache-tomcat-9.0.14.tar.gz
+$ sudo mv apache-tomcat-9.0.14 /opt/tomcat
+$ sudo useradd -r tomcat --shell /bin/false
+$ sudo chown -R tomcat:tomcat /opt/tomcat/
+
+at /etc/init.d/tomcat9 create this file:
+
+
+---------------------------------- FILE START
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          tomcat9
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Should-Start:      $named
+# Should-Stop:       $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start Tomcat.
+# Description:       Start the Tomcat servlet engine.
+### END INIT INFO
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+NAME=tomcat9
+DESC="Tomcat servlet engine"
+CATALINA_HOME=/opt/tomcat
+
+if [ `id -u` -ne 0 ]; then
+  echo "You need root privileges to run this script"
+  exit 1
+fi
+
+
+case "$1" in
+  start)
+    sudo -utomcat $CATALINA_HOME/bin/startup.sh
+    sleep 5
+    ;;
+  stop)
+    sudo -utomcat $CATALINA_HOME/bin/shutdown.sh
+    ;;
+esac
+
+---------------------------------- FILE END
+
+Change its permissions
+$ sudo chmod 755 /etc/init.d/tomcat9
+
+Add it to chkconfig
+
+$ sudo chkconfig tomcat9 on
+
+Now you can start the Apache Tomcat 9 server and enable it to start on boot time
+
+$ sudo systemctl start tomcat9
+$ sudo systemctl enable tomcat9
+
+Tomcat will start serving on port 8080 on the machine.
+
+INSTALLING OWASP-ZAP
+--------------------
+$ wget https://download.opensuse.org/repositories/home:cabelo/CentOS_7/home:cabelo.repo
+$ sudo mv home:cabelo.repo /etc/yum.repos.d/home_cabelo.repo
+$ sudo yum install -y owasp-zap
+
+Start zap like Chrome - go to the icon in the bottom left of the screen and search
+for Zap.  When it appears, click it.  You'll need to accept the agreement to continue.
+
+Choose *not* to persist the ZAP session, and check the box to remember the choice.  Then
+Click on Start.
+
+On the menu bar, under Help, click on "Check for updates..." and update as suggested.
+
+Change the port number so it doesn't interfere with our demo application:
+
+Open ZAP, Tools--> Options --> local proxies
+Change the default 8080 port to 8888 and click Ok.
+
+Configure Zap to run as a proxy at boot:
+
+edit /etc/systemd/system/zap.service:
+
+-------------- FILE START ------------------------
+[Unit]
+Description=Zap security proxy
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=cuser
+ExecStart=/usr/share/owasp-zap/zap.sh -daemon -config api.disablekey=true
+
+[Install]
+WantedBy=multi-user.target
+-------------- FILE END ------------------------
+
+By the way, details on creating your own systemd script can be found here: https://medium.com/@benmorel/creating-a-linux-service-with-systemd-611b5c8b91d6
+
+In order to test out Zap, in the Quick Start tab, enter the following URL
+
+URL to attack: http://localhost:8080/demo
+
+Then, click Attack.
+
+To do the same thing from the command line, run this:
+
+/usr/share/owasp-zap/zap.sh -cmd -quickurl http://localhost:8080/demo
+
+
+CUSTOMIZE HOSTS FILE
+--------------------
+
+edit the /etc/hosts and add a new entry to point to jenkinsbox:
+
+192.168.56.101 jenkinsbox
+
+
+
+================================================
+FILE: docs/ci_and_cd/virtualbox_networking.txt
+================================================
+Networking on the virtual machines and the host.
+------------------------------------------------
+
+The boxes will use NAT (for regular internet) as interface 1,
+and Host-Only as 2 (so we can have a conversation between the host and guests)
+
+ON THE HOST BOX
+---------------
+
+Configure the Host-only network (on Windows, it is
+named VirtualBox Host-Only Network #2, by default).
+
+Edit the ipv4 settings and configure them as follows:
+
+IP address: 192.168.56.2
+Subnet mask: 255.255.255.0
+Default gateway: 192.168.56.1
+
+Use the following DNS server addresses:
+Preferred DNS server: 192.168.56.1
+
+edit hosts (on Windows, it's at C:\Windows\System32\drivers\etc\hosts ) and add:
+
+192.168.56.101 jenkinsbox
+192.168.56.102 uitestbox
+
+ON THE GUEST MACHINE
+------------------------------------
+
+(the following may be helpful information if there is
+an issue with the network after install is complete.  Otherwise,
+this is all optional)
+
+
+On the console in the jenkinsbox, I used nmtui:
+
+$ nmtui
+
+Edit a connection.
+(It may have been necessary to create one.  If so, here are the details.
+The only thing to note is that you should change the value of the "Addresses"
+field - make jenkinsbox 192.168.56.101 and make uitestbox 192.168.56.102:
+
+Profile name: host-only network
+Device: 08:00:27:22:04:D9 (enp0s8)
+
+Ethernet
+IPv4 configuration <Manual>
+Addresses: 192.168.56.101/24
+Gateway: 192.168.56.1
+DNS Server: 192.168.56.1
+
+At the bottom, select [X] Automatically connect
+
+Then click ok.
+
+
+
+================================================
+FILE: docs/dev_notes/README.txt
+================================================
+architecture.txt                  : Architectural notes of the application
+monitoring_tomcat.txt             : How to monitor Tomcat with JConsole.
+pre-push                          : a Git hook to run tests before pushing to a remote repo.
+README_db.txt                     : Some details about the database we're using in Demo.
+
+
+================================================
+FILE: docs/dev_notes/architecture.txt
+================================================
+Architecture summary
+--------------------
+
+This is a web application with server-side rendering, used as an educational tool to discuss aspects of quality.
+Database:  H2
+Server: Tomcat.
+
+Endpoints
+---------
+
+For endpoints (access to the functionality from the outside world, aka its web API), look for files
+ending in the word "Servlet".
+
+In those files, the class has annotation which includes text like this:
+
+    urlPatterns = {"/ackermann"}
+
+The value of the urlPattern, in this case "ackermann", designates the url that is exposed to the
+outside world.  In this case, the URL for the endpoint would be:
+
+    demo/ackermann
+
+
+Persistence
+-----------
+
+The database is solely accessed from the file PersistenceLayer.java
+
+This project uses FlywayDB https://flywaydb.org/
+FlywayDB is a database migration tool - an application that runs scripts against our database
+to set it into a clean and organized state.  This allows us certain benefits when working with
+our database, such as:
+
+ - It provides a more organized approach to changing the schema of the database
+ - Allows for better testing of the database
+ - Allows for carefully vetted changes to the database
+
+
+Business functionality
+----------------------
+
+Most of the business functionality is stored in files ending with "Utils".
+
+
+Avoidance of null
+-----------------
+
+Throughout this application, it was attempted to avoid null.  Null is fine and all,
+but it has a problem: null is too vague a description, and it's too easy to forget to
+handle the situation when something comes back null.
+
+1) if I request a "user" from the database, and I get null ... what does that mean? Does
+it mean there was no user?  That there was an error? Who knows.
+
+2) In Java, a lot of methods return an object, and oftentimes it returns null, and it's
+just so painfully easy to forget to handle what happens when it's null.
+
+
+Immutability
+------------
+
+Immutable data structures are easier to track.  The basic problem with immutability
+is that when it is possible for a certain data structure to be changed after creation,
+it's just too easy to do so.  When a structure's state can easily change, and the code
+has any parallelization or event-driven code, trying to be certain of the code's behavior
+becomes quite a bit more difficult.
+
+When we create a data structure, we favor doing so immutably - that is, once created, it cannot
+be changed.  To make a change, we have to recreate the data structure.
+
+
+Packages
+--------
+
+The packages are divided up by domain.  For example, the majority of code for the library is
+in com.coveros.training.library.
+
+
+Testing
+-------
+
+Good testing from a sincere quality perspective is crucial for high-quality applications.
+There are all kinds of testing, for all kinds of quality considerations.  For example, do
+you care about internal quality?  There are a number of frameworks you can apply to keep
+you honest about that.  Do you care about correct functioning at the granular level? Unit
+tests (especially following TDD) help out there.  What about making sure that business
+requirements are carefully met?  We include BDD for that purpose - see the files in
+src/bdd_test.  We also include a Jenkinsfile (called "Jenkinsfile")  for use with
+Jenkins (https://www.jenkins.io/) which is a CI/CD tool.  Jenkins runs a huge slew of
+tests which examine many aspects of the program, including non-functionals like
+security and performance testing.
+
+
+================================================
+FILE: docs/dev_notes/monitoring_tomcat.txt
+================================================
+To monitor Tomcat with JConsole:
+--------------------------------
+
+First, in the /opt/tomcat/bin directory, add a file "setenv.sh"
+
+Here are the contents:
+
+export CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=uitestbox";
+
+make sure it has the proper ownership and permissions:
+
+$ sudo chown tomcat:tomcat setenv.sh
+$ sudo chmod 750 setenv.sh
+
+restart Tomcat, and you will be able to access it from JConsole on port 9999
+
+$ sudo systemctl restart tomcat9
+
+
+
+
+
+================================================
+FILE: docs/dev_notes/pre-push
+================================================
+#!/bin/sh
+
+# This is a file meant to be run just before we push our work to
+# a remote repository.  It runs the basic set of tests, just to make
+# sure that things are generally valid before sending.
+
+# To install this, put it into the git directory under hooks
+
+# this program is expected to be run just before pushing the application to
+# a remote repository.  Since that action is rare compared to commits, and because
+# we want to be doubly sure of our work before sending it out, we will run
+# the gradlew check command.  If that fails, we want to correct things first.
+
+# stash all changes, including what is in the index (the staging area between
+# the working directory and the repository).  This is so that when we run our
+# tests, we are only testing the stuff that's fully committed to the repo
+# and that is going to be sent to the central repo, since this is pre-push
+
+git stash push -q
+
+# run the tests with the gradle wrapper
+./gradlew check
+
+# store the last exit code in a variable
+RESULT=$?
+
+# unstash the stashed changes
+git stash pop -q
+
+# return the './gradlew check' exit code
+exit $RESULT
+
+
+
+================================================
+FILE: docs/dev_notes/README_db.txt
+================================================
+The database we are using in the project is H2.  It's perfect for our
+purposes for the following reasons:
+
+* Stable and widely used
+* Small - no install needed, can be pulled in as a dependency
+* Can use Postgresql SQL syntax, so switching to Postgresql wouldn't be too hard
+* Comes with all the tools you need, including a web-based db viewer
+
+Nevertheless, there are subtleties to using H2. For example, we use it
+in both in-memory and file-based modes.  
+
+We use file-based when we need something persistent between processes.
+When Tomcat is running, its process keeps going and we can access its
+data through a web app on that same Tomcat.  However if we run unit
+tests, the JUnit runner will wrap up and all the data is lost.  If we
+want to manipulate data related to a particular test, or to create
+backups of new test data, this is the easiest way.
+
+The issue with file-based database is simple - where do we store the
+database?  Users will be using this application on multiple
+architectures and in multiple scenarios.  If we are running on Tomcat
+and use in-memory, we simply don't have to worry about where the
+database file is located.
+
+If we are running unit tests, the database file is located in
+build/db/training.mv.db
+
+
+
+================================================
+FILE: docs/performance_testing/README.txt
+================================================
+50_users_at_once.jmx              : A Jmeter file simulating 50 simultaneous users.
+demo.jmx                          : A JMeter file to demonstrate performance testing.
+perf_testing_with_jmeter.txt      : Some notes to help testing performance with JMeter.
+
+
+
+
+================================================
+FILE: docs/performance_testing/perf_testing_with_jmeter.txt
+================================================
+Demonstrating Performance testing with JMeter
+---------------------------------------------
+
+Installing Jmeter
+-----------------
+First and foremost, have Jmeter installed: https://jmeter.apache.org/download_jmeter.cgi
+Then, install plugin manager: https://jmeter-plugins.org/wiki/PluginsManager/
+  Installing plugin manager is described on the plugin's page:
+  Download the Plugins Manager JAR file and put it into JMeter's lib/ext directory.
+  Then start JMeter and go to "Options" menu to access the Plugins Manager.
+
+Open up JMeter.
+
+Open docs/demo.jmx
+
+Open Java Mission Control (jmc) and connect to uitestbox:9999
+
+Open putty to uitestbox and tail -f the logs/catalina.out in Tomcat
+
+Run the test.
+You should see quite a lot of action in the Tomcat logs.  While the test is running, take a look at the graphs.
+
+One interesting thing to note is that at a certain point, close to about 80 users, the CPU starts to
+max out.  At that point the response time starts going through the roof.
+
+
+
+Alternative:
+-----------
+
+Window 1:
+Prepare command line: java -jar PATH/TO/ApacheJMeter.jar -n --testfile demo.jmx
+
+Window 2:
+Open Oracle Java Mission Control (JMC)
+
+Window 3:
+Open the log file for Tomcat
+
+Window 4:
+Prepare to open the jmeter.log log file to tail it.
+
+
+
+In JMC, show the views that show memory and cpu.  Make that clear on
+the screen.
+
+Make the logging clearly visible - move the window around to suit.
+
+Show the Jmeter listener graph of thoroughput.
+
+
+Configuring JMeter for reports
+------------------------------
+There's great information on the built-in report generator, at:
+
+https://www.ubik-ingenierie.com/blog/reporting-feature-in-jmeter/
+
+I changed a couple settings in the bin/user.properties file:
+
+The granularity of graphs in millis (defaults to one minute):
+
+jmeter.reportgenerator.overall_granularity=1000
+
+The transactions you want in report:
+
+jmeter.reportgenerator.exporter.html.series_filter=^(Search|Order)(-success|-failure)?$
+
+You can use a helper menu to generate this last property from your plan,
+Help > Export transactions for report
+
+
+================================================
+FILE: docs/security_testing/README.txt
+================================================
+zap_proxy_security_scanning.txt   : Setting up Zap to run as a proxy on the UI test server
+
+
+================================================
+FILE: docs/security_testing/zap_proxy_security_scanning.txt
+================================================
+Zap proxy for UI tests
+----------------------
+
+It's an excellent idea to have a security scanning proxy to run your UI and API tests through.  What will
+happen is that the scanner will inspect everything about each request and response, and will then
+be able to notify you of any issues it sees during the run.
+
+(This assumed you have configured Zap to listen on port 9888)
+
+In environment.py, add this import:
+
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+
+and replace __open_browser with this:
+
+def __open_browser(context):
+    PROXY = "localhost:9888"
+
+    proxy = Proxy()
+    proxy.proxy_type = ProxyType.MANUAL
+    proxy.http_proxy = PROXY
+    proxy.socks_proxy = PROXY
+    proxy.ssl_proxy = PROXY
+
+    capabilities = webdriver.DesiredCapabilities.CHROME
+    proxy.add_to_capabilities(capabilities)
+
+    context.driver = webdriver.Chrome(desired_capabilities=capabilities)
+
+Now, run Zap.
+
+Finally, run the tests.  It will run them through that proxy and you will get a report of what it sees.
+
+
+================================================
+FILE: docs/ui_testing/README.txt
+================================================
+README_python.txt                 : Necessary instructions for getting Demo set up to run Python.
+chromedriver_log.zip              : A compressed log file from Chromedriver when running our Behave UI tests
+python_selenium_cheat_sheet.txt   : A cheat-sheet for driving Selenium with Python.
+python_selenium_walkthrough.txt   : A walkthrough of using Selenium with Python.
+
+
+================================================
+FILE: docs/ui_testing/desktop_automation.txt
+================================================
+How to create robust application automation
+-------------------------------------------
+
+In web applications, it is possible to test using locators of our elements - locating
+a particular text field or a button, then interacting with it.
+
+Sometimes our software isn't a web application.  How do you test that?
+
+Some of the automation frameworks for applications attempt to mimic the behavior of a
+human - moving the mouse to a known position on the screen and clicking, sending
+characters like a human would have done on a keyboard, and so on.
+
+The problem with that: it results in incredibly fragile tests that require tremendous
+maintenance.
+
+Just imagine that the screen size changed.  Suddenly all the tests would be invalid,
+with mouse clicks going who-knows-where.  What if the styling of the user interface
+changed at all?  What a pain it would be to figure out why things weren't working
+perfectly.
+
+A much better way is to plan for automation from the start.  Yes, the developers would
+have to spend extra time to develop some kind of system to enable automated testing,
+but if they are on-board with the idea that testable systems lead to more tests
+which leads to higher quality, then they have to understand it is an investment
+worth making.
+
+A current project with Demo is to provide this kind of robust automation for a
+desktop UI application.
+
+To start the application:
+   gradlew startui
+
+To start the scripting client:
+   gradlew startscriptclient
+
+Once they have both started, you can run commands in the script client as follows:
+
+commands possible:
+    set label <TEXT>
+    set age <AGE>
+    set claims <CLAIMS>
+
+    get label
+    get age
+    get claims
+
+    click calculate
+
+    quit - quits the test script client
+    close - closes down the claims application
+
+
+Note: this is all still at a very rudimentary stage.
+
+
+================================================
+FILE: docs/ui_testing/python_selenium_cheat_sheet.txt
+================================================
+UI automation cheatsheet with Python and Selenium
+
+start with these:
+	from selenium import webdriver
+	from selenium.webdriver.common.keys import Keys
+	from hamcrest import *
+
+to open the browser:
+	driver = webdriver.Chrome()
+
+to open a page:
+	driver.get("http://localhost:8888/demo")
+
+to select by id:
+	driver.find_element_by_id("login_username")
+
+to select using CSS:
+	driver.find_element_by_css_selector("#foo")
+
+to close the browser:
+	driver.close()
+
+
+
+actions 
+-------
+
+In all the following actions, it's assumed we have assigned
+some element on the page to the "element" variable.  For example:
+element = driver.find_element_by_id("login_submit")
+
+check
+	assert_that(title, contains_string('Registered Page'))
+
+clear contents of input:
+	element.clear()
+
+click
+	element.click()
+	
+type
+	element.send_keys("somepass")
+	
+doubleclick
+	element.double_click()
+	
+hover
+	hover = ActionChains(firefox).move_to_element(element_to_hover_over)
+	hover.perform()
+
+keydown
+	(to press ctrl+c)
+	ActionChains(driver).key_down(Keys.CONTROL).send_keys('c').key_up(Keys.CONTROL).perform()
+	
+goback
+	driver.back()
+	
+delete all visible cookies
+	driver.delete_all_cookies()
+
+
+================================================
+FILE: docs/ui_testing/python_selenium_walkthrough.txt
+================================================
+See README.txt for preliminaries
+
+
+Let's start by running our application locally, as something to test.
+
+In a terminal window, start up the application.  In the home directory for this application, run this:
+on Windows:
+	gradlew apprun
+on Mac/Linux:
+	./gradlew apprun
+	
+It should return a message like this:
+	$ gradlew apprun
+  17:10:53 INFO  Tomcat 8.0.53 started and listening on port 8080
+  17:10:53 INFO  demo runs at:
+  17:10:53 INFO    http://localhost:8080/demo
+
+
+Open another terminal.  Run the pipenv shell:
+
+  pipenv shell
+
+Then, run python:
+
+  python
+
+You should see something like this:
+	Python 3.7.0 (v3.7.0:1bf9cc5093, Jun 27 2018, 04:06:47) [MSC v.1914 32 bit (Intel)] on win32
+	Type "help", "copyright", "credits" or "license" for more information.
+	>>>
+
+Now, let's start typing some commands.
+First, the boilerplate stuff so we have access to the commands we'll need:
+	from selenium import webdriver
+	from selenium.webdriver.common.keys import Keys
+	from hamcrest import *
+	
+Those shouldn't return any response.  If there are errors indicated, take another look and make sure
+you typed it correctly and that dependencies are resolved (you need Selenium installed for these commands to work).
+
+Now, let's open up Chrome.
+	driver = webdriver.Chrome()
+	
+If this went well, you should see a Chrome browser open up, and a message in your terminal
+about devtools listening.  Otherwise you should see an error message in your terminal.  Make sure you
+have installed Chromedriver in your path before running these commands.
+
+Let's tell Selenium to go to our application:
+
+	driver.get("localhost:8080/demo/library.html")
+	
+You should see that page show up in the browser, if you did that right.
+
+Let's get some information about the page, like it's title.  Easy:
+
+	>>> driver.title
+	'Library'
+	
+Let's assert that:
+
+	assert_that(driver.title, contains_string('Library'))
+
+This should return nothing, indicating success.  Let's try it with something that's not there:
+
+	>>> assert_that(driver.title, contains_string('foo'))
+	...
+  AssertionError:
+  Expected: a string containing 'foo'
+       but: was 'Web Demo'
+
+Ah!  an error returned.
+	
+Let's try out adding some text to a field.  The first thing we have to do is
+select the field.  There are various ways to do this, but just to jump ahead,
+here's the way to select the input for the login username, and assign it to a
+variable called "login_username_field"
+
+	login_username_field = driver.find_element_by_id("login_username")
+	
+If that worked correctly, you shouldn't see any message returned.  We can see if we caught the element by simply typing the variable name:
+
+	login_username_field
+
+Which should return something like this:
+<selenium.webdriver.remote.webelement.WebElement (session="5a75e46839b143d536a462131339ebcc", element="0.5216071359417056-1")>	
+
+Let's add some text to that field:
+
+	login_username_field.send_keys("someuser")
+	
+You should see the text "someuser" appear in the login username field.
+
+Let's repeat these commands for the password field in the login form.
+
+select the input for the login form password, and assign it to a variable called "login_password_field"
+
+	login_password_field = driver.find_element_by_id("login_password")
+
+Let's add some text to that field:
+
+	login_password_field.send_keys("somepass")
+	
+You should see the text "********" appear in the login password field.
+
+Now we've simulated the actions of a user typing in their username and password on a
+page.  Let's try the final step, clicking on the login button.
+
+Several of the following steps are going to seem familiar at this point.  But let's
+step through them slowly and carefully.
+
+login_button = driver.find_element_by_id("login_submit")
+
+Now, we're going to send a click to that button:
+
+login_button.click()
+
+This should cause your browser to jump to another page.  In all likelihood you will
+see "access denied" on the page.
+
+Now explore around.  See python_selenium_cheat_sheet.txt for a breakdown of
+common commands.
+
+
+================================================
+FILE: docs/ui_testing/README_python.txt
+================================================
+We need a few things installed before continuing here.
+
+First, you will need Python 3.7 for your system.
+Next you will need pipenv, a tool that makes it easy to get the dependencies you need.
+
+To get pipenv:
+
+first download get-pip.py from https://bootstrap.pypa.io/get-pip.py, and run
+
+    python get-pip.py
+
+Then,
+
+    pip install pipenv
+
+And in the demo directory,
+
+    pipenv install
+
+In order to run the Selenium tests with these instructions, you need Chrome and a driver for the browser.
+Download Chromedriver (check http://chromedriver.chromium.org/) and make sure it's in your path or in the ui_tests directory.
+
+
+
+================================================
+FILE: docs/ui_testing/running selenium_grid.txt
+================================================
+To get Selenium grid: https://www.seleniumhq.org/download/
+
+
+To run the hub:
+---------------
+java -jar selenium-server-standalone-<VERSION>.jar -role hub
+
+To run the Chrome node:
+-----------------------
+java -jar selenium-server-standalone-<VERSION>.jar -role node -hub http://localhost:4444/grid/register -browser browserName=chrome,maxInstances=5
+
+To run the Firefox node:
+------------------------
+java -jar selenium-server-standalone-<VERSION>.jar -port 5556 -role node -hub http://localhost:4444/grid/register -browser browserName=firefox,maxInstances=3
+
+To run the Edge node:
+---------------------
+java -jar selenium-server-standalone-<VERSION>.jar -port 5557 -role node -hub http://localhost:4444/grid/register -browser browserName=edge,maxInstances=1
+
+
+In order for Selenified to pay attention to the grid running locally, it is necessary to change its configuration.
+
+In selenified.properties:
+  hub=http://localhost:4444
+  browser=Firefox,Chrome,Edge
+
+Also, make sure that the webdrivers are available on the path:
+  Chromedriver
+  Geckodriver
+  Webdriver for Edge
+
+run:  gradlew selenified
+
+
+
+
+
+================================================
+FILE: gradle/wrapper/gradle-wrapper.properties
+================================================
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-7.0-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+
+
+
+================================================
+FILE: jenkins/Jenkinsfile
+================================================
+// This jenkinsfile is used to run CI/CD on my local (Windows) box, no VM's needed.
+
+pipeline {
+
+  agent any
+
+   environment {
+        // This is set so that the Python API tests will recognize it
+        // and go through the Zap proxy waiting at 9888
+        HTTP_PROXY = 'http://127.0.0.1:9888'
+   }
+
+  stages {
+
+    // build the war file (the binary).  This is the only
+    // place that happens.
+    stage('Build') {
+      steps {
+        sh './gradlew clean assemble'
+      }
+    }
+
+    // run all the unit tests - these do not require anything else
+    // to be running and most run very quickly.
+    stage('Unit Tests') {
+      steps {
+        sh './gradlew test'
+      }
+      post {
+        always {
+          junit 'build/test-results/test/*.xml'
+        }
+      }
+    }
+
+    // run the tests which require connection to a
+    // running database.
+    stage('Database Tests') {
+      steps {
+        sh './gradlew integrate'
+      }
+      post {
+        always {
+          junit 'build/test-results/integrate/*.xml'
+        }
+      }
+    }
+
+    // These are the Behavior Driven Development (BDD) tests
+    // See the files in src/bdd_test
+    // These tests do not require a running system.
+    stage('BDD Tests') {
+      steps {
+        sh './gradlew generateCucumberReports'
+        // generate the code coverage report for jacoco
+        sh './gradlew jacocoTestReport'
+      }
+      post {
+          always {
+            junit 'build/test-results/bdd/*.xml'
+          }
+        }
+    }
+
+    // Runs an analysis of the code, looking for any
+    // patterns that suggest potential bugs.
+    stage('Static Analysis') {
+      steps {
+        sh './gradlew sonarqube'
+        // wait for sonarqube to finish its analysis
+        sleep 5
+        sh './gradlew checkQualityGate'
+      }
+    }
+
+
+    // Move the binary over to the test environment and
+    // get it running, in preparation for tests that
+    // require a whole system to be running.
+    stage('Deploy to Test') {
+      steps {
+      sh './gradlew deployToTestWindowsLocal'
+      // pipenv needs to be installed and on the path for this to work.
+      sh 'PIPENV_IGNORE_VIRTUALENVS=1 pipenv install'
+
+      // Wait here until the server tells us it's up and listening
+      sh './gradlew waitForHeartBeat'
+
+      // clear Zap's memory for the incoming tests
+      sh 'curl http://zap/JSON/core/action/newSession -s --proxy localhost:9888'
+      }
+    }
+
+
+    // Run the tests which investigate the functioning of the API.
+    stage('API Tests') {
+      steps {
+        sh './gradlew runApiTests'
+      }
+      post {
+        always {
+          junit 'build/test-results/api_tests/*.xml'
+        }
+      }
+    }
+
+    // We use a BDD framework for some UI tests, Behave, because Python rules
+    // when it comes to experimentation with UI tests.  You can try things and see how they work out.
+    // this set of BDD tests does require a running system.
+    // BDD at the UI level is just to ensure that basic capabilities work,
+    // not that every little detail of UI functionality is correct.  For
+    // that purpose, see the following stage, "UI Tests"
+    stage('UI BDD Tests') {
+      steps {
+        sh './gradlew runBehaveTests'
+        sh './gradlew generateCucumberReport'
+      }
+      post {
+        always {
+          junit 'build/test-results/bdd_ui/*.xml'
+        }
+      }
+    }
+
+    // This set of tests investigates the functionality of the UI.
+    // Note that this is separate fom the UI BDD Tests, which
+    // only focuses on essential capability and therefore only
+    // covers a small subset of the possibilities of UI behavior.
+    stage('UI Tests') {
+        steps {
+            sh 'cd src/ui_tests/java && ./gradlew clean test'
+        }
+        post {
+            always {
+                junit 'src/ui_tests/java/build/test-results/test/*.xml'
+            }
+        }
+    }
+
+    // Run OWASP's "DependencyCheck". https://owasp.org/www-project-dependency-check/
+    // You are what you eat - and so it is with software.  This
+    // software consists of a number of software by other authors.
+    // For example, for this project we use language tools by Apache,
+    // password complexity analysis, and several others.  Each one of
+    // these might have security bugs - and if they have a security
+    // bug, so do we!
+    //
+    // DependencyCheck looks at the list of known
+    // security vulnerabilities from the United States National Institute of
+    // Standards and Technology (NIST), and checks if the software
+    // we are importing has any major known vulnerabilities. If so,
+    // the build will halt at this point.
+    stage('Security: Dependency Analysis') {
+      steps {
+         sh './gradlew dependencyCheckAnalyze'
+      }
+    }
+
+    // Run Jmeter performance testing https://jmeter.apache.org/
+    // This test simulates 50 users concurrently using our software
+    // for a set of common tasks.
+    stage('Performance Tests') {
+      steps {
+         sh './gradlew runPerfTests'
+      }
+    }
+
+    // Runs mutation testing against some subset of our software
+    // as a spot test.  Mutation testing is where bugs are seeded
+    // into the software and the tests are run, and we see which
+    // tests fail and which pass, as a result.
+    //
+    // what *should* happen is that where code or tests are altered,
+    // the test should fail, shouldn't it? However, it sometimes
+    // happens that no matter how code is changed, the tests
+    // continue to pass, which implies that the test wasn't really
+    // providing any value for those lines.
+    stage('Mutation Tests') {
+      steps {
+         sh './gradlew pitest'
+      }
+    }
+
+    stage('Build Documentation') {
+      steps {
+         sh './gradlew javadoc'
+      }
+    }
+
+    stage('Collect Zap Security Report') {
+      steps {
+        sh 'mkdir -p build/reports/zap'
+        sh 'curl http://zap/OTHER/core/other/htmlreport --proxy localhost:9888 > build/reports/zap/zap_report.html'
+      }
+    }
+
+
+    // This is the stage where we deploy to production.  If any test
+    // fails, we won't get here.  Note that we aren't really doing anything - this
+    // is a token step, to indicate whether we would have deployed or not.  Nothing actually
+    // happens, since this is a demo project.
+    stage('Deploy to Prod') {
+      steps {
+        // just a token operation while we pretend to deploy
+        sh 'sleep 5'
+      }
+    }
+
+  }
+
+}
+
+
+
+================================================
+FILE: src/README.txt
+================================================
+Contents of the src directory
+-----------------------------
+
+application code directory
+--------------------------
+main             : Code for the application
+
+test code directories
+---------------------
+bdd_test         : Tests that use Cucumber to test at the feature level
+integration_test : Primarily tests that hit the database, but really any integration test
+selenified_tests : Tests that use Selenified
+test             : Unit tests
+api_tests        : tests that target the API's
+ui_tests         : tests that target the UI
+
+
+
+
+For your information:
+
+  Why do we split up the test directories this way?
+
+  A few reasons.  I'll borrow some words from Petri Kainulainen
+  (slightly modified from https://www.petrikainulainen.net/programming/maven/integration-testing-with-maven/)
+
+    Adding integration tests to a build has traditionally been a bit painful. I suspect that the reason for
+    this is that the standard directory layout has only one test directory (src/test).
+
+    If we want to use the standard directory layout and add integration tests to our build, we have two options:
+
+    First, we can add our integration tests to the same directory as our unit tests. This is an awful idea because
+    integration tests and unit tests are totally different beasts and this approach forces us to mix them. Also, if
+    we follow this approach, running unit tests from our IDE becomes a pain in the ass. When we run tests, our IDE
+    runs all tests found from the test directory. This means that both unit and integration tests are run. If we
+    are “lucky”, this means that our test suite is slower than it could be, but often this means that our integration
+    tests fail every time. Not nice, huh?
+
+    Second, we can add our integration tests to a new module. This is overkill because it forces us to transform our
+    project into a multi-module project only because we want to separate our integration tests from our unit tests.
+    Also, if our project is already a multi-module project, and we want to write integration tests for more than one
+    module, we are screwed. Of course we can always create a separate integration test module for each tested module,
+    but it would be less painful to shoot ourselves in the foot.
+
+    It is pretty clear that both of these solutions suck.
+
+    The requirements of our build are:
+
+    - Integration and unit tests must have separate source directories. The src/integration-test/java directory
+    must contain the source code of our integration tests and the src/test/java directory must contain the
+    source code of our unit tests.
+
+    - Integration and unit tests must have different resource directories. The src/integration-test/resources
+    directory must contain the resources of our integration tests and the src/test/resources directory must
+    contain the resources of our unit tests.
+
+    - Only unit tests are run by default.
+
+    - It must be possible to run only integration tests.
+
+    - If an integration test fails, it must fail our build.
+
+  We continue with this pattern for the BDD tests and the Selenified tests.
+
+
+================================================
+FILE: src/api_tests/README.txt
+================================================
+These files are used to drive the design of the Demo API through tests
+written in Python.
+
+
+================================================
+FILE: src/api_tests/pytest.ini
+================================================
+# from https://docs.pytest.org/en/stable/deprecations.html#junit-family-default-value-change-to-xunit2
+
+[pytest]
+junit_family=xunit2
+
+# If you discover that your tooling does not support the new format, and want to keep using the legacy version, set the option to legacy instead:
+
+# [pytest]
+# junit_family=legacy
+
+
+================================================
+FILE: src/api_tests/test_api.py
+================================================
+import requests
+
+SERVER = "localhost"
+URL = "http://%s:8080" % SERVER
+
+
+# hitting this endpoint will reset the database.
+def __reset_database():
+    requests.get("%s/demo/flyway" % URL)
+
+
+# adding a couple integers
+def test_math_api_happy_path():
+    r = requests.post("%s/demo/math" % URL, data={'item_a': '9', 'item_b': '7'})
+    assert "16" in r.text
+
+
+# does it handle negatives well?
+def test_math_api_negative_numbers_integer():
+    r = requests.post("%s/demo/math" % URL, data={'item_a': '-9', 'item_b': '-7'})
+    assert "-16" in r.text
+
+
+# Only handles integers.  Will fail with decimals.
+def test_math_api_negative_numbers_float():
+    r = requests.post("%s/demo/math" % URL, data={'item_a': '-9.1', 'item_b': '-7.1'})
+    assert "Error: only accepts integers" in r.text
+
+
+# does it handle zero well?
+def test_math_api_with_zero():
+    r = requests.post("%s/demo/math" % URL, data={'item_a': '9', 'item_b': '0'})
+    assert "9" in r.text
+
+
+# provide non-digits as input, should return an error message in the response.
+def test_math_api_with_non_numeric():
+    r = requests.post("%s/demo/math" % URL, data={'item_a': 'nine', 'item_b': 'seven'})
+    assert "Error: only accepts integers" in r.text
+
+
+# register with a good password
+def test_register_api():
+    __reset_database()
+    r = requests.post("%s/demo/register" % URL, data={'username': 'alice', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    assert "successfully registered: true" in r.text
+
+# register with an empty password
+def test_register_api_empty_password():
+    __reset_database()
+    r = requests.post("%s/demo/register" % URL, data={'username': 'alice', 'password': ''})
+    assert "no password provided" in r.text
+
+# register with an empty username
+def test_register_api_empty_username():
+    __reset_database()
+    r = requests.post("%s/demo/register" % URL, data={'username': '', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    assert "no username provided" in r.text
+
+
+# register, then login
+def test_login_api():
+    __reset_database()
+    requests.post("%s/demo/register" % URL, data={'username': 'alice', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    r = requests.post("%s/demo/login" % URL, data={'username': 'alice', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    assert "access granted" in r.text
+
+# register, then login with empty username
+def test_login_api_empty_username():
+    __reset_database()
+    requests.post("%s/demo/register" % URL, data={'username': 'alice', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    r = requests.post("%s/demo/login" % URL, data={'username': '', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    assert "no username provided" in r.text
+
+# register, then login with empty password
+def test_login_api_empty_password():
+    __reset_database()
+    requests.post("%s/demo/register" % URL, data={'username': 'alice', 'password': 'B65S3xNW8vXQHyjYnD72L3mejc'})
+    r = requests.post("%s/demo/login" % URL, data={'username': 'alice', 'password': ''})
+    assert "no password provided" in r.text
+
+
+# test that we get the correct result if we try to register a book
+def test_register_book():
+    __reset_database()
+    r = requests.post("%s/demo/registerbook" % URL, data={'book': 'alice in wonderland'})
+    assert "SUCCESS" in r.text
+
+
+# test that we get the correct result if we try to register a book that's already registered
+def test_register_book_already_registered():
+    __reset_database()
+    requests.post("%s/demo/registerbook" % URL, data={'book': 'alice in wonderland'})
+    r = requests.post("%s/demo/registerbook" % URL, data={'book': 'alice in wonderland'})
+    assert "ALREADY_REGISTERED_BOOK" in r.text
+
+
+# test that we get the correct result if we try to register a borrower
+def test_register_borrower():
+    __reset_database()
+    r = requests.post("%s/demo/registerborrower" % URL, data={'borrower': 'alice'})
+    assert "SUCCESS" in r.text
+
+
+# test that we get the correct result if we try to register a borrower that's already registered
+def test_register_borrower_already_registered():
+    __reset_database()
+    requests.post("%s/demo/registerborrower" % URL, data={'borrower': 'alice'})
+    r = requests.post("%s/demo/registerborrower" % URL, data={'borrower': 'alice'})
+    assert "ALREADY_REGISTERED_BORROWER" in r.text
+
+
+# test that we can lend a book
+def test_create_book_loan():
+    __reset_database()
+    requests.post("%s/demo/registerborrower" % URL, data={'borrower': 'alice'})
+    requests.post("%s/demo/registerbook" % URL, data={'book': 'alice in wonderland'})
+    r = requests.post("%s/demo/lend" % URL, data={'borrower': 'alice', 'book': 'alice in wonderland'})
+    assert "SUCCESS" in r.text
+
+
+# test that we get the correct result if we try to lend a book already lent.
+def test_create_book_loan_already_lent():
+    __reset_database()
+    requests.post("%s/demo/registerborrower" % URL, data={'borrower': 'alice'})
+    requests.post("%s/demo/registerbook" % URL, data={'book': 'alice in wonderland'})
+    requests.post("%s/demo/lend" % URL, data={'borrower': 'alice', 'book': 'alice in wonderland'})
+    r = requests.post("%s/demo/lend" % URL, data={'borrower': 'alice', 'book': 'alice in wonderland'})
+    assert "BOOK_CHECKED_OUT" in r.text
+
+
+
+================================================
+FILE: src/bdd_test/README.txt
+================================================
+The contents of this folder provide code and documents to support a style of testing called Behavior-Driven Development (BDD).
+
+The core aspects of this technique are:
+- to use collaboration between at least the developers, testers, and business to build shared understanding
+- to develop clear scenarios that help clarify user stories and better articulate the definition of done
+- where possible, to consider automation for the scenarios
+- builds on top of Test-Driven Development (TDD), emphasizes the essential capabilities
+
+There are two folders here: java and resources.
+
+Within the _resources_ directory, you will find the feature files.
+
+In the _java_ directory, the step definitions - that is, the glue code that connects the prose in the feature
+files to the actual code of the system.
+
+Note that the different domains are separated into different directories - for example, all feature files and
+step definitions related to the "library" functional domain are within the _library_ directory.
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/authentication/LoginStepDefs.java
+================================================
+package com.coveros.training.authentication;
+
+import com.coveros.training.persistence.IPersistenceLayer;
+import com.coveros.training.persistence.PersistenceLayer;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+public class LoginStepDefs {
+
+    private boolean isRegisteredUser;
+    private RegistrationUtils registrationUtils = RegistrationUtils.createEmpty();
+    private LoginUtils loginUtils = LoginUtils.createEmpty();
+    private final IPersistenceLayer pl = new PersistenceLayer();
+
+    /**
+     * create objects for registration and login, and clear the database.
+     */
+    private void initializeDatabaseAccess() {
+        pl.cleanAndMigrateDatabase();
+        registrationUtils = new RegistrationUtils();
+        loginUtils = new LoginUtils();
+    }
+
+    @Given("^\"([^\"]*)\" is registered in the system with the password \"([^\"]*)\"$")
+    public void isRegisteredInSystemWithPassword(String username, String password) {
+        initializeDatabaseAccess();
+
+        registrationUtils.processRegistration(username, password);
+    }
+
+    @Then("^The system decides that they are authenticated.$")
+    public void theSystemDecidesThatTheyAreAuthenticated() {
+        Assert.assertTrue(isRegisteredUser);
+    }
+
+    @Then("^The system decides that they are not authenticated, because .*$")
+    public void theSystemDecidesThatTheyAreNotAuthenticated() {
+        Assert.assertFalse(isRegisteredUser);
+    }
+
+
+    @When("^when a user authenticates with \"([^\"]*)\" and \"([^\"]*)\"$")
+    public void whenAUserAuthenticatesWithAnd(String username, String password) {
+        isRegisteredUser = loginUtils.isUserRegistered(username, password);
+    }
+
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/authentication/RegistrationStepDefs.java
+================================================
+package com.coveros.training.authentication;
+
+import com.coveros.training.authentication.domainobjects.PasswordResult;
+import com.coveros.training.authentication.domainobjects.RegistrationResult;
+import com.coveros.training.authentication.domainobjects.RegistrationStatusEnums;
+import com.coveros.training.persistence.IPersistenceLayer;
+import com.coveros.training.persistence.PersistenceLayer;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import static com.coveros.training.authentication.domainobjects.PasswordResultEnums.INSUFFICIENT_ENTROPY;
+
+public class RegistrationStepDefs {
+
+    private static final RegistrationResult ALREADY_REGISTERED = new RegistrationResult(false, RegistrationStatusEnums.ALREADY_REGISTERED);
+    private String myUsername = "";
+    private RegistrationResult myRegistrationResult = RegistrationResult.createEmpty();
+    private RegistrationUtils registrationUtils = RegistrationUtils.createEmpty();
+    private PasswordResult passwordResult = PasswordResult.createEmpty();
+    private final IPersistenceLayer pl = new PersistenceLayer();
+
+    /**
+     * create objects for registration and login, and clear the database.
+     */
+    private void initializeDatabaseAccess() {
+        pl.cleanAndMigrateDatabase();
+        registrationUtils = new RegistrationUtils();
+    }
+
+    // a password used that will suffice as a typical password
+    private final static String TYPICAL_PASSWORD = "LpcVWwRkWSNVH";
+
+    @Given("^a user \"([^\"]*)\" is not currently registered in the system$")
+    public void aUserIsNotCurrentlyRegisteredInTheSystem(String username) {
+        initializeDatabaseAccess();
+        Assert.assertFalse(userIsRegistered(username));
+        myUsername = username;
+    }
+
+    @When("^they register with that username and use the password \"([^\"]*)\"$")
+    public void theyRegisterWithThatUsernameAndUseThePassword(String pw) {
+        registrationUtils.processRegistration(myUsername, pw);
+    }
+
+    @Then("they become registered")
+    public void they_become_registered() {
+        registrationUtils.isUserInDatabase(myUsername);
+    }
+
+    private boolean userIsRegistered(String username) {
+        return registrationUtils.isUserInDatabase(username);
+    }
+
+    @Given("^a username of \"([^\"]*)\" is registered$")
+    public void aUsernameOfIsRegistered(String username) {
+        initializeDatabaseAccess();
+        registrationUtils.processRegistration(username, TYPICAL_PASSWORD);
+        Assert.assertTrue(userIsRegistered(username));
+        myUsername = username;
+    }
+
+    @When("a user tries to register with that same name")
+    public void a_user_tries_to_register_with_that_same_name() {
+        myRegistrationResult = registrationUtils.processRegistration(myUsername, TYPICAL_PASSWORD);
+    }
+
+
+    @Then("the system indicates a failure to register")
+    public void the_system_indicates_a_failure_to_register() {
+        Assert.assertEquals(ALREADY_REGISTERED, myRegistrationResult);
+    }
+
+    @When("^they enter their username and provide a poor password of (.*)$")
+    public void theyEnterTheirUsernameAndProvideAPoorPassword(String password) {
+        myRegistrationResult = registrationUtils.processRegistration(myUsername, password);
+    }
+
+    @Then("^they fail to register and the system indicates a response: (.*)$")
+    public void theyFailToRegisterAndTheSystemIndicatesAResponse(String response) {
+        Assert.assertTrue(myRegistrationResult.toString()
+                .toLowerCase()
+                .replace("_", " ")
+                .contains(response));
+    }
+
+    @Given("^a user is in the midst of registering for an account$")
+    public void aUserIsInTheMidstOfRegisteringForAnAccount() {
+        // just a comment.  No state needs to be set up.
+    }
+
+    @When("^they try registering with the password (.*)$")
+    public void theyTryRegisteringWithThePasswordPassword(String password) {
+        passwordResult = RegistrationUtils.isPasswordGood(password);
+    }
+
+    @Then("the system returns that the password has insufficient entropy")
+    public void theSystemReturnsThatThePasswordHasInsufficientEntropyTakingThisLongToCrackTime_to_crack() {
+        Assert.assertEquals(INSUFFICIENT_ENTROPY, passwordResult.status);
+    }
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/cartesianproduct/CartesianProductStepDefs.java
+================================================
+package com.coveros.training.cartesianproduct;
+
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.PendingException;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+public class CartesianProductStepDefs {
+
+    Set<Set<String>> setOfSets;
+    String result;
+
+    @Given("lists as follows:")
+    public void listsAsFollows(DataTable randomLists) {
+        final List<String> oldLists = randomLists.asList();
+        setOfSets = new HashSet<>();
+
+        for (int i = 0; i < oldLists.size(); i++) {
+            StringTokenizer defaultTokenizer = new StringTokenizer(oldLists.get(i));
+            final Set<String> tempSet = new HashSet<>();
+            while (defaultTokenizer.hasMoreTokens())
+            {
+                tempSet.add(defaultTokenizer.nextToken());
+            }
+            setOfSets.add(tempSet);
+        }
+
+    }
+
+    @When("we calculate the combinations")
+    public void weCalculateTheCombinations() {
+        result = CartesianProduct.calculate(setOfSets);
+        throw new PendingException();
+    }
+
+    @Then("the resulting combinations should be as follows:")
+    public void theResultingCombinationsShouldBeAsFollows(String expectedResults) {
+        Assert.assertEquals(expectedResults, result);
+    }
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/expenses/AlcoholStepDefs.java
+================================================
+package com.coveros.training.expenses;
+
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.PendingException;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import java.util.Map;
+
+public class AlcoholStepDefs {
+
+    private AlcoholResult alcoholResult;
+    private DinnerPrices dinnerPrices;
+
+    @Given("a dinner with the following prices in dollars:")
+    public void aDinnerWithTheFollowingPricesInDollars(DataTable prices) {
+        final Map<String, String> data = prices.asMaps().get(0);
+        dinnerPrices = new DinnerPrices(
+                Double.parseDouble(data.get("subtotal")),
+                Double.parseDouble(data.get("food total")),
+                Double.parseDouble(data.get("tip")),
+                Double.parseDouble(data.get("tax")));
+
+    }
+
+    @When("I calculate the alcohol-related portion")
+    public void iCalculateTheAlcoholRelatedPortion() {
+        alcoholResult = AlcoholCalculator.calculate(dinnerPrices);
+        throw new PendingException();
+    }
+
+    @Then("I get the following results:")
+    public void iGetTheFollowingResults(DataTable expectedData) {
+        final Map<String, String> data = expectedData.asMaps().get(0);
+        AlcoholResult expectedResult = new AlcoholResult(
+                Double.parseDouble(data.get("total food price")),
+                Double.parseDouble(data.get("total alcohol price")),
+                Double.parseDouble(data.get("food ratio")));
+        Assert.assertEquals(alcoholResult, expectedResult);
+    }
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/library/AddDeleteListSearchBooksAndBorrowersStepDefs.java
+================================================
+package com.coveros.training.library;
+
+import com.coveros.training.library.domainobjects.Book;
+import com.coveros.training.library.domainobjects.Borrower;
+import com.coveros.training.library.domainobjects.LibraryActionResults;
+import com.coveros.training.library.domainobjects.Loan;
+import com.coveros.training.persistence.IPersistenceLayer;
+import com.coveros.training.persistence.PersistenceLayer;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.coveros.training.library.LibraryUtilsTests.generateListOfBooks;
+import static com.coveros.training.library.LibraryUtilsTests.generateListOfBorrowers;
+import static org.junit.Assert.assertEquals;
+
+public class AddDeleteListSearchBooksAndBorrowersStepDefs {
+
+    public static final String ALICE = "alice";
+    public static final String DEVOPS_HANDBOOK = "devops handbook";
+    private Book myBook = Book.createEmpty();
+    private String myBookTitle = "";
+    private Borrower myBorrower = Borrower.createEmpty();
+    private String myBorrowerName = "";
+    private final Date JAN_1ST = Date.valueOf(LocalDate.of(2018, Month.JANUARY, 1));
+    private LibraryUtils libraryUtils = LibraryUtils.createEmpty();
+    private final Date JAN_2ND = Date.valueOf(LocalDate.of(2018, Month.JANUARY, 2));
+    private LibraryActionResults libraryActionResults = LibraryActionResults.NULL;
+    private final IPersistenceLayer pl = new PersistenceLayer();
+    private List<Book> allBooks = new ArrayList<>();
+    private List<Borrower> allBorrowers = new ArrayList<>();
+
+    /**
+     * Set up the databases, clear them, initialize the Library Utility with them.
+     */
+    private void initializeEmptyDatabaseAndUtility() {
+        pl.cleanAndMigrateDatabase();
+        libraryUtils = new LibraryUtils();
+    }
+
+    @Given("a book, {string}, is not currently registered in the system")
+    public void a_book_is_not_currently_registered_in_the_system(String bookTitle) {
+        myBookTitle = bookTitle;
+        initializeEmptyDatabaseAndUtility();
+    }
+
+    @When("a librarian registers that book")
+    public void a_librarian_registers_that_book() {
+        libraryActionResults = libraryUtils.registerBook(myBookTitle);
+        myBook = libraryUtils.searchForBookByTitle(myBookTitle);
+    }
+
+    @Then("the system has the book registered")
+    public void the_system_has_the_book_registered() {
+        assertEquals(LibraryActionResults.SUCCESS, libraryActionResults);
+        Assert.assertTrue(myBook.id > 0);
+    }
+
+    @Given("a book, {string}, is currently registered in the system")
+    public void a_book_is_currently_registered_in_the_system(String bookTitle) {
+        initializeEmptyDatabaseAndUtility();
+        myBookTitle = bookTitle;
+        libraryUtils.registerBook(bookTitle);
+        myBook = libraryUtils.searchForBookByTitle(bookTitle);
+    }
+
+    @When("a librarian deletes that book")
+    public void a_librarian_deletes_that_book() {
+        myBook = new Book(1, myBookTitle);
+        libraryActionResults = libraryUtils.deleteBook(myBook);
+    }
+
+    @Then("the system does not have the book registered")
+    public void the_system_does_not_have_the_book_registered() {
+        myBook = libraryUtils.searchForBookByTitle(myBook.title);
+        Assert.assertTrue(myBook.isEmpty());
+    }
+
+    @Then("the system reports an error indicating that the book is already registered")
+    public void the_system_reports_an_error_indicating_that_TheBookIsAlreadyRegistered() {
+        assertEquals(LibraryActionResults.ALREADY_REGISTERED_BOOK, libraryActionResults);
+    }
+
+
+    @Then("the system reports an error indicating that the book cannot be deleted because it was never registered")
+    public void theSystemReportsAnErrorIndicatingThatTheBookCannotBeDeletedBecauseItWasNeverRegistered() {
+        assertEquals(LibraryActionResults.NON_REGISTERED_BOOK_CANNOT_BE_DELETED, libraryActionResults);
+    }
+
+    @Given("a borrower, {string}, is not currently registered in the system")
+    public void a_borrower_is_not_currently_registered_in_the_system(String borrower) {
+        myBorrowerName = borrower;
+        initializeEmptyDatabaseAndUtility();
+    }
+
+    @When("a librarian registers that borrower")
+    public void a_librarian_registers_that_borrower() {
+        libraryActionResults = libraryUtils.registerBorrower(myBorrowerName);
+    }
+
+    @Then("the system has the borrower registered")
+    public void the_system_has_the_borrower_registered() {
+        final Borrower borrower = libraryUtils.searchForBorrowerByName(myBorrowerName);
+        assertEquals(borrower.name, myBorrowerName);
+        Assert.assertTrue(borrower.id > 0);
+        assertEquals(LibraryActionResults.SUCCESS, libraryActionResults);
+    }
+
+    @Given("a borrower, {string}, is currently registered in the system")
+    public void a_borrower_is_currently_registered_in_the_system(String borrowerName) {
+        initializeEmptyDatabaseAndUtility();
+        myBorrowerName = borrowerName;
+        libraryActionResults = libraryUtils.registerBorrower(borrowerName);
+    }
+
+    @When("a librarian deletes that borrower")
+    public void a_librarian_deletes_that_borrower() {
+        final Borrower borrower = new Borrower(1, myBorrowerName);
+        libraryActionResults = libraryUtils.deleteBorrower(borrower);
+    }
+
+    @Then("the system does not have the borrower registered")
+    public void the_system_does_not_have_the_borrower_registered() {
+        final Borrower borrower = libraryUtils.searchForBorrowerByName(myBorrowerName);
+        Assert.assertTrue(borrower.isEmpty());
+    }
+
+    @Given("a library with the following books registered: a, b, c")
+    public void a_library_with_the_following_books_registered() {
+        initializeEmptyDatabaseAndUtility();
+        libraryUtils.registerBook("a");
+        libraryUtils.registerBook("b");
+        libraryUtils.registerBook("c");
+    }
+
+    @When("a librarian lists all the registered books")
+    public void a_librarian_lists_all_the_registered_books() {
+        allBooks = libraryUtils.listAllBooks();
+    }
+
+    @Then("the whole list of books is returned")
+    public void the_whole_list_of_books_is_returned() {
+        final List<Book> expectedBooks = generateListOfBooks(new String[]{"a", "b", "c"});
+        assertEquals(expectedBooks, allBooks);
+    }
+
+    @Then("the whole list of borrowers is returned")
+    public void the_whole_list_of_borrowers_is_returned() {
+        final List<Borrower> expectedBorrowers = generateListOfBorrowers(new String[]{"a", "b", "c"});
+        assertEquals(expectedBorrowers, allBorrowers);
+    }
+
+    @When("a librarian searches by that title")
+    public void a_librarian_searches_by_that_title() {
+        myBook = libraryUtils.searchForBookByTitle(myBookTitle);
+    }
+
+    @Then("the system returns the book's full data")
+    public void the_system_returns_the_books_full_data() {
+        assertEquals(myBookTitle, myBook.title);
+        Assert.assertTrue(myBook.id > 0);
+    }
+
+    @Then("the system returns the borrower's full data")
+    public void the_system_returns_the_borrowers_full_data() {
+        assertEquals(myBorrowerName, myBorrower.name);
+        Assert.assertTrue(myBorrower.id > 0);
+    }
+
+    @When("a librarian searches by its id")
+    public void a_librarian_searches_by_its_id() {
+        myBook = libraryUtils.searchForBookById(myBook.id);
+    }
+
+    @Given("no books are registered in the system")
+    public void no_books_are_registered_in_the_system() {
+        initializeEmptyDatabaseAndUtility();
+    }
+
+    @When("a librarian searches for a book by id {int}")
+    public void a_librarian_searches_for_a_book_by_id(Integer bookId) {
+        myBook = libraryUtils.searchForBookById(bookId);
+    }
+
+    @Then("the system returns an empty result for the book")
+    public void the_system_returns_an_empty_result_for_the_book() {
+        Assert.assertTrue(myBook.isEmpty());
+    }
+
+    @Then("the system returns an empty result for the borrower")
+    public void the_system_returns_an_empty_result_for_the_borrower() {
+        Assert.assertTrue(myBorrower.isEmpty());
+    }
+
+    @When("a librarian searches for a book by title of {string}")
+    public void a_librarian_searches_for_a_book_by_title_of(String bookTitle) {
+        myBook = libraryUtils.searchForBookByTitle(bookTitle);
+    }
+
+    @Then("the system reports that there are no books in the system")
+    public void the_system_reports_that_there_are_no_books_in_the_system() {
+        Assert.assertTrue(allBooks.isEmpty());
+    }
+
+    @Given("a library with the following borrowers registered: a, b, c")
+    public void a_library_with_the_following_borrowers_registered() {
+        initializeEmptyDatabaseAndUtility();
+        libraryUtils.registerBorrower("a");
+        libraryUtils.registerBorrower("b");
+        libraryUtils.registerBorrower("c");
+    }
+
+    @When("a librarian lists all the registered borrowers")
+    public void a_librarian_lists_all_the_registered_borrowers() {
+        allBorrowers = libraryUtils.listAllBorrowers();
+    }
+
+    @When("a librarian searches by that name")
+    public void a_librarian_searches_by_that_name() {
+        myBorrower = libraryUtils.searchForBorrowerByName(myBorrowerName);
+    }
+
+    @Given("no borrowers are registered in the system")
+    public void no_borrowers_are_registered_in_the_system() {
+        initializeEmptyDatabaseAndUtility();
+    }
+
+    @When("a librarian searches for a borrower by id {int}")
+    public void a_librarian_searches_for_a_borrower_by_id(Integer id) {
+        myBorrower = libraryUtils.searchForBorrowerById(id);
+    }
+
+    @Then("the system reports that there are no borrowers with that id")
+    public void the_system_reports_that_there_are_no_borrowers_with_that_id() {
+        Assert.assertTrue(myBorrower.isEmpty());
+    }
+
+    @When("a librarian searches for a borrower by name of {string}")
+    public void a_librarian_searches_for_a_borrower_by_name_of(String name) {
+        myBorrower = libraryUtils.searchForBorrowerByName(name);
+    }
+
+    @Then("the system reports that there are no borrowers found with that name")
+    public void the_system_reports_that_there_are_no_borrowers_found_with_that_name() {
+        Assert.assertTrue(myBorrower.isEmpty());
+    }
+
+    @When("a librarian lists all the borrowers")
+    public void a_librarian_lists_all_the_borrowers() {
+        allBorrowers = libraryUtils.listAllBorrowers();
+    }
+
+    @Then("the system returns an empty list of borrowers")
+    public void the_system_returns_an_empty_list_of_borrowers() {
+        Assert.assertTrue(allBorrowers.isEmpty());
+    }
+
+    @Then("the system reports an error indicating that the borrower is already registered")
+    public void the_system_reports_an_error_indicating_that_the_borrower_is_already_registered() {
+        assertEquals(LibraryActionResults.ALREADY_REGISTERED_BORROWER, libraryActionResults);
+    }
+
+    @Then("the system reports an error indicating that the borrower cannot be deleted because he or she was never registered")
+    public void the_system_reports_an_error_indicating_that_the_borrower_cannot_be_deleted_because_he_or_she_was_never_registered() {
+        assertEquals(LibraryActionResults.NON_REGISTERED_BORROWER_CANNOT_BE_DELETED, libraryActionResults);
+    }
+
+    @When("a librarian searches by that id")
+    public void a_librarian_searches_by_that_id() {
+        final Borrower tempBorrower = libraryUtils.searchForBorrowerByName(myBorrowerName);
+        myBorrower = libraryUtils.searchForBorrowerById(tempBorrower.id);
+    }
+
+    @Given("a book, {string}, is currently loaned out")
+    public void aBookIsCurrentlyLoanedOut(String bookTitle) {
+        initializeEmptyDatabaseAndUtility();
+        libraryUtils.registerBorrower(ALICE);
+        libraryUtils.registerBook(bookTitle);
+        myBookTitle = bookTitle;
+        libraryUtils.lendBook(bookTitle, ALICE, JAN_1ST);
+    }
+
+    @Given("a book is currently loaned out to {string}")
+    public void aBookIsCurrentlyLoanedOutTo(String borrowerName) {
+        initializeEmptyDatabaseAndUtility();
+        libraryUtils.registerBorrower(borrowerName);
+        myBorrowerName = borrowerName;
+        libraryUtils.registerBook(DEVOPS_HANDBOOK);
+        libraryUtils.lendBook(DEVOPS_HANDBOOK, borrowerName, JAN_1ST);
+    }
+
+    @Given("a book is loaned to {string}")
+    public void aBookIsLoanedTo(String borrowerName) {
+        myBorrowerName = borrowerName;
+        initializeEmptyDatabaseAndUtility();
+        libraryUtils.registerBook(DEVOPS_HANDBOOK);
+        libraryUtils.registerBorrower(borrowerName);
+        libraryUtils.lendBook(DEVOPS_HANDBOOK, borrowerName, JAN_2ND);
+        myBook = libraryUtils.searchForBookByTitle(DEVOPS_HANDBOOK);
+    }
+
+    @Then("the loan is deleted as well")
+    public void theLoanIsDeletedAsWell() {
+        final Loan loan = libraryUtils.searchForLoanByBook(myBook);
+        Assert.assertTrue(loan.isEmpty());
+    }
+
+    @Given("a book, {string}, is loaned out")
+    public void aBookIsLoanedOut(String bookTitle) {
+        initializeEmptyDatabaseAndUtility();
+        myBookTitle = bookTitle;
+        libraryUtils.registerBook(myBookTitle);
+        libraryUtils.registerBorrower(ALICE);
+        libraryUtils.lendBook(bookTitle, ALICE, JAN_1ST);
+    }
+
+    @Given("some books are checked out")
+    public void some_books_are_checked_out() {
+        initializeEmptyDatabaseAndUtility();
+        // register a, b, and c
+        libraryUtils.registerBook("a");
+        libraryUtils.registerBook("b");
+        libraryUtils.registerBook("c");
+        libraryUtils.registerBorrower("someone");
+
+        // loan out b
+        libraryUtils.lendBook("b", "someone", JAN_1ST);
+    }
+
+    @When("a librarian lists the available books")
+    public void a_librarian_lists_the_available_books() {
+        allBooks = libraryUtils.listAvailableBooks();
+    }
+
+    @Then("the system responds with only the available books")
+    public void the_system_responds_with_only_the_available_books() {
+        List<Book> expectedBooks = new ArrayList<>();
+        expectedBooks.add(new Book(1, "a"));
+        expectedBooks.add(new Book(3, "c"));
+        assertEquals(expectedBooks, allBooks);
+    }
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/library/BookCheckOutStepDefs.java
+================================================
+package com.coveros.training.library;
+
+import com.coveros.training.library.domainobjects.Book;
+import com.coveros.training.library.domainobjects.Borrower;
+import com.coveros.training.library.domainobjects.LibraryActionResults;
+import com.coveros.training.library.domainobjects.Loan;
+import com.coveros.training.persistence.IPersistenceLayer;
+import com.coveros.training.persistence.PersistenceLayer;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+public class BookCheckOutStepDefs {
+
+    public static final String ANOTHER_BOOK = "another book";
+    private Book myBook = Book.createEmpty();
+    private String myBookTitle = "";
+    private String myBorrowerName = "";
+    private Borrower myBorrower = Borrower.createEmpty();
+    private final Date JAN_1ST = Date.valueOf(LocalDate.of(2018, Month.JANUARY, 1));
+    private LibraryUtils libraryUtils = LibraryUtils.createEmpty();
+    private final Date JAN_2ND = Date.valueOf(LocalDate.of(2018, Month.JANUARY, 2));
+    private LibraryActionResults libraryActionResults = LibraryActionResults.NULL;
+    private final IPersistenceLayer pl = new PersistenceLayer();
+
+    /**
+     * Set up the databases, clear them, initialize the Library Utility with them.
+     */
+    private void initializeEmptyDatabaseAndUtility() {
+        pl.cleanAndMigrateDatabase();
+        libraryUtils = new LibraryUtils();
+    }
+
+    @Given("^a borrower, \"([^\"]*)\", is registered$")
+    public void aBorrowerIsRegistered(String borrowerName) {
+        initializeEmptyDatabaseAndUtility();
+
+        libraryUtils.registerBorrower(borrowerName);
+        myBorrower = libraryUtils.searchForBorrowerByName(borrowerName);
+    }
+
+    @And("^a book, \"([^\"]*)\" is available for borrowing$")
+    public void aBookIsAvailableForBorrowing(String title) {
+        libraryUtils.registerBook(title);
+        myBook = libraryUtils.searchForBookByTitle(title);
+    }
+
+    @When("^they try to check out the book on \"([^\"]*)\"$")
+    public void theyTryToCheckOutTheBookOn(String date) {
+        Date borrowTime = Date.valueOf(LocalDate.parse(date, DateTimeFormatter.ofPattern("MMMM dd, yyyy")));
+        libraryUtils.lendBook(myBook, myBorrower, borrowTime);
+    }
+
+    @Then("^the system indicates the book is loaned to them on that date$")
+    public void theSystemIndicatesTheBookIsLoanedToThemOnThatDate() {
+        final Loan loan = libraryUtils.searchForLoanByBook(myBook);
+        Assert.assertEquals(Date.valueOf("2018-01-31"), loan.checkoutDate);
+    }
+
+    @When("^they try to check out the book$")
+    public void theyCheckOutTheBook() {
+        libraryUtils.lendBook(myBook, myBorrower, JAN_2ND);
+    }
+
+    @Then("^the system indicates the book is loaned to them on some date$")
+    public void theSystemIndicatesTheBookIsLoanedToThemOnSomeDate() {
+        final Loan loan = libraryUtils.searchForLoanByBook(myBook);
+        Assert.assertEquals(Date.valueOf("2018-01-31"), loan.checkoutDate);
+    }
+
+    @Given("^an individual, \"([^\"]*)\", is not registered$")
+    public void anIndividualIsNotRegistered(String borrower) {
+        initializeEmptyDatabaseAndUtility();
+    }
+
+    @When("^they try to check out a book, \"([^\"]*)\" that is available$")
+    public void theyTryToCheckOutABookThatIsAvailable(String title) {
+        libraryUtils.registerBook(title);
+        myBook = libraryUtils.searchForBookByTitle(title);
+
+        libraryActionResults = libraryUtils.lendBook(myBook, myBorrower, JAN_2ND);
+    }
+
+    @Then("^the system indicates that they are not registered$")
+    public void theSystemIndicatesThatHeIsNotRegistered() {
+        Assert.assertEquals(LibraryActionResults.BORROWER_NOT_REGISTERED, libraryActionResults);
+    }
+
+    @Given("^and a book, \"([^\"]*)\" is already checked out to \"([^\"]*)\"$")
+    public void andABookIsAlreadyCheckedOutTo(String title, String borrower_b) {
+        libraryUtils.registerBorrower(borrower_b);
+        libraryUtils.registerBook(title);
+        final Book book = libraryUtils.searchForBookByTitle(title);
+        final Borrower borrower = libraryUtils.searchForBorrowerByName(borrower_b);
+
+        // a previous person already checked it out.
+        libraryUtils.lendBook(book, borrower, JAN_1ST);
+
+        // now we try to check it out.  It should indicate BOOK_CHECKED_OUT.
+        libraryActionResults = libraryUtils.lendBook(book, myBorrower, JAN_2ND);
+    }
+
+    @Then("^the system indicates that the book is not available$")
+    public void theSystemIndicatesThatTheBookIsNotAvailable() {
+        Assert.assertEquals(LibraryActionResults.BOOK_CHECKED_OUT, libraryActionResults);
+    }
+
+    @Given("a borrower, {string}, has one book, {string}, already borrowed")
+    public void a_borrower_has_one_book_already_borrowed(String borrowerName, String bookTitle) {
+        initializeEmptyDatabaseAndUtility();
+        myBookTitle = bookTitle;
+        myBorrowerName = borrowerName;
+        libraryUtils.registerBook(myBookTitle);
+        libraryUtils.registerBorrower(borrowerName);
+        libraryUtils.lendBook(bookTitle, borrowerName, JAN_1ST);
+    }
+
+    @When("they borrow another book")
+    public void they_borrow_another_book() {
+        libraryUtils.registerBook(ANOTHER_BOOK);
+        libraryUtils.lendBook(ANOTHER_BOOK, myBorrowerName, JAN_1ST);
+    }
+
+    @Then("they have two books currently borrowed")
+    public void they_have_two_books_currently_borrowed() {
+        final Borrower borrower = libraryUtils.searchForBorrowerByName(myBorrowerName);
+        final List<Loan> loans = libraryUtils.searchForLoanByBorrower(borrower);
+        Assert.assertEquals(2, loans.size());
+    }
+
+    @When("another borrower, {string} tries to borrow that book")
+    public void another_borrower_tries_to_borrow_that_book(String string) {
+        libraryUtils.registerBorrower("someone else");
+        libraryActionResults = libraryUtils.lendBook(myBookTitle, "someone else", JAN_1ST);
+    }
+
+    @Then("they cannot borrow it because it is already checked out")
+    public void they_cannot_borrow_it_because_it_is_already_checked_out() {
+        Assert.assertEquals(LibraryActionResults.BOOK_CHECKED_OUT, libraryActionResults);
+    }
+
+
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/math/AckermannStepDefs.java
+================================================
+package com.coveros.training.math;
+
+import com.coveros.training.mathematics.Ackermann;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+import java.math.BigInteger;
+
+public class AckermannStepDefs {
+
+    private BigInteger result;
+
+    @When("I calculate Ackermann's formula using {int} and {int}")
+    public void i_calculate_ackermann_s_formula_using_and(int m, int n) {
+        result = Ackermann.calculate(m, n);
+    }
+
+    @Then("the Ackermann result is {int}")
+    public void i_get(int expected) {
+        final BigInteger bigExpected = BigInteger.valueOf(expected);
+        Assert.assertEquals(bigExpected, result);
+    }
+
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/math/FibonacciStepDefs.java
+================================================
+package com.coveros.training.math;
+
+import com.coveros.training.mathematics.Fibonacci;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+public class FibonacciStepDefs {
+
+    private long result;
+
+    @When("I calculate the {int} Fibonacci number")
+    public void i_calculate_the(Integer nth_fibonacci_number) {
+        result = Fibonacci.calculate(nth_fibonacci_number);
+    }
+
+    @Then("the Fibonacci result is {long}")
+    public void iGetResult(long expected_result) {
+        Assert.assertEquals(expected_result, result);
+    }
+}
+
+
+
+================================================
+FILE: src/bdd_test/java/com/coveros/training/math/MathStepDefs.java
+================================================
+package com.coveros.training.math;
+
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.Assert;
+
+public class MathStepDefs {
+
+    private int calculated_total;
+
+    @Given("^my website is running and can do math$")
+    public void myWebsiteIsRunningAndCanDoMath() {
+        // just a comment.  No state to set up.
+    }
+
+    @When("I add {int} to {int}")
+    public void i_add_to(int num1, int num2) {
+        calculated_total = num1 + num2;
+    }
+
+    @Then("the result should be {int}")
+    public void the_result_should_be(int total) {
+        Assert.assertEquals(total, calculated_total);
+    }
+
+}
+
+
+
+================================================
+FILE: src/bdd_test/resources/authentication/login_user.feature
+================================================
+Feature: A user may login to the system.
+
+    As a registered user of the system,
+    I want to be able to login,
+    so I can access the system's capabilities.
+
+    # See register_user.feature for the registration portion of authentication
+
+    Scenario: Entering proper credentials authenticates a user to the system.
+        Given "adam" is registered in the system with the password "LpcVWwRkWSNVH"
+        When when a user authenticates with "adam" and "LpcVWwRkWSNVH"
+        Then The system decides that they are authenticated.
+
+    Scenario Outline: Entering invalid credentials fails to authenticate a user to the system.
+        Given "adam" is registered in the system with the password "LpcVWwRkWSNVH"
+        When when a user authenticates with "<username>" and "<password>"
+        Then The system decides that they are not authenticated, because <note>
+        Examples:
+            | username | password      | note                                        |
+            | adam     | lpcvwwrkwsnvh | the password is correct, but all lower-case |
+            | adamee   | LpcVWwRkWSNVH | we used an incorrect username               |
+            | adam     | LpcVWwR       | we used a shortened version of the password |
+            | ALICE    | LpcVWwRkWSNVH | the username was made all upper-case        |
+
+
+================================================
+FILE: src/bdd_test/resources/authentication/register_user.feature
+================================================
+Feature: A user may register themselves to the system.
+
+    As a potential user of the system,
+    I want to be able to register myself,
+    so that I can subsequently login to the system
+
+#    Narrative: A user wants to access the system, but they can only do it if they have
+#    an account on it.  To register an account, they simply provide
+#    a username and a password.  The password should be sufficiently complex, and the
+#    username must not have already been registered.  Later, when they want to
+#    authenticate themselves, they must enter that same username and password.
+
+    Scenario: A user registers themselves to the system with a good password
+        Given a user "adam" is not currently registered in the system
+        When they register with that username and use the password "lpcvwwrkwsnvh"
+        Then they become registered
+
+    Scenario Outline: A user might try different passwords, but we are making sure they are excellent before we allow it.
+        Given a user is in the midst of registering for an account
+        When they try registering with the password <password>
+        Then the system returns that the password has insufficient entropy
+        Examples:
+            | password                |
+            | typical_password_123    |
+            | aaaaaaaaaa              |
+            | password123             |
+            | really_totally_long     |
+
+    Scenario Outline: A user is unable to register due to blatantly bad password
+        Given a user "adam" is not currently registered in the system
+        When they enter their username and provide a poor password of <password>
+        Then they fail to register and the system indicates a response: <response>
+        Examples:
+            | password | response       |
+            | a        | too short      |
+            | 123      | too short      |
+            | aaaaa    | too short      |
+
+    Scenario: A user is unable to register due to the username already existing
+        Given a username of "adam" is registered
+        When a user tries to register with that same name
+        Then the system indicates a failure to register
+
+
+
+================================================
+FILE: src/bdd_test/resources/cartesianproduct/cartesianproduct.feature
+================================================
+Feature: Allow a user to generate a cartesian product from lists
+
+    As a tester
+    I want to calculate all combinations of items from multiple lists
+    so that I can create a decision table to test all inputs
+
+#    Narrative: a testing technique is to come up with all combinations of inputs
+#    to a system in order to verify that all possibilities are accounted for.  Once
+#    you have more than a couple inputs to consider, calculating all the combinations
+#    is a tedious practice, which could easily lead to missing certain combinations.
+#    This calculator will produce the correct result.
+
+    Scenario: happy path - a typical set of lists
+        Given lists as follows:
+            | list    |
+            | a,b     |
+            | 1,2,3,4 |
+            | e,f     |
+        When we calculate the combinations
+        Then the resulting combinations should be as follows:
+            """
+            (a, 1, e), (a, 1, f), (a, 2, e), (a, 2, f),
+            (a, 3, e), (a, 3, f), (a, 4, e), (a, 4, f),
+            (b, 1, e), (b, 1, f), (b, 2, e), (b, 2, f),
+            (b, 3, e), (b, 3, f), (b, 4, e), (b, 4, f)
+            """
+
+
+================================================
+FILE: src/bdd_test/resources/expenses/alcohol.feature
+================================================
+Feature: calculating the portion of a restaurant check that is alcohol-related
+
+    As someone entering an expense at a restaurant
+    I want to be able to precisely calculate the amount of the check for the alcohol
+    So that I can divide up the check as required when entering expenses
+
+#    Narrative: When entering an expense at a restaurant, government guidelines require
+#    that the expense is split up precisely between food and alcohol.  This is not
+#    as straightforward as you might immediately think.  For example if the bill is
+#    for $50 and you spent $7 on a beer, the expense isn't just $7 for the beer, it
+#    also has to consider the alcohol portion of the tip and tax.
+
+    Scenario: Ordering a beer with dinner
+        Given a dinner with the following prices in dollars:
+            | subtotal | food total | tip | tax  |
+            | 33.47    | 24.48      | 7   | 3.99 |
+        When I calculate the alcohol-related portion
+        Then I get the following results:
+            | total food price | total alcohol price | food ratio |
+            | 32.52            | 11.94               | 0.7314     |
+
+
+
+================================================
+FILE: src/bdd_test/resources/library/add_and_delete_books.feature
+================================================
+Feature: Librarians may add and delete books
+
+    As a librarian,
+    I want to be able to add and delete books,
+    So that I have control over the inventory of my library
+
+    Scenario: Can successfully add a book
+        Given a book, "The DevOps Handbook", is not currently registered in the system
+        When a librarian registers that book
+        Then the system has the book registered
+
+    Scenario: Can successfully remove a book
+        Given a book, "The DevOps Handbook", is currently registered in the system
+        When a librarian deletes that book
+        Then the system does not have the book registered
+
+    Scenario: Cannot add a book that already exists
+        Given a book, "The DevOps Handbook", is currently registered in the system
+        When a librarian registers that book
+        Then the system reports an error indicating that the book is already registered
+
+    Scenario: Cannot remove a book that doesn't exist
+        Given a book, "The DevOps Handbook", is not currently registered in the system
+        When a librarian deletes that book
+        Then the system reports an error indicating that the book cannot be deleted because it was never registered
+
+    Scenario: Can delete a book that is loaned out
+        Given a book, "The DevOps Handbook", is currently loaned out
+        When a librarian deletes that book
+        Then the system does not have the book registered
+
+    Scenario: If a book is deleted, then related loans are as well
+        Given a book, "The DevOps Handbook", is loaned out
+        When a librarian deletes that book
+        Then the loan is deleted as well
+
+
+
+
+
+
+================================================
+FILE: src/bdd_test/resources/library/add_and_delete_borrowers.feature
+================================================
+Feature: Librarians may add and delete borrowers
+
+    As a librarian,
+    I want to be able to add and delete borrowers,
+    So that I have control over who is allowed to borrow from the library
+
+    Scenario: Can successfully add a borrower
+        Given a borrower, "alice", is not currently registered in the system
+        When a librarian registers that borrower
+        Then the system has the borrower registered
+
+    Scenario: Can successfully remove a borrower
+        Given a borrower, "alice", is currently registered in the system
+        When a librarian deletes that borrower
+        Then the system does not have the borrower registered
+
+    Scenario: Cannot add a borrower that already exists
+        Given a borrower, "alice", is currently registered in the system
+        When a librarian registers that borrower
+        Then the system reports an error indicating that the borrower is already registered
+
+    Scenario: Cannot remove a borrower that doesn't exist
+        Given a borrower, "alice", is not currently registered in the system
+        When a librarian deletes that borrower
+        Then the system reports an error indicating that the borrower cannot be deleted because he or she was never registered
+
+    Scenario: Can delete a borrower that has a loan
+        Given a book is currently loaned out to "alice"
+        When a librarian deletes that borrower
+        Then the system does not have the borrower registered
+
+     Scenario: If a borrower is deleted, then their loan is too
+         Given a book is loaned to "alice"
+         When a librarian deletes that borrower
+         Then the loan is deleted as well
+
+
+
+
+
+================================================
+FILE: src/bdd_test/resources/library/check_out_a_book.feature
+================================================
+Feature: A librarian may lend a book from the library
+
+    As a librarian,
+    I would like to lend a book
+    so that patrons may enjoy it outside the library.
+
+#    Narrative: A county library system has many books available for borrowing.  If you
+#    live in that county, and you have registered for a library card, you are able
+#    to borrow books.  The system shall provide the capability to lend out books.
+#    The librarians are in control of lending out books.
+
+    Scenario: A registered patron checks out a book
+        Given a borrower, "alice", is registered
+        And a book, "Specification By Example" is available for borrowing
+        When they try to check out the book on "January 31, 2018"
+        Then the system indicates the book is loaned to them on that date
+
+    Scenario: A non-registered person should not be able to borrow a book
+        Given an individual, "bob", is not registered
+        When they try to check out a book, "BDD in Action" that is available
+        Then the system indicates that they are not registered
+
+    Scenario: A registered borrower cannot borrow a non-available book
+        Given a borrower, "alice", is registered
+        And and a book, "Specification By Example" is already checked out to "bob"
+        When they try to check out the book
+        Then the system indicates that the book is not available
+
+    Scenario: a borrower can borrow more than one book
+        Given a borrower, "alice", has one book, "The DevOps Handbook", already borrowed
+        When they borrow another book
+        Then they have two books currently borrowed
+
+    Scenario: a book can only be loaned to one person
+        Given a borrower, "alice", has one book, "The DevOps Handbook", already borrowed
+        When another borrower, "bob" tries to borrow that book
+        Then they cannot borrow it because it is already checked out
+
+
+
+
+================================================
+FILE: src/bdd_test/resources/library/list_and_search_books.feature
+================================================
+Feature: Librarians may list and search books
+
+    As a librarian,
+    I want to be able to list and search books,
+    So that I can review the inventory of my library
+
+    Scenario: Can list all the books
+        Given a library with the following books registered: a, b, c
+        When a librarian lists all the registered books
+        Then the whole list of books is returned
+
+    Scenario: Can search a book by title
+        Given a book, "The DevOps Handbook", is currently registered in the system
+        When a librarian searches by that title
+        Then the system returns the book's full data
+
+    Scenario: Can search a book by id
+        Given a book, "The DevOps Handbook", is currently registered in the system
+        When a librarian searches by its id
+        Then the system returns the book's full data
+
+    Scenario: Should return an empty result if search by id finds nothing
+        Given no books are registered in the system
+        When a librarian searches for a book by id 1
+        Then the system returns an empty result for the book
+
+    Scenario: Should return an empty result if search by title finds nothing
+        Given no books are registered in the system
+        When a librarian searches for a book by title of "The DevOps Handbook"
+        Then the system returns an empty result for the book
+
+    Scenario: Receive an appropriate message if listing all books, but no books in library
+        Given no books are registered in the system
+        When a librarian lists all the registered books
+        Then the system reports that there are no books in the system
+
+    Scenario: Can obtain a list of available books
+        Given some books are checked out
+        When a librarian lists the available books
+        Then the system responds with only the available books
+
+
+
+
+
+
+================================================
+FILE: src/bdd_test/resources/library/list_and_search_borrowers.feature
+================================================
+Feature: Librarians may list and search borrowers
+
+    As a librarian,
+    I want to be able to list and search borrowers,
+    So that I can review the borrowers of my library
+
+    Scenario: Can list all the borrowers
+        Given a library with the following borrowers registered: a, b, c
+        When a librarian lists all the registered borrowers
+        Then the whole list of borrowers is returned
+
+    Scenario: Can search a borrower by name
+        Given a borrower, "alice", is currently registered in the system
+        When a librarian searches by that name
+        Then the system returns the borrower's full data
+
+    Scenario: Can search a borrower by id
+        Given a borrower, "alice", is currently registered in the system
+        When a librarian searches by that id
+        Then the system returns the borrower's full data
+
+    Scenario: Should return an empty result if search by id finds nothing
+        Given no borrowers are registered in the system
+        When a librarian searches for a borrower by id 1
+        Then the system returns an empty result for the borrower
+
+    Scenario: Should return an empty result if search by title finds nothing
+        Given no borrowers are registered in the system
+        When a librarian searches for a borrower by name of "alice"
+        Then the system returns an empty result for the borrower
+
+    Scenario: Receive an appropriate message if listing all borrowers, but no borrowers in library
+        Given no borrowers are registered in the system
+        When a librarian lists all the borrowers
+        Then the system returns an empty list of borrowers
+
+
+
+
+================================================
+FILE: src/bdd_test/resources/math/ackerman.feature
+================================================
+Feature: Calculation of Ackermann's function
+
+    As a cool computer kid
+    I want to calculate the result of Ackermann's function for various values
+    So that I can see an early example of a total computable function
+
+    Narrative:
+        from Wikipedia (https://en.wikipedia.org/wiki/Ackermann_function)
+        In computability theory, the Ackermann function, named after Wilhelm Ackermann, is one of the simplest
+        and earliest-discovered examples of a total computable function that is not primitive recursive. All primitive
+        recursive functions are total and computable, but the Ackermann function illustrates that not all total
+        computable functions are primitive recursive.
+
+        After Ackermann's publication[2] of his function (which had three nonnegative integer arguments), many
+        authors modified it to suit various purposes, so that today "the Ackermann function" may refer to any
+        of numerous variants of the original function.
+
+        from Rosetta Code (https://rosettacode.org/wiki/Ackermann_function)
+        The Ackermann function is a classic example of a recursive function, notable especially because it
+        is not a primitive recursive function. It grows very quickly in value, as does the size of its call tree.
+
+    Scenario Outline: I should be able to calculate a few results per Ackermann's formula
+        When I calculate Ackermann's formula using <m> and <n>
+        Then the Ackermann result is <result>
+        Examples:
+          |  m    |    n        |     result    |
+          |  0    |    0        |       1       |
+          |  1    |    1        |       3       |
+          |  1    |    2        |       4       |
+
+
+================================================
+FILE: src/bdd_test/resources/math/Fibonacci.feature
+================================================
+Feature: Calculation of Fibonacci numbers
+
+    As an aspiring mathematically-oriented beekeeper
+    I want to be able to calculate Fibonacci numbers
+    So that I can count the idealized number of honeybees in my hive
+
+    Narrative:
+        from Wikipedia (https://en.wikipedia.org/wiki/Fibonacci_number)
+        Fibonacci numbers are strongly related to the golden ratio: Binet's formula expresses the nth Fibonacci
+        number in terms of n and the golden ratio, and implies that the ratio of two consecutive Fibonacci numbers
+        tends to the golden ratio as n increases.
+
+        Fibonacci numbers are named after Italian mathematician Leonardo of Pisa, later known as Fibonacci. They appear
+        to have first arisen as early as 200 BC in work by Pingala on enumerating possible patterns of poetry formed
+        from syllables of two lengths. In his 1202 book Liber Abaci, Fibonacci introduced the sequence to Western
+        European mathematics,[6] although the sequence had been described earlier in Indian mathematics.[7][8][9]
+
+        Fibonacci numbers appear unexpectedly often in mathematics, so much so that there is an entire journal
+        dedicated to their study, the Fibonacci Quarterly. Applications of Fibonacci numbers include computer
+        algorithms such as the Fibonacci search technique and the Fibonacci heap data structure, and graphs called
+        Fibonacci cubes used for interconnecting parallel and distributed systems.
+
+        They also appear in biological settings, such as branching in trees, the arrangement of leaves on a stem,
+        the fruit sprouts of a pineapple, the flowering of an artichoke, an uncurling fern and the arrangement
+        of a pine cone's bracts.
+
+    Scenario Outline: Calculating some Fibonacci numbers
+        When I calculate the <nth> Fibonacci number
+        Then the Fibonacci result is <result>
+        Examples:
+        |   nth                    |    result       |
+        |           0              |      0          |
+        |           1              |      1          |
+        |           2              |      1          |
+        |           3              |      2          |
+        |           20             |      6765       |
+
+
+================================================
+FILE: src/bdd_test/resources/math/math.feature
+================================================
+Feature: Adding of numbers
+
+    As a user who has trouble with doing math in their head,
+    I want to add some numbers
+    so I know the sums
+
+    Scenario Outline: Add two numbers <num1> and <num2>
+        Given my website is running and can do math
+        When I add <num1> to <num2>
+        Then the result should be <total>
+        Examples:
+            | num1 | num2 | total |
+            | 2    | 3    | 5     |
+            | 9    | 6    | 15    |
+            | 2    | -3   | -1    |

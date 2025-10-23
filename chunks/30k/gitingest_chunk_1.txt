@@ -1,0 +1,2858 @@
+Directory structure:
+└── 7ep-demo/
+    ├── README.md
+    ├── DIRECTORY_README.txt
+    ├── gradle.properties
+    ├── gradlew
+    ├── gradlew.bat
+    ├── LICENSE
+    ├── Pipfile
+    ├── desktop_app/
+    │   ├── README.txt
+    │   ├── gradlew
+    │   ├── gradlew.bat
+    │   ├── gradle/
+    │   │   └── wrapper/
+    │   │       └── gradle-wrapper.properties
+    │   └── src/
+    │       ├── main/
+    │       │   ├── java/
+    │       │   │   └── com/
+    │       │   │       └── coveros/
+    │       │   │           └── training/
+    │       │   │               └── autoinsurance/
+    │       │   │                   ├── AutoInsuranceAction.java
+    │       │   │                   ├── AutoInsuranceProcessor.java
+    │       │   │                   ├── AutoInsuranceScriptServer.java
+    │       │   │                   ├── AutoInsuranceUI.java
+    │       │   │                   ├── InvalidClaimsException.java
+    │       │   │                   └── WarningLetterEnum.java
+    │       │   └── resources/
+    │       │       └── log4j2.xml
+    │       └── test/
+    │           └── java/
+    │               └── com/
+    │                   └── coveros/
+    │                       └── training/
+    │                           └── autoinsurance/
+    │                               ├── AutoInsuranceActionTests.java
+    │                               ├── AutoInsuranceProcessorTests.java
+    │                               ├── AutoInsuranceScriptClient.java
+    │                               ├── DesktopTester.java
+    │                               ├── DesktopUiTests.java
+    │                               └── ExecutionDataClient.java
+    ├── docs/
+    │   ├── README.txt
+    │   ├── coveros_text.txt
+    │   ├── api_testing/
+    │   │   ├── README.txt
+    │   │   ├── api_testing_with_curl.txt
+    │   │   ├── api_testing_with_soapui.txt
+    │   │   ├── soapui_demo_tests.xml
+    │   │   └── tester.postman_collection.json
+    │   ├── ci_and_cd/
+    │   │   ├── README.txt
+    │   │   ├── ci_and_cd_for_localhost.txt
+    │   │   ├── install_docker_centos.txt
+    │   │   ├── jenkins_box_guide.txt
+    │   │   ├── ssl.txt
+    │   │   ├── ui_test_box.txt
+    │   │   └── virtualbox_networking.txt
+    │   ├── dev_notes/
+    │   │   ├── README.txt
+    │   │   ├── architecture.txt
+    │   │   ├── monitoring_tomcat.txt
+    │   │   ├── pre-push
+    │   │   └── README_db.txt
+    │   ├── performance_testing/
+    │   │   ├── README.txt
+    │   │   └── perf_testing_with_jmeter.txt
+    │   ├── security_testing/
+    │   │   ├── README.txt
+    │   │   └── zap_proxy_security_scanning.txt
+    │   └── ui_testing/
+    │       ├── README.txt
+    │       ├── desktop_automation.txt
+    │       ├── python_selenium_cheat_sheet.txt
+    │       ├── python_selenium_walkthrough.txt
+    │       ├── README_python.txt
+    │       └── running selenium_grid.txt
+    ├── gradle/
+    │   └── wrapper/
+    │       └── gradle-wrapper.properties
+    ├── jenkins/
+    │   └── Jenkinsfile
+    └── src/
+        ├── README.txt
+        ├── api_tests/
+        │   ├── README.txt
+        │   ├── pytest.ini
+        │   └── test_api.py
+        ├── bdd_test/
+        │   ├── README.txt
+        │   ├── java/
+        │   │   └── com/
+        │   │       └── coveros/
+        │   │           └── training/
+        │   │               ├── authentication/
+        │   │               │   ├── LoginStepDefs.java
+        │   │               │   └── RegistrationStepDefs.java
+        │   │               ├── cartesianproduct/
+        │   │               │   └── CartesianProductStepDefs.java
+        │   │               ├── expenses/
+        │   │               │   └── AlcoholStepDefs.java
+        │   │               ├── library/
+        │   │               │   ├── AddDeleteListSearchBooksAndBorrowersStepDefs.java
+        │   │               │   └── BookCheckOutStepDefs.java
+        │   │               └── math/
+        │   │                   ├── AckermannStepDefs.java
+        │   │                   ├── FibonacciStepDefs.java
+        │   │                   └── MathStepDefs.java
+        │   └── resources/
+        │       ├── authentication/
+        │       │   ├── login_user.feature
+        │       │   └── register_user.feature
+        │       ├── cartesianproduct/
+        │       │   └── cartesianproduct.feature
+        │       ├── expenses/
+        │       │   └── alcohol.feature
+        │       ├── library/
+        │       │   ├── add_and_delete_books.feature
+        │       │   ├── add_and_delete_borrowers.feature
+        │       │   ├── check_out_a_book.feature
+        │       │   ├── list_and_search_books.feature
+        │       │   └── list_and_search_borrowers.feature
+        │       └── math/
+        │           ├── ackerman.feature
+        │           ├── Fibonacci.feature
+        │           └── math.feature
+        ├── integration_test/
+        │   ├── java/
+        │   │   └── com/
+        │   │       └── coveros/
+        │   │           └── training/
+        │   │               └── persistence/
+        │   │                   └── PersistenceLayerTests.java
+        │   └── resources/
+        │       └── db_sample_files/
+        │           ├── README.txt
+        │           ├── v2_empty_schema.sql
+        │           ├── v2_one_book_one_borrower.sql
+        │           ├── v2_one_loan.sql
+        │           ├── v2_one_user.sql
+        │           └── v2_three_books_three_borrowers.sql
+        ├── main/
+        │   ├── java/
+        │   │   └── com/
+        │   │       └── coveros/
+        │   │           └── training/
+        │   │               ├── README.txt
+        │   │               ├── authentication/
+        │   │               │   ├── LoginServlet.java
+        │   │               │   ├── LoginUtils.java
+        │   │               │   ├── package-info.java
+        │   │               │   ├── RegisterServlet.java
+        │   │               │   ├── RegistrationUtils.java
+        │   │               │   └── domainobjects/
+        │   │               │       ├── package-info.java
+        │   │               │       ├── PasswordResult.java
+        │   │               │       ├── PasswordResultEnums.java
+        │   │               │       ├── RegistrationResult.java
+        │   │               │       ├── RegistrationStatusEnums.java
+        │   │               │       └── User.java
+        │   │               ├── cartesianproduct/
+        │   │               │   ├── CartesianProduct.java
+        │   │               │   └── package-info.java
+        │   │               ├── expenses/
+        │   │               │   ├── AlcoholCalculator.java
+        │   │               │   ├── AlcoholResult.java
+        │   │               │   ├── DinnerPrices.java
+        │   │               │   └── package-info.java
+        │   │               ├── helpers/
+        │   │               │   ├── AssertionException.java
+        │   │               │   ├── CheckUtils.java
+        │   │               │   ├── package-info.java
+        │   │               │   ├── ServletUtils.java
+        │   │               │   └── StringUtils.java
+        │   │               ├── library/
+        │   │               │   ├── LibraryBookListAvailableServlet.java
+        │   │               │   ├── LibraryBookListSearchServlet.java
+        │   │               │   ├── LibraryBorrowerListSearchServlet.java
+        │   │               │   ├── LibraryLendServlet.java
+        │   │               │   ├── LibraryRegisterBookServlet.java
+        │   │               │   ├── LibraryRegisterBorrowerServlet.java
+        │   │               │   ├── LibraryUtils.java
+        │   │               │   ├── package-info.java
+        │   │               │   └── domainobjects/
+        │   │               │       ├── Book.java
+        │   │               │       ├── Borrower.java
+        │   │               │       ├── LibraryActionResults.java
+        │   │               │       ├── Loan.java
+        │   │               │       └── package-info.java
+        │   │               ├── mathematics/
+        │   │               │   ├── Ackermann.java
+        │   │               │   ├── AckermannIterative.java
+        │   │               │   ├── AckServlet.java
+        │   │               │   ├── Calculator.java
+        │   │               │   ├── Fibonacci.java
+        │   │               │   ├── FibonacciIterative.java
+        │   │               │   ├── FibServlet.java
+        │   │               │   ├── FunctionalField.java
+        │   │               │   ├── MathServlet.java
+        │   │               │   ├── package-info.java
+        │   │               │   └── TailRecursive.java
+        │   │               ├── persistence/
+        │   │               │   ├── DbServlet.java
+        │   │               │   ├── EmptyDataSource.java
+        │   │               │   ├── IPersistenceLayer.java
+        │   │               │   ├── NotImplementedException.java
+        │   │               │   ├── package-info.java
+        │   │               │   ├── ParameterObject.java
+        │   │               │   ├── PersistenceLayer.java
+        │   │               │   ├── SqlData.java
+        │   │               │   └── SqlRuntimeException.java
+        │   │               └── tomcat/
+        │   │                   ├── package-info.java
+        │   │                   └── WebAppListener.java
+        │   ├── javadoc/
+        │   │   └── overview.html
+        │   ├── resources/
+        │   │   ├── README.txt
+        │   │   ├── log4j2.xml
+        │   │   └── db/
+        │   │       ├── README.txt
+        │   │       └── migration/
+        │   │           ├── V1__Create_person_table.sql
+        │   │           └── V2__Rest_of_tables_for_auth_and_library.sql
+        │   └── webapp/
+        │       ├── catalog.css
+        │       ├── catalog.js
+        │       ├── dbhelp.html
+        │       ├── endpointcatalog.html
+        │       ├── index.html
+        │       ├── library.html
+        │       ├── library.js
+        │       ├── main.css
+        │       ├── restfulresult.jsp
+        │       ├── result.jsp
+        │       └── WEB-INF/
+        │           └── web.xml
+        ├── selenified_tests/
+        │   ├── java/
+        │   │   └── com/
+        │   │       └── coveros/
+        │   │           └── training/
+        │   │               └── selenified/
+        │   │                   └── SelenifiedSample.java
+        │   └── resources/
+        │       └── selenified.properties
+        ├── test/
+        │   └── java/
+        │       └── com/
+        │           └── coveros/
+        │               └── training/
+        │                   ├── authentication/
+        │                   │   ├── LoginServletTests.java
+        │                   │   ├── LoginUtilsTests.java
+        │                   │   ├── RegisterServletTests.java
+        │                   │   ├── RegistrationUtilsTests.java
+        │                   │   └── domainobjects/
+        │                   │       ├── PasswordResultTests.java
+        │                   │       ├── RegistrationResultTests.java
+        │                   │       └── UserTests.java
+        │                   ├── helpers/
+        │                   │   ├── CheckUtilsTests.java
+        │                   │   ├── DateUtils.java
+        │                   │   ├── DateUtilsTests.java
+        │                   │   └── StringUtilsTests.java
+        │                   ├── library/
+        │                   │   ├── LendingTests.java
+        │                   │   ├── LibraryBookListAvailableServletTests.java
+        │                   │   ├── LibraryBookListSearchServletTests.java
+        │                   │   ├── LibraryBorrowerListSearchServletTests.java
+        │                   │   ├── LibraryLendServletTests.java
+        │                   │   ├── LibraryRegisterBookServletTests.java
+        │                   │   ├── LibraryRegisterBorrowerServletTests.java
+        │                   │   ├── LibraryUtilsTests.java
+        │                   │   └── domainobjects/
+        │                   │       ├── BookTests.java
+        │                   │       ├── BorrowerTests.java
+        │                   │       └── LoanTests.java
+        │                   ├── mathematics/
+        │                   │   ├── AckermannIterativeParameterizedTests.java
+        │                   │   ├── AckermannParameterizedTests.java
+        │                   │   ├── AckServletTests.java
+        │                   │   ├── CalculatorTests.java
+        │                   │   ├── FibonacciParameterizedTests.java
+        │                   │   ├── FibonacciTests.java
+        │                   │   ├── FibServletTests.java
+        │                   │   └── MathServletTests.java
+        │                   ├── persistence/
+        │                   │   ├── DbServletTests.java
+        │                   │   ├── EmptyDataSourceTests.java
+        │                   │   ├── ParameterObjectTests.java
+        │                   │   └── SqlDataTests.java
+        │                   └── tomcat/
+        │                       └── WebAppListenerTests.java
+        └── ui_tests/
+            ├── README.txt
+            ├── behave/
+            │   ├── README.txt
+            │   ├── setup.cfg
+            │   └── features/
+            │       ├── authentication_ui.feature
+            │       ├── environment.py
+            │       ├── librarian_ui.feature
+            │       └── steps/
+            │           ├── ackermannStepDefs.py
+            │           ├── authenticationStepDefs.py
+            │           ├── fibonacciStepDefs.py
+            │           └── librarianStepDefs.py
+            ├── cs/
+            │   ├── README.txt
+            │   └── testproject/
+            │       ├── testproject.csproj
+            │       ├── testproject.sln
+            │       └── UiTest.cs
+            ├── java/
+            │   ├── README.txt
+            │   ├── gradle.properties
+            │   ├── gradlew
+            │   ├── gradlew.bat
+            │   ├── gradle/
+            │   │   └── wrapper/
+            │   │       └── gradle-wrapper.properties
+            │   └── src/
+            │       ├── main/
+            │       │   └── resources/
+            │       │       └── log4j2.xml
+            │       └── test/
+            │           └── java/
+            │               └── com/
+            │                   └── coveros/
+            │                       └── training/
+            │                           ├── ApiCalls.java
+            │                           ├── HtmlUnitTests.java
+            │                           └── SeleniumTests.java
+            ├── js/
+            │   ├── README.txt
+            │   ├── package.json
+            │   └── test/
+            │       └── test.spec.js
+            └── python/
+                ├── README.txt
+                ├── basic_test.py
+                └── Pipfile
+
+================================================
+FILE: README.md
+================================================
+## Demo - demonstrates an application and tests
+
+This is an application by [Coveros](https://www.coveros.com/) to demonstrate good
+software practices.  As we say in agile... _Working software over comprehensive 
+documentation_ ... but that doesn't mean we can't have pretty good documentation too. 
+
+#### Quick Start:
+
+* Install [Java](https://www.java.com/en/download/) if you don't already have it.
+* Clone or [download](https://github.com/7ep/demo/archive/master.zip) this repo.  (if you download, unzip the file to a directory.)
+* On the command line in the top directory of this repo, run `gradlew apprun`
+* Visit the application with your browser at http://localhost:8080/demo
+
+#### Summary:
+
+Demo consists of a simple web application and tests.  Its goal is to provide 
+an environment suitable for demonstration and practice in valuable development
+techniques.  Some of the techniques exemplified are:
+* [Unit](https://github.com/7ep/demo/blob/master/src/test/java/com/coveros/training/authentication/RegistrationUtilsTests.java) [tests](https://github.com/7ep/demo/blob/master/src/test/java/com/coveros/training/library/LibraryUtilsTests.java) developed by [TDD](https://en.wikipedia.org/wiki/Test-driven_development) using [Junit](https://junit.org/junit5/) as a driver and [Mockito](https://site.mockito.org/) for mocks, with coverage reports.
+* [UI tests](https://github.com/7ep/demo/blob/master/src/ui_tests/behave/features/librarian_ui.feature) using [multiple frameworks](https://github.com/7ep/demo/tree/master/src/ui_tests)
+* [BDD](https://en.wikipedia.org/wiki/Behavior-driven_development) [tests](https://github.com/7ep/demo/blob/master/src/bdd_test/resources/library/check_out_a_book.feature) using gherkin
+  * [Cucumber](https://docs.cucumber.io/) tests, with reports
+  * [Behave](https://behave.readthedocs.io/en/latest/) UI tests that use [Selenium](https://www.selenium.dev/) web driver.
+* [Integration tests](https://github.com/7ep/demo/blob/master/src/integration_test/java/com/coveros/training/persistence/PersistenceLayerTests.java) that test the [H2 database](https://www.h2database.com/html/main.html)
+* [Database versioning](https://github.com/7ep/demo/blob/master/src/main/resources/db/migration/V2__Rest_of_tables_for_auth_and_library.sql), with [Flyway](https://flywaydb.org/)
+* Security analysis using [DependencyCheck](https://www.owasp.org/index.php/OWASP_Dependency_Check)
+* Hot-swap code with [Gretty](https://github.com/gretty-gradle-plugin/gretty)
+* Enhanced type system using [Checker Framework](https://checkerframework.org/)
+* See its [architecture](https://github.com/7ep/demo/blob/master/docs/dev_notes/architecture.txt)
+
+
+Its essential goals:
+* Just works, any platform.
+* As simple as possible
+* Minimal system requirements
+* Fast and easy to install and to run
+* High test coverage
+* Multiple business domains
+* Easy to maintain and improve
+* Well documented
+* High performance
+* Illustrates maximum number of techniques
+* Easy to get up to speed
+
+#### Table of contents:
+1. [Optional dependencies](#optional-dependencies)
+1. [Chromedriver installation notes](#chromedriver-installation-notes)
+1. [Python installation notes](#python-installation-notes)
+1. [To build and run tests](#to-build-and-run-tests)
+1. [To run the application](#to-run-the-web-application)
+1. [To run API and UI tests](#to-run-api-and-ui-tests)
+1. [Summary of relevant Gradle commands](#summary-of-relevant-gradle-commands)
+1. [The whole shebang - CI/CD pipeline](#the-whole-shebang---a-cicd-pipeline)
+
+###### Optional Dependencies
+If you want API testing and Selenium testing, you will need
+to visit these links and download / install the applications found there.
+* [Python](https://www.python.org/downloads/)
+* [Chromedriver](http://chromedriver.chromium.org/downloads)
+* [Chrome internet browser](https://www.google.com/chrome/)
+
+---
+
+#### Chromedriver installation notes
+make sure that the [Chromedriver](https://chromedriver.chromium.org/) executable is installed in one of the directories that is 
+on your path.  To see your path, type the following in a command line: 
+
+on Windows:
+
+    echo %PATH%  
+    
+On Mac/Linux:
+
+    echo $PATH
+    
+If you run the command, `chromedriver` on the command  line, you should get a result similar to this:
+
+    Starting ChromeDriver ...
+        
+#### Python installation notes
+Python can be downloaded [here](https://www.python.org/downloads/)
+
+To run API tests and Selenium tests, an easy way to handle its 
+dependencies is to use *pipenv*.  To get this installed, first download
+[get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run the following on the command line:
+
+    python get-pip.py
+    
+Then,
+
+    pip install pipenv
+   
+And in the demo directory,
+    
+    pipenv install   
+   
+#### To build and run tests:
+On the command line, run the following:
+
+On Mac/Linux
+
+    ./gradlew check
+
+On Windows
+
+    gradlew check
+
+#### To run the web application:
+On the command line, run the following:
+
+On Mac/Linux
+
+    ./gradlew apprun
+
+On Windows
+
+    gradlew apprun
+    
+Then, head to http://localhost:8080/demo    
+    
+
+#### To run API and UI tests:
+Note: The app has to be [already running](#to-run-the-web-application) for these tests to pass, and you _need_
+to have installed [Python] and [Chromedriver].
+
+In a new terminal, separate from the one where the server is running, run the following:
+
+On Mac/Linux
+
+    ./gradlew runAllTests
+
+On Windows
+
+    gradlew runAllTests    
+    
+#### Summary of relevant Gradle commands
+* gradlew coveros - show a cheat sheet of commands for Demo
+* gradlew apprun - runs the application
+* gradlew check - runs all tests possible with only dependency being Java 8.  No need for app to be running.
+* gradlew runAllTests - runs the whole set of tests**  
+* gradlew clean - cleans build products and installs pre-push hook. (see the file in this directory, pre-push)
+* gradlew runBehaveTests - runs the UI tests**
+* gradlew runApiTests - runs the API tests**
+* gradlew generateCucumberReport - runs cucumber and creates a nice-looking HTML report
+* gradlew pitest - runs mutation testing (see http://pitest.org/)
+* gradlew dependencyCheckAnalyze - analyzes security reports for the dependencies of 
+  this project.  See https://www.owasp.org/index.php/OWASP_Dependency_Check
+* gradlew sonarqube - runs static analysis using SonarQube.  Sonarqube must be running - check http://localhost:9000
+* gradlew integrate - runs the database integration tests
+* gradlew startH2Console - Starts a console to examine the H2 database file.  (user and
+  password are empty, URL to use is jdbc:h2:./build/db/training)
+* gradlew <task 1>...<task N> taskTree - a utility that will show the task tree for a particular task
+
+
+  ** Requires the app to be running 
+     (usually in another terminal) and all optional dependencies installed.
+    
+#### The whole shebang - a CI/CD pipeline
+
+Details on building out a CI/CD pipeline are found in the "docs/ci_and_cd" directory.
+For example, to set it all up on a [local Windows box](https://raw.githubusercontent.com/7ep/demo/master/docs/ci_and_cd/ci_and_cd_for_localhost.txt) 
+
+###### Features of the pipeline:
+* A fully functioning and documented demonstration CI/CD pipeline using Jenkins.
+* BDD tests run with a report generated
+* Static analysis quality-gating using SonarQube
+* UI tests running on Chrome
+* Performance testing with Jmeter
+* Security analysis with OWASP's "DependencyCheck"
+* Complex commands wrapped simply using Gradle
+* Mutation testing with Pitest
+* Javadocs built
+
+
+
+---
+
+## Screenshots:
+![Jenkins pipeline](https://c2.staticflickr.com/8/7889/33202009658_11422b7f20_b.jpg)
+
+![Zap attach proxy](https://c2.staticflickr.com/8/7905/33202009438_8f367e20ec_o.png)
+
+![SonarQube analysis](https://c2.staticflickr.com/8/7823/33202009548_e678128200_b.jpg)
+
+![Running performance tests](https://c2.staticflickr.com/8/7854/47077017751_7e045f68dd_b.jpg)
+
+
+
+================================================
+FILE: DIRECTORY_README.txt
+================================================
+Directories and files at the top level:
+
+Directories
+-----------
+desktop_app  :   a project to demonstrate testing of desktop apps
+docs         :   documents related to this application
+gradle       :   necessary wrapper files and some capabilities related to certain tests
+jenkins      :   holds the Jenkinsfile for CI/CD
+src          :   has the application's source code and all test code
+
+Files
+-----
+.gitattributes          :    certain configuration settings for Git
+.gitignore              :    files and directories we don't want stored in Git
+build.gradle            :    the primary Gradle configuration file
+gradlew / gradlew.bat   :    runs a "wrapper" version of gradle so that
+                             it is not necessary to have gradle installed to run it
+LICENSE                 :    the license for the application
+Pipfile, Pipefile.lock  :    used by Pipenv to list needed dependencies
+DIRECTORY_README.txt    :    this file
+README.md               :    a description of the project and how to use it
+
+
+================================================
+FILE: gradle.properties
+================================================
+projectname=Demo
+Description=A demonstration of a web application with CI/CD
+version=1.0.0
+org.gradle.daemon=true
+#
+#If you want to specify the path to chromedriver.
+#chromedriver.path=C:/Users/foo/Downloads/chromedriver_win32/chromedriver.exe
+#chromedriver.path=/home/foo/Downloads/chromedriver_linux/chromedriver
+
+# if you want to debug gradle, this will open a port on 5006 when the
+# daemon is running.
+#org.gradle.jvmargs=-XX:MaxPermSize=4g -XX:+HeapDumpOnOutOfMemoryError -Xmx4g -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006
+
+#no need for colorful output and progress bars.  plain will do.
+org.gradle.console=plain
+org.gradle.workers.max=1
+
+# Setting the memory config explicitly
+org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+
+
+
+================================================
+FILE: gradlew
+================================================
+#!/usr/bin/env sh
+
+#
+# Copyright 2015 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+##############################################################################
+##
+##  Gradle start up script for UN*X
+##
+##############################################################################
+
+# Attempt to set APP_HOME
+# Resolve links: $0 may be a link
+PRG="$0"
+# Need this for relative symlinks.
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`"/$link"
+    fi
+done
+SAVED="`pwd`"
+cd "`dirname \"$PRG\"`/" >/dev/null
+APP_HOME="`pwd -P`"
+cd "$SAVED" >/dev/null
+
+APP_NAME="Gradle"
+APP_BASE_NAME=`basename "$0"`
+
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD="maximum"
+
+warn () {
+    echo "$*"
+}
+
+die () {
+    echo
+    echo "$*"
+    echo
+    exit 1
+}
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "`uname`" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
+    ;;
+esac
+
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+
+
+# Determine the Java command to use to start the JVM.
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses strange locations for the executables
+        JAVACMD="$JAVA_HOME/jre/sh/java"
+    else
+        JAVACMD="$JAVA_HOME/bin/java"
+    fi
+    if [ ! -x "$JAVACMD" ] ; then
+        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+else
+    JAVACMD="java"
+    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+fi
+
+# Increase the maximum file descriptors if we can.
+if [ "$cygwin" = "false" -a "$darwin" = "false" -a "$nonstop" = "false" ] ; then
+    MAX_FD_LIMIT=`ulimit -H -n`
+    if [ $? -eq 0 ] ; then
+        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+            MAX_FD="$MAX_FD_LIMIT"
+        fi
+        ulimit -n $MAX_FD
+        if [ $? -ne 0 ] ; then
+            warn "Could not set maximum file descriptor limit: $MAX_FD"
+        fi
+    else
+        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+    fi
+fi
+
+# For Darwin, add options to specify how the application appears in the dock
+if $darwin; then
+    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+fi
+
+# For Cygwin or MSYS, switch paths to Windows format before running java
+if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
+    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+    CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
+
+    JAVACMD=`cygpath --unix "$JAVACMD"`
+
+    # We build the pattern for arguments to be converted via cygpath
+    ROOTDIRSRAW=`find -L / -maxdepth 1 -mindepth 1 -type d 2>/dev/null`
+    SEP=""
+    for dir in $ROOTDIRSRAW ; do
+        ROOTDIRS="$ROOTDIRS$SEP$dir"
+        SEP="|"
+    done
+    OURCYGPATTERN="(^($ROOTDIRS))"
+    # Add a user-defined pattern to the cygpath arguments
+    if [ "$GRADLE_CYGPATTERN" != "" ] ; then
+        OURCYGPATTERN="$OURCYGPATTERN|($GRADLE_CYGPATTERN)"
+    fi
+    # Now convert the arguments - kludge to limit ourselves to /bin/sh
+    i=0
+    for arg in "$@" ; do
+        CHECK=`echo "$arg"|egrep -c "$OURCYGPATTERN" -`
+        CHECK2=`echo "$arg"|egrep -c "^-"`                                 ### Determine if an option
+
+        if [ $CHECK -ne 0 ] && [ $CHECK2 -eq 0 ] ; then                    ### Added a condition
+            eval `echo args$i`=`cygpath --path --ignore --mixed "$arg"`
+        else
+            eval `echo args$i`="\"$arg\""
+        fi
+        i=`expr $i + 1`
+    done
+    case $i in
+        0) set -- ;;
+        1) set -- "$args0" ;;
+        2) set -- "$args0" "$args1" ;;
+        3) set -- "$args0" "$args1" "$args2" ;;
+        4) set -- "$args0" "$args1" "$args2" "$args3" ;;
+        5) set -- "$args0" "$args1" "$args2" "$args3" "$args4" ;;
+        6) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" ;;
+        7) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" ;;
+        8) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" ;;
+        9) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" "$args8" ;;
+    esac
+fi
+
+# Escape application args
+save () {
+    for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
+    echo " "
+}
+APP_ARGS=`save "$@"`
+
+# Collect all arguments for the java command, following the shell quoting and substitution rules
+eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
+
+exec "$JAVACMD" "$@"
+
+
+
+================================================
+FILE: gradlew.bat
+================================================
+@rem
+@rem Copyright 2015 the original author or authors.
+@rem
+@rem Licensed under the Apache License, Version 2.0 (the "License");
+@rem you may not use this file except in compliance with the License.
+@rem You may obtain a copy of the License at
+@rem
+@rem      https://www.apache.org/licenses/LICENSE-2.0
+@rem
+@rem Unless required by applicable law or agreed to in writing, software
+@rem distributed under the License is distributed on an "AS IS" BASIS,
+@rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@rem See the License for the specific language governing permissions and
+@rem limitations under the License.
+@rem
+
+@if "%DEBUG%" == "" @echo off
+@rem ##########################################################################
+@rem
+@rem  Gradle startup script for Windows
+@rem
+@rem ##########################################################################
+
+@rem Set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" setlocal
+
+set DIRNAME=%~dp0
+if "%DIRNAME%" == "" set DIRNAME=.
+set APP_BASE_NAME=%~n0
+set APP_HOME=%DIRNAME%
+
+@rem Resolve any "." and ".." in APP_HOME to make it shorter.
+for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
+
+@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
+
+@rem Find java.exe
+if defined JAVA_HOME goto findJavaFromJavaHome
+
+set JAVA_EXE=java.exe
+%JAVA_EXE% -version >NUL 2>&1
+if "%ERRORLEVEL%" == "0" goto execute
+
+echo.
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
+
+goto fail
+
+:findJavaFromJavaHome
+set JAVA_HOME=%JAVA_HOME:"=%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+
+if exist "%JAVA_EXE%" goto execute
+
+echo.
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
+
+goto fail
+
+:execute
+@rem Setup the command line
+
+set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+
+
+@rem Execute Gradle
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+
+:end
+@rem End local scope for the variables with windows NT shell
+if "%ERRORLEVEL%"=="0" goto mainEnd
+
+:fail
+rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
+rem the _cmd.exe /c_ return code!
+if  not "" == "%GRADLE_EXIT_CONSOLE%" exit 1
+exit /b 1
+
+:mainEnd
+if "%OS%"=="Windows_NT" endlocal
+
+:omega
+
+
+
+================================================
+FILE: LICENSE
+================================================
+MIT License
+
+Copyright (c) 2019 Byron Katz, Coveros Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+================================================
+FILE: Pipfile
+================================================
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+requests = "*"
+behave = "*"
+pyhamcrest = "*"
+selenium = "*"
+pytest = "*"
+behave2cucumber = "*"
+
+
+
+================================================
+FILE: desktop_app/README.txt
+================================================
+This is a desktop application to demonstrate testing.
+
+To see the application, run: gradlew startui
+
+To run the tests: gradlew test
+
+Review the reports at build/reports/jacoco
+
+
+================================================
+FILE: desktop_app/gradlew
+================================================
+#!/usr/bin/env sh
+
+#
+# Copyright 2015 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+##############################################################################
+##
+##  Gradle start up script for UN*X
+##
+##############################################################################
+
+# Attempt to set APP_HOME
+# Resolve links: $0 may be a link
+PRG="$0"
+# Need this for relative symlinks.
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`"/$link"
+    fi
+done
+SAVED="`pwd`"
+cd "`dirname \"$PRG\"`/" >/dev/null
+APP_HOME="`pwd -P`"
+cd "$SAVED" >/dev/null
+
+APP_NAME="Gradle"
+APP_BASE_NAME=`basename "$0"`
+
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD="maximum"
+
+warn () {
+    echo "$*"
+}
+
+die () {
+    echo
+    echo "$*"
+    echo
+    exit 1
+}
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "`uname`" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
+    ;;
+esac
+
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+
+
+# Determine the Java command to use to start the JVM.
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses strange locations for the executables
+        JAVACMD="$JAVA_HOME/jre/sh/java"
+    else
+        JAVACMD="$JAVA_HOME/bin/java"
+    fi
+    if [ ! -x "$JAVACMD" ] ; then
+        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+else
+    JAVACMD="java"
+    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+fi
+
+# Increase the maximum file descriptors if we can.
+if [ "$cygwin" = "false" -a "$darwin" = "false" -a "$nonstop" = "false" ] ; then
+    MAX_FD_LIMIT=`ulimit -H -n`
+    if [ $? -eq 0 ] ; then
+        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+            MAX_FD="$MAX_FD_LIMIT"
+        fi
+        ulimit -n $MAX_FD
+        if [ $? -ne 0 ] ; then
+            warn "Could not set maximum file descriptor limit: $MAX_FD"
+        fi
+    else
+        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+    fi
+fi
+
+# For Darwin, add options to specify how the application appears in the dock
+if $darwin; then
+    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+fi
+
+# For Cygwin or MSYS, switch paths to Windows format before running java
+if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
+    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+    CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
+
+    JAVACMD=`cygpath --unix "$JAVACMD"`
+
+    # We build the pattern for arguments to be converted via cygpath
+    ROOTDIRSRAW=`find -L / -maxdepth 1 -mindepth 1 -type d 2>/dev/null`
+    SEP=""
+    for dir in $ROOTDIRSRAW ; do
+        ROOTDIRS="$ROOTDIRS$SEP$dir"
+        SEP="|"
+    done
+    OURCYGPATTERN="(^($ROOTDIRS))"
+    # Add a user-defined pattern to the cygpath arguments
+    if [ "$GRADLE_CYGPATTERN" != "" ] ; then
+        OURCYGPATTERN="$OURCYGPATTERN|($GRADLE_CYGPATTERN)"
+    fi
+    # Now convert the arguments - kludge to limit ourselves to /bin/sh
+    i=0
+    for arg in "$@" ; do
+        CHECK=`echo "$arg"|egrep -c "$OURCYGPATTERN" -`
+        CHECK2=`echo "$arg"|egrep -c "^-"`                                 ### Determine if an option
+
+        if [ $CHECK -ne 0 ] && [ $CHECK2 -eq 0 ] ; then                    ### Added a condition
+            eval `echo args$i`=`cygpath --path --ignore --mixed "$arg"`
+        else
+            eval `echo args$i`="\"$arg\""
+        fi
+        i=`expr $i + 1`
+    done
+    case $i in
+        0) set -- ;;
+        1) set -- "$args0" ;;
+        2) set -- "$args0" "$args1" ;;
+        3) set -- "$args0" "$args1" "$args2" ;;
+        4) set -- "$args0" "$args1" "$args2" "$args3" ;;
+        5) set -- "$args0" "$args1" "$args2" "$args3" "$args4" ;;
+        6) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" ;;
+        7) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" ;;
+        8) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" ;;
+        9) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" "$args8" ;;
+    esac
+fi
+
+# Escape application args
+save () {
+    for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
+    echo " "
+}
+APP_ARGS=`save "$@"`
+
+# Collect all arguments for the java command, following the shell quoting and substitution rules
+eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
+
+exec "$JAVACMD" "$@"
+
+
+
+================================================
+FILE: desktop_app/gradlew.bat
+================================================
+@rem
+@rem Copyright 2015 the original author or authors.
+@rem
+@rem Licensed under the Apache License, Version 2.0 (the "License");
+@rem you may not use this file except in compliance with the License.
+@rem You may obtain a copy of the License at
+@rem
+@rem      https://www.apache.org/licenses/LICENSE-2.0
+@rem
+@rem Unless required by applicable law or agreed to in writing, software
+@rem distributed under the License is distributed on an "AS IS" BASIS,
+@rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@rem See the License for the specific language governing permissions and
+@rem limitations under the License.
+@rem
+
+@if "%DEBUG%" == "" @echo off
+@rem ##########################################################################
+@rem
+@rem  Gradle startup script for Windows
+@rem
+@rem ##########################################################################
+
+@rem Set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" setlocal
+
+set DIRNAME=%~dp0
+if "%DIRNAME%" == "" set DIRNAME=.
+set APP_BASE_NAME=%~n0
+set APP_HOME=%DIRNAME%
+
+@rem Resolve any "." and ".." in APP_HOME to make it shorter.
+for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
+
+@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
+
+@rem Find java.exe
+if defined JAVA_HOME goto findJavaFromJavaHome
+
+set JAVA_EXE=java.exe
+%JAVA_EXE% -version >NUL 2>&1
+if "%ERRORLEVEL%" == "0" goto execute
+
+echo.
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
+
+goto fail
+
+:findJavaFromJavaHome
+set JAVA_HOME=%JAVA_HOME:"=%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+
+if exist "%JAVA_EXE%" goto execute
+
+echo.
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
+
+goto fail
+
+:execute
+@rem Setup the command line
+
+set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+
+
+@rem Execute Gradle
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+
+:end
+@rem End local scope for the variables with windows NT shell
+if "%ERRORLEVEL%"=="0" goto mainEnd
+
+:fail
+rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
+rem the _cmd.exe /c_ return code!
+if  not "" == "%GRADLE_EXIT_CONSOLE%" exit 1
+exit /b 1
+
+:mainEnd
+if "%OS%"=="Windows_NT" endlocal
+
+:omega
+
+
+
+================================================
+FILE: desktop_app/gradle/wrapper/gradle-wrapper.properties
+================================================
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-7.0-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/AutoInsuranceAction.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+
+public final class AutoInsuranceAction {
+
+    final int premiumIncreaseDollars;
+    final WarningLetterEnum warningLetterEnum;
+    final boolean isPolicyCanceled;
+    final boolean isError;
+
+    public AutoInsuranceAction(int premiumIncreaseDollars, WarningLetterEnum warningLetterEnum, boolean isPolicyCanceled, boolean isError) {
+
+        this.premiumIncreaseDollars = premiumIncreaseDollars;
+        this.warningLetterEnum = warningLetterEnum;
+        this.isPolicyCanceled = isPolicyCanceled;
+        this.isError = isError;
+    }
+
+
+    public final boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (obj.getClass() != getClass()) {
+            return false;
+        }
+        AutoInsuranceAction rhs = (AutoInsuranceAction) obj;
+        return new EqualsBuilder()
+                .append(premiumIncreaseDollars, rhs.premiumIncreaseDollars)
+                .append(warningLetterEnum, rhs.warningLetterEnum)
+                .append(isPolicyCanceled, rhs.isPolicyCanceled)
+                .append(isError, rhs.isError)
+                .isEquals();
+    }
+
+    public final int hashCode() {
+        // you pick a hard-coded, randomly chosen, non-zero, odd number
+        // ideally different for each class
+        return new HashCodeBuilder(99, 5).
+                append(premiumIncreaseDollars).
+                append(warningLetterEnum).
+                append(isPolicyCanceled).
+                append(isError).
+                toHashCode();
+    }
+
+    public static AutoInsuranceAction createEmpty() {
+        return new AutoInsuranceAction(-1, WarningLetterEnum.NONE, false, false);
+    }
+
+    public static AutoInsuranceAction createErrorResponse() {
+        return new AutoInsuranceAction(-1, WarningLetterEnum.NONE, false, true);
+    }
+
+    public boolean isEmpty() {
+        return this.equals(createEmpty());
+    }
+
+    public final String toString() {
+        return ToStringBuilder.reflectionToString(this);
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/AutoInsuranceProcessor.java
+================================================
+package com.coveros.training.autoinsurance;
+
+class AutoInsuranceProcessor {
+
+    private AutoInsuranceProcessor() {
+        // private constructor to hide the public one.
+    }
+
+    static AutoInsuranceAction process(int claims, int age) {
+
+        if (claims == 0 && age >= 16 && age <= 25) {
+            return new AutoInsuranceAction(50, WarningLetterEnum.NONE, false, false);
+        }
+
+        if (claims == 0 && age >= 26 && age <= 85) {
+            return new AutoInsuranceAction(25, WarningLetterEnum.NONE, false, false);
+        }
+
+        if (claims == 1 && age >= 16 && age <= 25) {
+            return new AutoInsuranceAction(100, WarningLetterEnum.LTR1, false, false);
+        }
+
+        if (claims == 1 && age >= 26 && age <= 85) {
+            return new AutoInsuranceAction(50, WarningLetterEnum.NONE, false, false);
+        }
+
+        if (claims >= 2 && claims <= 4 && age >= 16 && age <= 25) {
+            return new AutoInsuranceAction(400, WarningLetterEnum.LTR2, false, false);
+        }
+
+        if (claims >= 2 && claims <= 4 && age >= 26 && age <= 85) {
+            return new AutoInsuranceAction(200, WarningLetterEnum.LTR3, false, false);
+        }
+
+        if (claims >= 5) {
+            return new AutoInsuranceAction(0, WarningLetterEnum.NONE, true, false);
+        }
+
+        // for any outside condition
+        return AutoInsuranceAction.createErrorResponse();
+
+    }
+
+
+}
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/AutoInsuranceScriptServer.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.beans.Transient;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Arrays;
+
+public class AutoInsuranceScriptServer implements Runnable, Transient {
+
+    static Logger logger = LoggerFactory.getLogger(AutoInsuranceScriptServer.class);
+    private boolean shouldRepeat = true;
+    private AutoInsuranceUI autoInsuranceUI;
+
+    /**
+     * Construct this with access to the UI we can control
+     * @param autoInsuranceUI the UI we are controlling
+     */
+    public AutoInsuranceScriptServer(AutoInsuranceUI autoInsuranceUI) {
+        this.autoInsuranceUI = autoInsuranceUI;
+    }
+
+    public void serverStart() {
+
+        int portNumber = 8000;
+
+
+        while(shouldRepeat) {
+            try (
+                    ServerSocket serverSocket = new ServerSocket(portNumber);
+                    Socket clientSocket = serverSocket.accept();
+            ) {
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(clientSocket.getInputStream()));
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    String result = "OK";
+
+                    final String[] inputTokens =
+                            Arrays.stream(inputLine.split(" "))
+                                    .map(String::toLowerCase).toArray(String[]::new);
+
+                    try {
+                        handleQuit(inputTokens);
+
+                        handleSetCases(inputTokens);
+
+                        result = handleGetCases(result, inputTokens);
+
+                        handleClickActions(inputTokens);
+                    } catch (Exception ex) {
+                        logger.error(ex.getMessage());
+                        result = "FAILURE";
+                    }
+                    out.println(result);
+
+                }
+            } catch (IOException e) {
+                logger.error("Exception caught when trying to listen on port "
+                        + portNumber + " or listening for a connection");
+                logger.error(e.getMessage());
+            }
+        }
+    }
+
+    private void handleClickActions(String[] inputTokens) {
+        if (inputTokens[0].equals("click") && inputTokens[1].equals("calculate")) {
+            autoInsuranceUI.claimsCalcButton.doClick();
+        }
+    }
+
+    private String handleGetCases(String result, String[] inputTokens) {
+        if (inputTokens[0].equals("get")) {
+            if (inputTokens[1].equals("label")) {
+                result = autoInsuranceUI.label.getText();
+            }
+            if (inputTokens[1].equals("age")) {
+                result = autoInsuranceUI.ageField.getText();
+            }
+            if (inputTokens[1].equals("claims")) {
+                result = autoInsuranceUI.claimsDropDown.getSelectedItem().toString();
+            }
+        }
+        return result;
+    }
+
+    private void handleSetCases(String[] inputTokens) {
+        if (inputTokens[0].equals("set")) {
+            if (inputTokens[1].equals("label")) {
+                autoInsuranceUI.setLabel(inputTokens[2]);
+            }
+            if (inputTokens[1].equals("age")) {
+                autoInsuranceUI.setClaimsAge(inputTokens[2]);
+            }
+            if (inputTokens[1].equals("claims")) {
+                final int i = Integer.parseInt(inputTokens[2]);
+                autoInsuranceUI.setPreviousClaims(i);
+            }
+        }
+    }
+
+    private void handleQuit(String[] inputTokens) {
+        if (inputTokens[0].equals("quit")) {
+            shouldRepeat = false;
+        }
+    }
+
+    @Override
+    public void run() {
+        serverStart();
+    }
+
+    @Override
+    public boolean value() {
+        return false;
+    }
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+        return null;
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/AutoInsuranceUI.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import java.awt.*;
+
+import static javax.swing.JFrame.EXIT_ON_CLOSE;
+import static javax.swing.SwingConstants.CENTER;
+
+public class AutoInsuranceUI extends JPanel {
+
+    // server used for automating the UI
+    AutoInsuranceScriptServer autoInsuranceScriptServer;
+
+    JLabel label;
+    JComboBox<String> claimsDropDown;
+    JTextField ageField;
+    JButton claimsCalcButton;
+    JFrame frame;
+
+    /** Creates the GUI shown inside the frame's content pane. */
+    public AutoInsuranceUI(JFrame frame) {
+        super(new BorderLayout());
+        this.frame = frame;
+
+        JPanel autoInsurancePanel = createAutoInsurancePanel();
+
+        //Lay them out.
+        Border padding = BorderFactory.createEmptyBorder(20,20,5,20);
+        autoInsurancePanel.setBorder(padding);
+
+        add(autoInsurancePanel, BorderLayout.CENTER);
+        label = new JLabel("Click the \"Crunch\" button"
+                + " to calculate your auto insurance results",
+                CENTER);
+        add(label, BorderLayout.PAGE_END);
+        label.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+
+        startSocketServer();
+    }
+
+    private JPanel createAutoInsurancePanel() {
+        JPanel box = new JPanel();
+
+        box.setLayout(new BoxLayout(box, BoxLayout.PAGE_AXIS));
+
+        addLabel(box, "Previous claims:");
+        claimsDropDown = addClaimsDropDown(box);
+
+        addLabel(box, "Driver's age:");
+        ageField = addClaimsAgeTextField(box);
+
+        claimsCalcButton = addClaimsCalcButton(box);
+        claimsCalcButton.addActionListener(e -> {
+            final int intPreviousClaims = getIntPreviousClaims();
+            final String customerAge = ageField.getText();
+            final int intCustomerAge = Integer.parseInt(customerAge);
+
+            final AutoInsuranceAction result = AutoInsuranceProcessor.process(intPreviousClaims, intCustomerAge);
+
+            setLabel(
+                    "Premium increase: $" +  result.premiumIncreaseDollars +
+                    " Warning Ltr: " + result.warningLetterEnum +
+                    " is canceled: " + result.isPolicyCanceled);
+        });
+
+        return box;
+    }
+
+    /**
+     * This method returns an integer representing the number of previous claims for a customer.
+     */
+    private int getIntPreviousClaims() {
+        final String numberPreviousClaims = (String)claimsDropDown.getSelectedItem();
+
+        assert numberPreviousClaims != null;
+        switch (numberPreviousClaims) {
+            case "0" : return 0;
+            case "1" : return 1;
+            case "2-4" : return 2;
+            case ">=5" : return 5;
+            default:
+                throw new InvalidClaimsException("invalid value entered");
+        }
+    }
+
+    private JTextField addClaimsAgeTextField(JPanel box) {
+        JTextField textField = new JTextField();
+        textField.setVisible(true);
+        box.add(textField);
+        return textField;
+    }
+
+    private JButton addClaimsCalcButton(JPanel box) {
+        JButton crunch = new JButton("Crunch");
+        crunch.setVisible(true);
+        box.add(crunch);
+        return crunch;
+    }
+
+    private void addLabel(JPanel box, String msg) {
+        JLabel lbl = new JLabel(msg);
+        lbl.setVisible(true);
+        box.add(lbl);
+    }
+
+    private JComboBox<String> addClaimsDropDown(JPanel box) {
+        String[] previousClaims = {"0", "1", "2-4", ">=5"};
+        final JComboBox<String> cb = new JComboBox<>(previousClaims);
+        cb.setVisible(true);
+        box.add(cb);
+        return cb;
+    }
+
+    /**
+     * start a socket server that can run commands on this UI.
+     * This is to enable automation scripts.
+     */
+    private void startSocketServer() {
+        autoInsuranceScriptServer = new AutoInsuranceScriptServer(this);
+
+        Thread newThread = new Thread(autoInsuranceScriptServer);
+        newThread.start();
+    }
+
+    /**
+     * Sets the text at the bottom of the panel
+     * @param newText whatever you want the new text to be
+     */
+    void setLabel(String newText) {
+        label.setText(newText);
+    }
+
+    /**
+     * Selects one of the drop-down items for previous claims
+     * @param claims number of previous claims
+     */
+    void setPreviousClaims(int claims) {
+        if (claims <= 0) {
+            claimsDropDown.setSelectedIndex(0);
+        }
+
+        if (claims == 1) {
+            claimsDropDown.setSelectedIndex(1);
+        }
+
+        if (claims >= 2 && claims <= 4) {
+            claimsDropDown.setSelectedIndex(2);
+        }
+
+        if (claims >= 5) {
+            claimsDropDown.setSelectedIndex(3);
+        }
+    }
+
+    /**
+     * Sets the age field per what you enter
+     * @param age the text that goes into the age field.
+     */
+    void setClaimsAge(String age) {
+        ageField.setText(age);
+    }
+
+    /**
+     * Create the GUI and show it.  For thread safety,
+     * this method should be invoked from the
+     * event-dispatching thread.
+     */
+    private static void createAndShowGUI() {
+        //Create and set up the window.
+        JFrame frame = new JFrame("AutoInsuranceUI");
+        frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        //Create and set up the content pane.
+        AutoInsuranceUI newContentPane = new AutoInsuranceUI(frame);
+        newContentPane.setOpaque(true); //content panes must be opaque
+        frame.setContentPane(newContentPane);
+
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        //Schedule a job for the event-dispatching thread:
+        //creating and showing this application's GUI.
+        javax.swing.SwingUtilities.invokeLater(() -> createAndShowGUI());
+    }
+
+    // stops and closes the application
+    public void close() {
+        this.frame.dispose();
+        System.exit(0);
+    }
+}
+
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/InvalidClaimsException.java
+================================================
+package com.coveros.training.autoinsurance;
+
+public class InvalidClaimsException extends RuntimeException {
+    public InvalidClaimsException(String ex) {
+        super(ex);
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/main/java/com/coveros/training/autoinsurance/WarningLetterEnum.java
+================================================
+package com.coveros.training.autoinsurance;
+
+/**
+ * The identifiers of different letters that get sent out for
+ * different numbers of claims and age of the driver.
+ */
+public enum WarningLetterEnum {
+    NONE,
+    LTR1,
+    LTR2,
+    LTR3
+}
+
+
+
+================================================
+FILE: desktop_app/src/main/resources/log4j2.xml
+================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorinterval="30" status="info" strict="true">
+
+    <Appenders>
+        <Appender type="Console" name="Console">
+            <Layout type="PatternLayout" pattern="%d %p %m%n"/>
+        </Appender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+
+</Configuration>
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/AutoInsuranceActionTests.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Assert;
+import org.junit.Test;
+
+import static com.coveros.training.autoinsurance.WarningLetterEnum.LTR1;
+
+public class AutoInsuranceActionTests {
+
+    @Test
+    public void testShouldHaveEqualsAndHashcodeImplementedCorrectly() {
+        EqualsVerifier.forClass(AutoInsuranceAction.class).verify();
+    }
+
+    @Test
+    public void testShouldOutputGoodString() {
+        final AutoInsuranceAction action = createTestAutoInsuranceAction();
+        Assert.assertTrue("toString was: " + action.toString(), action.toString().contains("premiumIncreaseDollars=50,warningLetterEnum=LTR1,isPolicyCanceled=false"));
+    }
+
+    public static AutoInsuranceAction createTestAutoInsuranceAction() {
+        return new AutoInsuranceAction(50, LTR1, false, false);
+    }
+
+    @Test
+    public void testCanCreateEmpty() {
+        final AutoInsuranceAction autoInsuranceAction = AutoInsuranceAction.createEmpty();
+        Assert.assertTrue(autoInsuranceAction.isEmpty());
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/AutoInsuranceProcessorTests.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+@RunWith(Parameterized.class)
+public class AutoInsuranceProcessorTests {
+
+    @Parameters
+    public static Collection<Object[]> data() {
+
+        // three-point bounds testing
+        return Arrays.asList(new Object[][]{
+        // claims,  age,  premiumIncrease,  warningLetter,  cancelPolicy, isError
+                {0, 15, -1, WarningLetterEnum.NONE, false, true},
+                {0, 16, 50, WarningLetterEnum.NONE, false, false},
+                {0, 17, 50, WarningLetterEnum.NONE, false, false},
+
+                {0, 25, 50, WarningLetterEnum.NONE, false, false},
+                {0, 26, 25, WarningLetterEnum.NONE, false, false},
+                {0, 27, 25, WarningLetterEnum.NONE, false, false},
+
+                {0, 84, 25, WarningLetterEnum.NONE, false, false},
+                {0, 85, 25, WarningLetterEnum.NONE, false, false},
+                {0, 86, -1, WarningLetterEnum.NONE, false, true},
+
+                {1, 15, -1, WarningLetterEnum.NONE, false, true},
+                {1, 16, 100, WarningLetterEnum.LTR1, false, false},
+                {1, 17, 100, WarningLetterEnum.LTR1, false, false},
+
+                {1, 25, 100, WarningLetterEnum.LTR1, false, false},
+                {1, 26, 50, WarningLetterEnum.NONE, false, false},
+                {1, 27, 50, WarningLetterEnum.NONE, false, false},
+
+                {1, 84, 50, WarningLetterEnum.NONE, false, false},
+                {1, 85, 50, WarningLetterEnum.NONE, false, false},
+                {1, 86, -1, WarningLetterEnum.NONE, false, true},
+
+                {2, 15, -1, WarningLetterEnum.NONE, false, true},
+                {2, 16, 400, WarningLetterEnum.LTR2, false, false},
+                {2, 17, 400, WarningLetterEnum.LTR2, false, false},
+
+                {2, 25, 400, WarningLetterEnum.LTR2, false, false},
+                {2, 26, 200, WarningLetterEnum.LTR3, false, false},
+                {2, 27, 200, WarningLetterEnum.LTR3, false, false},
+
+                {2, 84, 200, WarningLetterEnum.LTR3, false, false},
+                {2, 85, 200, WarningLetterEnum.LTR3, false, false},
+                {2, 86, -1, WarningLetterEnum.NONE, false, true},
+
+                {4, 15, -1, WarningLetterEnum.NONE, false, true},
+                {4, 16, 400, WarningLetterEnum.LTR2, false, false},
+                {4, 17, 400, WarningLetterEnum.LTR2, false, false},
+
+                {4, 25, 400, WarningLetterEnum.LTR2, false, false},
+                {4, 26, 200, WarningLetterEnum.LTR3, false, false},
+                {4, 27, 200, WarningLetterEnum.LTR3, false, false},
+
+                {4, 84, 200, WarningLetterEnum.LTR3, false, false},
+                {4, 85, 200, WarningLetterEnum.LTR3, false, false},
+                {4, 86, -1, WarningLetterEnum.NONE, false, true},
+
+                {5, 26, 0, WarningLetterEnum.NONE, true, false},
+                {6, 26, 0, WarningLetterEnum.NONE, true, false},
+                {5, 80, 0, WarningLetterEnum.NONE, true, false},
+
+                {-1, 80, -1, WarningLetterEnum.NONE, false, true},
+        });
+    }
+
+    private int claims;
+    private int age;
+    private int premiumIncrease;
+    private WarningLetterEnum warningLetter;
+    private boolean cancelPolicy;
+    private boolean isError;
+
+    public AutoInsuranceProcessorTests(int claims, int age, int premiumIncrease, WarningLetterEnum warningLetter, boolean cancelPolicy, boolean isError) {
+        this.claims = claims;
+        this.age = age;
+        this.premiumIncrease = premiumIncrease;
+        this.warningLetter = warningLetter;
+        this.cancelPolicy = cancelPolicy;
+        this.isError = isError;
+    }
+
+    @Test
+    public void testProcessor() {
+
+        AutoInsuranceAction action = AutoInsuranceProcessor.process(claims, age);
+
+        AutoInsuranceAction expectedAutoInsuranceAction = new AutoInsuranceAction(premiumIncrease, warningLetter, cancelPolicy, isError);
+
+        Assert.assertEquals("claims: " + claims + " age: " + age, expectedAutoInsuranceAction, action);
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/AutoInsuranceScriptClient.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+public class AutoInsuranceScriptClient {
+
+    public static final String QUIT = "quit";
+    static Logger logger = LoggerFactory.getLogger(AutoInsuranceScriptClient.class);
+
+    public String send(String command) {
+        String hostName = "localhost";
+        String result = "";
+        int portNumber = 8000;
+        try (Socket echoSocket = new Socket(hostName, portNumber)) {
+            PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
+            BufferedReader in =
+                    new BufferedReader(
+                            new InputStreamReader(echoSocket.getInputStream()));
+            logger.info("running command: {}", command);
+            if (command.equals(QUIT)) {
+                result = processCommand(out, in, command);
+            }
+            result = processCommand(out, in, command);
+        } catch (UnknownHostException e) {
+            logger.error("Don't know about host {}", hostName);
+        } catch (IOException e) {
+            logger.error("Couldn't get I/O for the connection to {}", hostName);
+        }
+        return result;
+    }
+
+    private String processCommand(PrintWriter out, BufferedReader in, String command) throws IOException {
+        logger.info("sending: {}", command);
+        out.println(command);
+        final String response = in.readLine();
+        logger.info("response: {}", response);
+        return response;
+    }
+
+}
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/DesktopTester.java
+================================================
+package com.coveros.training.autoinsurance;
+
+public class DesktopTester {
+    private final AutoInsuranceScriptClient scriptClient;
+
+    public DesktopTester(AutoInsuranceScriptClient scriptClient) {
+        this.scriptClient = scriptClient;
+    }
+
+
+    public void setAge(int age) {
+        scriptClient.send(String.format("set age %d", age));
+    }
+
+    public void setClaims(int claims) {
+        scriptClient.send(String.format("set claims %d", claims));
+    }
+
+    public void clickCalculate() {
+        scriptClient.send("click calculate");
+    }
+
+    public String getLabel() {
+        return scriptClient.send("get label");
+    }
+
+    /**
+     * kill the desktop UI and the tester client
+     */
+    public void quit() {
+        scriptClient.send(AutoInsuranceScriptClient.QUIT);
+    }
+}
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/DesktopUiTests.java
+================================================
+package com.coveros.training.autoinsurance;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+public class DesktopUiTests {
+
+    @Before
+    public void startUI() {
+        AutoInsuranceUI.main(new String[]{});
+    }
+
+    /**
+     * An initial test to make sure the basics work
+     */
+    @Test
+    public void testShouldGetCorrectCalculationHappyPath() {
+        DesktopTester dt = new DesktopTester(new AutoInsuranceScriptClient());
+        dt.setAge(22);
+        dt.setClaims(1);
+        dt.clickCalculate();
+        final String label = dt.getLabel();
+        dt.quit();
+        Assert.assertEquals("Premium increase: $100 Warning Ltr: LTR1 is canceled: false", label);
+    }
+
+
+}
+
+
+
+================================================
+FILE: desktop_app/src/test/java/com/coveros/training/autoinsurance/ExecutionDataClient.java
+================================================
+package com.coveros.training.autoinsurance;
+
+/*******************************************************************************
+ * Copyright (c) 2009, 2020 Mountainminds GmbH & Co. KG and Contributors
+ * This program and the accompanying materials are made available under
+ * the terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *    Marc R. Hoffmann - initial API and implementation
+ *
+ *******************************************************************************/
+
+import org.jacoco.core.data.ExecutionDataWriter;
+import org.jacoco.core.runtime.RemoteControlReader;
+import org.jacoco.core.runtime.RemoteControlWriter;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+
+/**
+ * This example connects to a coverage agent that run in output mode
+ * <code>tcpserver</code> and requests execution data. The collected data is
+ * dumped to a local file.
+ */
+public class ExecutionDataClient {
+
+    private static final String ADDRESS = "localhost";
+
+    /**
+     * Starts the Jacoco execution data request.
+     * First argument is the port to connect to, second is the file to write to.
+     */
+    public static void main(final String[] args) throws IOException {
+        int port = Integer.parseInt(args[0]);
+        String destfile = args[1];
+        final FileOutputStream localFile = new FileOutputStream(destfile);
+        final ExecutionDataWriter localWriter = new ExecutionDataWriter(
+                localFile);
+
+        // Open a socket to the coverage agent:
+        try (Socket socket = new Socket(InetAddress.getByName(ADDRESS), port)) {
+            final RemoteControlWriter writer = new RemoteControlWriter(
+                    socket.getOutputStream());
+            final RemoteControlReader reader = new RemoteControlReader(
+                    socket.getInputStream());
+            reader.setSessionInfoVisitor(localWriter);
+            reader.setExecutionDataVisitor(localWriter);
+
+            // Send a dump command and read the response:
+            writer.visitDumpCommand(true, true);
+            if (!reader.read()) {
+                throw new IOException("Socket closed unexpectedly.");
+            }
+
+        }
+        localFile.close();
+    }
+
+    private ExecutionDataClient() {
+    }
+}
+
+
+================================================
+FILE: docs/README.txt
+================================================
+Contents of the docs directory
+------------------------------
+
+/api_testing                      : testing web API's
+/ci_and_cd                        : Setting up continuous integration and delivery systems
+/dev_notes                        : details of the system appropriate for developers
+/performance_testing              : testing performance of a system
+/security_testing                 : testing security of a system
+/ui_testing                       : UI testing, primarily using Selenium
+coveros_text.txt                  : help text with a fancy Coveros ascii graphic (also shown with gradlew coveros).
+desktop_automation.txt            : A guide on automating non-web-applications
+test.py                           : A Python script that shows page object model techniques for web testing.
+BDD.md                            : A BDD / TDD walkthrough.
+
+
+
+
+================================================
+FILE: docs/coveros_text.txt
+================================================
+                                 .ccccccccc..                                  Interesting links when the system is up:
+                        .cccccccccc                                            ----------------------------------------
+                  cCCCCCCCC                                                    http://localhost:8080/demo - the main application
+             .CCCCCCCCCCc                                                      http://localhost:8080/demo/console - the database viewer
+         .cCCCCCCCCCC/                                                               (use URL of jdbc:h2:mem:training and no user or password)
+      /CCCCCCCCCCC/                                                            http://localhost:8080/demo/monitoring - monitoring of the server
+    /CCCCCCCCCCCC/
+   /CCCCCCCCCCCC/        .dCCCCb. .dOOOOb. dP   .dP .dEEEEb. RRdRRRb. .dOOOOb. .dSSSSb.
+  /CCCCCCCCCCCC/         CC'  `"" OO'  `OO VV   dV' EEoooodC RR'  `RR OO'  `OO YSooooo.
+ |CCCCCCCCCCCCC|         CC.  ... OO.  .OO VV .VV'  EE.  ... RR       OO.  .OO       SS
+ |CCCCCCCCCCCCC|         `CCCCCP' `OOOOOP' VVVVP'   `EEEEEP' dR       `OOOOOP' `SSSSSP
+ .CCCCCCCCCCCCC\
+  \CCCCCCCCCCCCCC\                           ____  _____ __  __  ___
+   \CCCCCCCCCCCCCC\                         |  _ \| ____|  \/  |/ _ \          Summary of relevant Gradle commands
+    \CCCCCCCCCCCCCCc\                       | | | |  _| | |\/| | | | |         ------------------------------------
+       \CCCCCCCCCCCCCCc                     | |_| | |___| |  | | |_| |
+          .CCCCCCCCCCCCCCCc                 |____/|_____|_|  |_|\___/          gradlew apprun         - Runs the application
+             *\CCCCCCCCCCCCCCCC\c                                              gradlew check          - Runs all tests solely using Java
+                  ^\CCCCCCCCCCCCCCCCccc                                        gradlew runAllTests    - Runs the whole set of tests**
+                        ^^^*CCCCCCCCCCCCCCCCCCCCCCCCCCcc..                     gradlew clean          - Cleans build products and installs pre-push hook.
+                                   ^^^^^^^^^^^^^^^^^                           gradlew runBehaveTests - Runs the UI tests**
+                                                                               gradlew runApiTests    - Runs the API tests**
+                                                                               gradlew selenified     - Runs some Selenified tests**
+                                                                               gradlew pitest         - Runs mutation testing (see http://pitest.org/)
+                                                                               gradlew sonarqube      - Runs static analysis using SonarQube.
+                                                                                                        (SonarQube must be running on localhost:9000)
+
+gradlew generateCucumberReport   - Runs cucumber and creates a nice-looking HTML report.
+gradlew dependencyCheckAnalyze   - Analyzes security reports for the dependencies of this project.
+gradlew integrate                - Runs the database integration tests.
+gradlew startH2Console           - Starts a console to examine the H2 database file.
+gradlew <task 1>... taskTree     - A utility that will show the task tree for a particular task.
+
+** Requires the app to be running (usually in another terminal) and all optional dependencies installed.
+
+
+
+================================================
+FILE: docs/api_testing/README.txt
+================================================
+api_testing_with_curl.txt         : How to call API endpoints with Curl https://curl.haxx.se/
+api_testing_with_soapui.txt       : How to test API with SoapUI https://www.soapui.org/
+soapui_demo_tests.xml             : A SoapUI file to demonstrate API testing.
+tester.postman_collection.json    : Postman tests
+
+
+================================================
+FILE: docs/api_testing/api_testing_with_curl.txt
+================================================
+#!/bin/sh
+
+#How to do manual API testing
+#----------------------------
+
+curl http://localhost:8080/demo/math --data "item_a=9&item_b=7"
+curl http://localhost:8080/demo/register --data "username=alice&password=B65S3xNW8vXQHyjYnD72L3mejc"
+curl http://localhost:8080/demo/login --data "username=alice&password=B65S3xNW8vXQHyjYnD72L3mejc"
+curl http://localhost:8080/demo/registerbook --data "book=alice+in+wonderland"
+curl http://localhost:8080/demo/registerborrower --data "borrower=alice"
+curl http://localhost:8080/demo/lend --data "book=alice+in+wonderland&borrower=alice"
+
+
+
+
+
+
+
+
+================================================
+FILE: docs/api_testing/api_testing_with_soapui.txt
+================================================
+Start the demo project by running gradlew apprun
+
+Open SoapUI
+
+Import a project, select "soapui_demo_tests.xml" in the demo/docs directory
+
+Double-click on Math_TestSuite
+
+click the green arrow to run the Test Suite.
+
+
+================================================
+FILE: docs/api_testing/soapui_demo_tests.xml
+================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="111909e8-f8d3-4eac-bef6-a52466912526" activeEnvironment="Default" name="Demo" resourceRoot="" soapui-version="5.4.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.actions.iface.tools.soapui.TestRunnerAction@values-local"><![CDATA[<xml-fragment xmlns:con="http://eviware.com/soapui/config">
+  <con:entry key="Report Format(s)" value=""/>
+  <con:entry key="Host:Port" value=""/>
+  <con:entry key="Export JUnit Results" value="false"/>
+  <con:entry key="Export All" value="false"/>
+  <con:entry key="Save After" value="false"/>
+  <con:entry key="Add Settings" value="false"/>
+  <con:entry key="WSS Password Type" value=""/>
+  <con:entry key="TestSuite" value="Math_TestSuite"/>
+  <con:entry key="Endpoint" value=""/>
+  <con:entry key="Select Report Type" value=""/>
+  <con:entry key="System Properties" value=""/>
+  <con:entry key="Password" value=""/>
+  <con:entry key="Print Report" value="false"/>
+  <con:entry key="Open Report" value="false"/>
+  <con:entry key="Export JUnit Results with test properties" value="false"/>
+  <con:entry key="Global Properties" value=""/>
+  <con:entry key="Project Properties" value=""/>
+  <con:entry key="Project Password" value=""/>
+  <con:entry key="TestCase" value="TestCase 1 - HappyPath"/>
+  <con:entry key="Username" value=""/>
+  <con:entry key="user-settings.xml Password" value=""/>
+  <con:entry key="TestRunner Path" value=""/>
+  <con:entry key="Environment" value="Default"/>
+  <con:entry key="Coverage Report" value="false"/>
+  <con:entry key="Enable UI" value="false"/>
+  <con:entry key="Root Folder" value=""/>
+  <con:entry key="Ignore Errors" value="false"/>
+  <con:entry key="Domain" value=""/>
+  <con:entry key="Tool Args" value=""/>
+  <con:entry key="Save Project" value="false"/>
+</xml-fragment>]]></con:setting></con:settings><con:interface xsi:type="con:RestService" id="cfce851e-01d5-4402-ae97-963cd5d99225" wadlVersion="http://wadl.dev.java.net/2009/02" name="http://localhost:8080" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:settings/><con:definitionCache type="TEXT" rootPart=""/><con:endpoints><con:endpoint>http://localhost:8080</con:endpoint></con:endpoints><con:resource name="Demo_math" path="/demo/math" id="0f6c5e45-be92-4a25-8683-8790bf3646d3"><con:settings/><con:parameters/><con:method name="Math" id="1bf79c97-8151-48dc-a03d-1926b68a3f9e" method="POST"><con:settings/><con:parameters><con:parameter><con:name>item_a</con:name><con:value/><con:style>QUERY</con:style><con:default/><con:path xsi:nil="true"/><con:description xsi:nil="true"/></con:parameter><con:parameter><con:name>item_b</con:name><con:value/><con:style>QUERY</con:style><con:default/><con:path xsi:nil="true"/><con:description xsi:nil="true"/></con:parameter></con:parameters><con:representation type="REQUEST"><con:mediaType>application/json</con:mediaType><con:params/></con:representation><con:representation type="RESPONSE"><con:mediaType>text/html;charset=UTF-8</con:mediaType><con:status>200</con:status><con:params/><con:element>html</con:element></con:representation><con:request name="two_small_positive_ints" id="e36d3aaf-9d3d-44bd-acfb-a03649893d4b" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="4"/>
+  <con:entry key="item_a" value="3"/>
+</con:parameters></con:request></con:method></con:resource></con:interface><con:testSuite id="7223e62f-6ee9-4d31-a146-8f6a303f9830" name="Math_TestSuite"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="53a850ba-07dd-4c1d-96a5-1feaf3595b98" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 1 - two small ints" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="REST Request" id="188ec0e8-fdaf-43b3-8fd4-d77159ba5ff4"><con:settings/><con:config service="http://localhost:8080" resourcePath="/demo/math" methodName="Math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="e36d3aaf-9d3d-44bd-acfb-a03649893d4b" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="9aebbc7f-8304-4a32-a46f-9bd7216abf3a" name="Contains"><con:configuration><token>7</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="4"/>
+  <con:entry key="item_a" value="3"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="d7228d76-69b9-4051-b2d2-b3f7a61e8403" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 2 - two  larger positive ints" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="REST Request" id="868add2e-eac9-4f1d-90eb-7a32c54057c7"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>4000</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="3000"/>
+  <con:entry key="item_a" value="1000"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="eaa1c68a-2a77-4fe5-b09e-9c85308af797" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 3 - two  larger negative ints" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="REST Request" id="21f55269-3bd0-4ced-9687-84b516c71083"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>-4000</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="-3000"/>
+  <con:entry key="item_a" value="-1000"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="2cb8f07a-cb53-4851-862e-72a27773ac66" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 4 - two small negative ints" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="REST Request" id="6a30f959-f212-463b-a1aa-1cf6680f4373"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>-56</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="-33"/>
+  <con:entry key="item_a" value="-23"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="60c91b99-6149-4b05-bbb9-71137af95715" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 5- negative case - decimal" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="REST Request" id="50a89f2b-03ea-4507-b414-58fc5e8b1612"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>Error: only accepts integers</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:assertion type="Simple Contains" id="d8536417-6a15-44c8-8155-7d45d9d40033"><con:configuration/></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="-33"/>
+  <con:entry key="item_a" value="1.1"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="483d33c3-b4fa-4cf6-91f4-d4b026bed0dd" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 6- negative case - too large addend" searchProperties="true"><con:description>If the numbers provided to add are individually larger than 2,147,483,647, or if they 
+add to that number or larger, then the result won't be as expected.
+
+In this test we will test with one addend being too large</con:description><con:settings/><con:testStep type="restrequest" name="REST Request" id="a247e72f-7fe5-4c01-ab52-304297670b04"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>Error: addend too large - maximum of 2,147,483,647 in a single addend</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="-33"/>
+  <con:entry key="item_a" value="2147483648"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:testCase id="5395395c-0a98-4bfc-b615-0b6b1cc68a00" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 7- negative case - too large sum" searchProperties="true"><con:description>If the numbers provided to add are individually larger than 2,147,483,647, or if they 
+add to that number or larger, then the result won't be as expected.
+
+In this test we will test with the sum being above that number</con:description><con:settings/><con:testStep type="restrequest" name="REST Request" id="f30398f3-d98a-46bf-aba1-2974e0f5ec2a"><con:settings/><con:config service="http://localhost:8080" methodName="Math" resourcePath="/demo/math" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="REST Request" id="fb12b576-d937-428e-9766-cd28306cba56" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:encoding>UTF-8</con:encoding><con:endpoint>http://localhost:8080</con:endpoint><con:request/><con:originalUri>http://localhost/demo/math</con:originalUri><con:assertion type="Simple Contains" id="b9d08d6d-9fa6-47cb-a443-b46ee715f605" name="Contains"><con:configuration><token>Error: sum too large - maximum of (absolute) 2,147,483,647</token><ignoreCase>true</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters>
+  <con:entry key="item_b" value="1"/>
+  <con:entry key="item_a" value="2147483647"/>
+</con:parameters></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:properties/></con:testSuite><con:properties/><con:wssContainer/><con:oAuth2ProfileContainer/><con:oAuth1ProfileContainer/><con:sensitiveInformation/></con:soapui-project>
+
+
+================================================
+FILE: docs/api_testing/tester.postman_collection.json
+================================================
+{
+	"info": {
+		"_postman_id": "70251e20-e7d7-4fad-a126-f85753e54fd7",
+		"name": "tester",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "basic math happy path",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "e9f77377-24dc-448a-813b-5529f090fec8",
+						"exec": [
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"8\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=3&item_b=5",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "3"
+						},
+						{
+							"key": "item_b",
+							"value": "5"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "maximum positive number plus 0",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "74f49090-3e21-4ded-a420-2b944b5cdeb8",
+						"exec": [
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"2147483647\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=2147483647&item_b=0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "2147483647"
+						},
+						{
+							"key": "item_b",
+							"value": "0"
+						}
+					]
+				},
+				"description": "This should return the maximum positive int in a signed 32-bit integer"
+			},
+			"response": []
+		},
+		{
+			"name": "maximum negative number plus 0",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "55b23df5-815a-412f-a613-e1e2b7041c9e",
+						"exec": [
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"-2147483648\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=-2147483648&item_b=0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "-2147483648"
+						},
+						{
+							"key": "item_b",
+							"value": "0"
+						}
+					]
+				},
+				"description": "This should return the maximum positive int in a signed 32-bit integer"
+			},
+			"response": []
+		},
+		{
+			"name": "maximum positive number plus maximum positive number",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b6fea037-956d-44d5-9b54-3c92397ba997",
+						"exec": [
+							"// is this a good test?  do we want to accept negative 2 as an answer?",
+							"// In my opinion, we should assert that some kind of overflor error message has been returned,",
+							"// and change the code to suit that.",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"-2\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=2147483647&item_b=2147483647",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "2147483647"
+						},
+						{
+							"key": "item_b",
+							"value": "2147483647"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "maximum negative number plus maximum negative number",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b9973844-ec4c-420d-ad01-5c5bc80f2a95",
+						"exec": [
+							"// is this a good test?  do we want to accept this as an answer?",
+							"// In my opinion, we should assert that some kind of overflor error message has been returned,",
+							"// and change the code to suit that.",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"2\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=-2147483648 &item_b=-2147483648 ",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "-2147483648 "
+						},
+						{
+							"key": "item_b",
+							"value": "-2147483648 "
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "maximum positive number plus 1 - return error",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c89f1166-b079-462f-a1c0-7966aaf6f8fc",
+						"exec": [
+							"// is this a good test?  do we want to accept this as an answer?",
+							"// In my opinion, we should assert that some kind of overflor error message has been returned,",
+							"// and change the code to suit that.",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"-2\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=2147483647&item_b=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "2147483647"
+						},
+						{
+							"key": "item_b",
+							"value": "1"
+						}
+					]
+				},
+				"description": "This should return the maximum negative int in a signed 32-bit integer"
+			},
+			"response": []
+		},
+		{
+			"name": "maximum negative number minus 1 - return error",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "a77f3bfe-a528-4cdf-8f9d-908a201c64d7",
+						"exec": [
+							"// is this a good test?  do we want to accept this as an answer?",
+							"// In my opinion, we should assert that some kind of overflor error message has been returned,",
+							"// and change the code to suit that.",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"-2\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/demo/math?item_a=-2147483648&item_b=-1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"demo",
+						"math"
+					],
+					"query": [
+						{
+							"key": "item_a",
+							"value": "-2147483648"
+						},
+						{
+							"key": "item_b",
+							"value": "-1"
+						}
+					]
+				},
+				"description": "This should return the maximum positive int in a signed 32-bit integer"
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
+
+
+================================================
+FILE: docs/ci_and_cd/README.txt
+================================================
+ci_and_cd_for_localhost.txt       : instructions for setting up a CI/CD pipeline all-in-one on a Windows box
+install_docker_centos.txt         : Instructions for setting up Docker on CentOS.
+jenkins_box_guide.txt             : How to set up a CI/CD server on CentOS.
+ui_test_box.txt                   : Instructions for setting up a server to run UI testing.
+virtualbox_networking.txt         : Details of how networking is configured for the virtual machines.
+
+
+================================================
+FILE: docs/ci_and_cd/ci_and_cd_for_localhost.txt
+================================================
+installing a ci/cd pipeline on a Windows computer.
+-------------------------------------------------
+
+The following assumes you have already installed the necessary components to run "gradlew runalltests" on your computer -
+this entails having JDK11, Python, Chromedriver in a directory on your path, etc... see README.md in the top directory of Demo.
+
+The gist of the following is as follows:
+we install and run Tomcat, Sonarqube, and Jenkins.
+We configure the Jenkins pipeline.
+We set up a fake central repository in a local directory so that when we push any code to it, Jenkins starts up.
+This should go smoothly, but there are inevitable kinks when configuring real software.
+Please contact me with any issues found.
+
+
+I did this on Windows, other operating systems would require some changes.
+
+Install the latest Git.
+Put this on your path: C:\Program Files\Git\usr\bin (so Jenkins has access to unix-style commands while running the pipeline)
+
+Download and install JDK11, put it on your path (Sonarqube 8 requires JDK11)
+
+Install Jmeter, put the path to its bin directory on the path.
+Read "Installing Jmeter" in the document "perf_testing_with_jmeter.txt", follow that.
+
+Download Demo somewhere - it's at https://github.com/7ep/demo
+
+Download Sonarqube https://www.sonarqube.org/downloads/
+Unzip the file somewhere and drop down into its bin directory and start it up.
+
+Create a fake central repo on your machine.  This is where Jenkins will look
+for new code changes.  I put mine at C:\Users\byron\fake_central_repo\demo, you can put yours anywhere.
+
+create the directory, then in that directory, run a git init:
+git init --bare
+
+Back in the original Demo directory, create a git remote that points to the fake repo.  I called mine "fakecentralrepo"
+
+# the following will add the remote location
+git remote add fakecentralrepo ../fake_central_repo/demo
+
+# the following will set the remote location as the default remote
+git push -u fakecentralrepo master
+
+Download Tomcat9 core binary distribution for your machine: https://tomcat.apache.org/download-90.cgi
+
+Modify the server.xml in the Tomcat "conf/" directory, at the bottom of the file there is a <Host> section.  This will allow Tomcat to serve the static content that is generated during a build. Place the following inside, so that you get something like this:
+
+      <Host name="localhost"  appBase="webapps"
+            unpackWARs="true" autoDeploy="true">
+        <Context docBase="/c:/Users/YOUR_NAME_HERE/.jenkins/workspace" path="/workspace" />
+
+Additionally, create the previously mentioned workspace directory:
+	mkdir -p <path_to_your_user_directory>/.jenkins/workspace
+
+In conf/context.xml, add the following inside of the main <Context> element, to avoid a complaint by Tomcat about "nsufficient free space available after evicting expired cache entries - consider increasing the maximum size of the cache"
+
+    <Resources cachingAllowed="true" cacheMaxSize="100000" />
+
+In the Tomcat /bin directory, create a new file, setenv.bat
+Give it this content (this is so we can connect with JMX dynamic analysis tools to Tomcat):
+set CATALINA_OPTS=%CATALINA_OPTS% -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=localhost
+
+or on MacOs, setenv.sh. Give it this content:
+export CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Djava.rmi.server.hostname=localhost"
+
+and be sure to set it as executable
+
+Start up Tomcat (look in the bin directory for a "startup" file)
+
+Download the Jenkins war file:
+
+http://mirrors.jenkins.io/war-stable/latest/jenkins.war
+
+Place the war into the webapps directory in Tomcat.  Doing so will boot up Jenkins.
+
+go to localhost:8080/jenkins once it has a few seconds to finish booting.
+
+Choose "Install Suggested Plugins"
+
+I created an admin with the following characteristics:
+username: admin
+password: admin
+email: admin@test.com
+
+(save and continue)
+
+To install the Sidebar-Link plugin, go to:
+
+http://localhost:8080/jenkins/pluginManager/available
+
+and search for "sidebar".  Choose Sidebar Link and "Install without restart"
+
+
+
+CONFIGURE PIPELINE TO RUN AT GIT RECEIVE
+----------------------------------------
+
+We want to have the ability to notify Jenkins whenever we push
+to our new repo.  Jenkins has a capability of running builds whenever
+a certain endpoint is hit. 
+
+Download the command-line-interface (CLI) tool from Jenkins:
+
+http://localhost:8080/jenkins/jnlpJars/jenkins-cli.jar
+
+Place it in the user's home directory (mine is C:\Users\byron)
+
+Now, create the following file, at /fakecentralrepo/demo/hooks/post-receive
+
+------------------------ FILE START
+#!/bin/sh
+
+# the following runs the jenkins-cli command located in the user's home directory
+# it uses admin as a username and admin as a password for Jenkins
+# this will kick off a build on the "demo" pipeline
+exec java -jar ~/jenkins-cli.jar -s http://localhost:8080/jenkins -auth admin:admin build demo
+------------------------ FILE END
+
+
+Now let's create a pipeline so it does some actual work.
+
+
+- In Jenkins, create a pipeline, name it:  Demo      (capitalization matters here!!)
+- Check the box for "discard old builds",
+    Strategy: log rotation
+    Max # of builds to keep: 5
+- Check the box labeled "Do not allow concurrent builds".  (We don't want race conditions in our pipeline, and we don't want excessive memory usage on this demo machine)
+- Check the box for "Sidebar links". Add a link.  Enter this:
+
+  Link URL: http://localhost:8080/workspace/Demo/build/reports/bdd/cucumber-html-reports/overview-features.html
+  Link Text: Cucumber report.
+
+  Click Add Link.
+
+  Link URL: http://localhost:9000/
+  Link Text: SonarQube
+
+  Click Add Link.
+
+  Link URL: http://localhost:8080/workspace/Demo/build/reports/dependency-check-report.html
+  Link Text: Dependency check report
+
+  Click Add Link.
+
+  Link URL: http://localhost:8080/demo
+  Link Text: Demo
+
+  Click Add Link
+
+  Link URL: http://localhost:8080/workspace/Demo/build/reports/jacoco/index.html
+  Link Text: Jacoco coverage report
+
+  Click Add Link
+
+  Link URL: http://localhost:8080/workspace/Demo/build/reports/pitest/index.html
+  Link Text: Pitest Mutation Testing
+
+  Click Add Link
+
+  Link URL: http://localhost:8080/workspace/Demo/build/docs/javadoc/index.html
+  Link Text: Javadoc
+
+  Click Add Link
+
+  Link URL: http://training:8080/workspace/Demo/perf_report/index.html
+  Link Text: Performance report
+
+  Click Add Link
+
+  Link URL: http://training:8080/workspace/Demo/build/reports/zap/zap-report.html
+  Link Text: Zap report
+
+- Under Pipeline, click on the dropdown and select "Pipeline script from SCM"
+- on the dropdown next to SCM, select Git.
+- fill in these values:
+     In Repositories:
+     Repository URL: C:\Users\byron\fake_central_repo\demo  (Yours may be a different place)
+     In Branches to Build:
+     Branch specifier: refs/heads/master
+     In Script Path: jenkins/Jenkinsfile
+
+     Click save
+
+Congratulations!  You should now be able to run a full pipeline.
+
+Summary:
+Jenkins is at http://localhost:8080/jenkins/
+Demo is at http://localhost:8080/demo/
+Sonarqube is at http://localhost:9000/
+
+
+
+================================================
+FILE: docs/ci_and_cd/install_docker_centos.txt
+================================================
+
+#######
+####### Step 1 — Install Docker
+
+#install needed packages
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+
+#Configure the docker-ce repo:
+sudo yum-config-manager -y --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+
+#Install docker-ce:
+sudo yum install -y docker-ce
+
+#Add your user to the docker group with the following command.
+sudo usermod -aG docker $(whoami)
+
+#Set Docker to start automatically at boot time:
+sudo systemctl enable docker.service
+
+
+#Finally, start the Docker service:
+sudo systemctl start docker.service
+
+
+##########
+########## Step 2 - install Docker Compose
+
+#Install Extra Packages for Enterprise Linux
+sudo yum install -y epel-release
+
+
+#Install python-pip
+
+sudo yum install -y python-pip
+
+#Then install Docker Compose:
+
+sudo pip install docker-compose
+
+#You will also need to upgrade your Python packages on CentOS 7 to get docker-compose to run successfully:
+
+sudo yum upgrade -y python*
+
+#To verify a successful Docker Compose installation, run:
+
+docker-compose version
