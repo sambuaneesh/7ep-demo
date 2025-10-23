@@ -1,0 +1,200 @@
+Of course. Here is a single, comprehensive architectural summary created by merging the two provided chunks, eliminating redundancy while preserving all unique details for a thorough analysis.
+
+***
+
+### **Comprehensive Architectural Summary: `7ep-demo` Codebase**
+
+This document provides a unified architectural summary of the `7ep-demo` codebase, synthesized from multiple analysis chunks. It is designed to be a detailed resource for activities such as microservice decomposition analysis.
+
+### 1. Overall Architecture
+
+The codebase represents a **monolithic Java web application** named "Demo". Its primary purpose is educational, demonstrating a wide range of software development, testing, and CI/CD practices.
+
+-   **Technology Stack**:
+    -   **Backend**: Java 8+, using the standard **Java Servlet API** for web endpoints. The application does not use a high-level framework like Spring or Jakarta EE.
+    -   **Application Server**: Tomcat (inferred from `WebAppListener` and deployment documentation).
+    -   **Database**: H2, configured to run in-memory (`jdbc:h2:mem:training`) with PostgreSQL compatibility mode.
+    -   **Build & Dependency Management**: Gradle.
+-   **Architectural Style**: A classic **Layered Architecture** (Presentation -> Business -> Data Access). The frontend is a hybrid model, combining traditional server-side rendered pages with JavaScript-driven dynamic UI enhancements over AJAX. It is not a Single Page Application (SPA).
+-   **Key Feature**: An extensive and mature testing and CI/CD setup is a core part of the project, indicating a strong focus on quality, automation, and DevOps practices.
+
+---
+
+### 2. Component Breakdown & Business Domains
+
+The application is logically divided into several distinct domains, each with clear responsibilities.
+
+#### 2.1. Authentication Service (`authentication`)
+-   **Responsibility**: Manages user (librarian) registration and login.
+-   **Key Components**:
+    -   `LoginServlet`, `RegisterServlet`: Expose functionality via HTTP endpoints.
+    -   `LoginUtils`, `RegistrationUtils`: Contain the core business logic for authentication.
+    -   `User.java`: The primary data model for a user.
+-   **Key Business Logic**:
+    -   **Registration**: Validates that a username is not already taken and performs password strength validation using the `nbvcxz` library (checking for minimum length of 10, max length of 100, and sufficient entropy).
+    -   **Login**: Validates user credentials against hashed passwords stored in the database.
+
+#### 2.2. Library Service (`library`)
+-   **Responsibility**: Manages a simple library system for books, borrowers, and loans.
+-   **Key Components**:
+    -   Servlets (`LibraryRegisterBookServlet`, `LibraryLendServlet`, etc.): Expose functionality via web endpoints.
+    -   `LibraryUtils`: Contains all business logic for library operations.
+    -   Domain Objects (`Book.java`, `Borrower.java`, `Loan.java`): Data models for the library domain.
+-   **Key Business Logic**:
+    -   **Book/Borrower Management**: Allows creating and deleting books and borrowers, ensuring entities are not duplicated.
+    -   **Lending**: Verifies that both the book and borrower are registered, checks if the book is already checked out, and creates a loan record if available.
+    -   **Searching/Listing**: Provides functionality to list all books, borrowers, available books, and to search for entities by ID or name/title.
+
+#### 2.3. Mathematics Service (`mathematics`)
+-   **Responsibility**: Provides various mathematical calculation capabilities. This component contains pure, stateless functions.
+-   **Key Components**:
+    -   `MathServlet`, `AckServlet`, `FibServlet`: Expose calculation endpoints.
+    -   `Calculator.java`: Simple addition logic.
+    -   `Ackermann.java`: Implements Ackermann's function with both recursive and iterative/tail-recursive versions.
+    -   `Fibonacci.java`, `FibonacciIterative.java`: Implement the Fibonacci sequence.
+-   **Key Business Logic**:
+    -   **Addition**: Standard integer addition.
+    -   **Ackermann's Function**: Standard implementation.
+    -   **Fibonacci Sequence**: Provides multiple algorithms with different performance characteristics:
+        -   A naive, exponential-time recursive algorithm.
+        -   An efficient **O(log n)** matrix exponentiation algorithm (`fibAlgo1`).
+        -   A simple linear-time **O(n)** iterative algorithm (`fibAlgo2`).
+
+#### 2.4. Persistence Service (`persistence`)
+-   **Responsibility**: Manages all data access and database interactions for the application.
+-   **Key Components**:
+    -   `IPersistenceLayer`: A critical interface defining the data access contract for the entire application, acting as a **Gateway** or **Repository** interface.
+    -   `PersistenceLayer`: The concrete H2 implementation of `IPersistenceLayer`. It manages the database connection pool, executes raw SQL queries via JDBC, integrates with Flyway, and contains the SHA-256 password hashing logic.
+    -   `SqlData` / `ParameterObject`: Helper classes that form a custom **micro-ORM** or **Data Mapper** utility to reduce JDBC boilerplate.
+    -   `DbServlet` (mapped to `/flyway`): A web endpoint for administrative control, allowing the database to be cleaned and migrated on demand.
+    -   `EmptyDataSource`: An implementation of the **Null Object Pattern** for `javax.sql.DataSource`.
+
+#### 2.5. Standalone Desktop Application (`desktop_app`)
+-   **Responsibility**: A completely separate Java Swing desktop application that calculates auto insurance premiums, designed to demonstrate testing of non-web applications.
+-   **Key Components**:
+    -   `AutoInsuranceUI.java`: The main Swing GUI component.
+    -   `AutoInsuranceProcessor.java`: Contains the core business rules for premium calculation based on a decision table.
+    -   `AutoInsuranceScriptServer.java`: A socket server that listens for commands to automate the UI for testing purposes.
+-   **Key Business Logic**: Implements a decision table to determine insurance outcomes (premium increase, warning letter, policy cancellation) based on driver age and number of previous claims.
+
+#### 2.6. Deployment/Configuration (`tomcat`)
+-   **Responsibility**: Manages application lifecycle events.
+-   **Key Components**:
+    -   `WebAppListener`: A `ServletContextListener` that hooks into the Tomcat startup lifecycle. Its primary role is to **initialize the database by cleaning and migrating the schema using Flyway** every time the application starts, ensuring a consistent state.
+
+#### 2.7. Frontend (`src/main/webapp`)
+-   **Responsibility**: Provides the user interface and client-side logic.
+-   **Key Components**:
+    -   HTML Files (`library.html`, `endpointcatalog.html`): Define the primary user interfaces and forms.
+    -   `library.js`: Contains significant client-side logic. It fetches data from backend APIs (e.g., `/listavailable`) via AJAX to dynamically render UI components. It implements logic to alter the UI for book/borrower selection based on record count:
+        -   **0 records**: Input field is disabled.
+        -   **1-9 records**: A standard HTML `<select>` dropdown is rendered.
+        -   **10+ records**: An input field with autocomplete functionality is provided.
+    -   `catalog.js`: A generic script that hijacks standard form submissions and converts them into AJAX requests using `XMLHttpRequest`.
+
+---
+
+### 3. API Endpoints and Interfaces
+
+#### 3.1. Web API (Servlets)
+
+| Method | Path                 | Parameters                                                     | Responsibility                                                 | Response Type  |
+| :----- | :------------------- | :------------------------------------------------------------- | :------------------------------------------------------------- | :------------- |
+| `POST` | `/register`          | `username` (string), `password` (string)                       | Registers a new user.                                          | HTML           |
+| `POST` | `/login`             | `username` (string), `password` (string)                       | Authenticates a user.                                          | HTML           |
+| `POST` | `/registerbook`      | `book` (string, title)                                         | Registers a new book.                                          | HTML           |
+| `POST` | `/registerborrower`  | `borrower` (string, name)                                      | Registers a new borrower.                                      | HTML           |
+| `POST` | `/lend`              | `book` (string, title), `borrower` (string, name)              | Lends a book to a borrower.                                    | HTML           |
+| `GET`  | `/book`              | `id` (long, optional), `title` (string, optional)              | Searches for a book by ID/title, or lists all books.           | JSON           |
+| `GET`  | `/borrower`          | `id` (long, optional), `name` (string, optional)               | Searches for a borrower by ID/name, or lists all borrowers.    | JSON           |
+| `GET`  | `/listavailable`     | -                                                              | Lists all books that are not currently on loan.                | JSON           |
+| `POST` | `/math`              | `item_a` (int), `item_b` (int)                                 | Adds two integers.                                             | Plain Text     |
+| `POST` | `/ackermann`         | `ack_param_m`, `ack_param_n`, `ack_algorithm_choice`             | Calculates Ackermann's function using a specified algorithm. | Plain Text     |
+| `POST` | `/fibonacci`         | `fib_param` (int), `fib_algorithm_choice` (string)             | Calculates the nth Fibonacci number using a chosen algorithm.  | Plain Text     |
+| `GET`  | `/flyway`            | `action` (string, "clean", "migrate")                          | Manages the database schema (clean, migrate, or both).         | HTML           |
+| `ANY`  | `/console/*`         | -                                                              | Provides web access to the H2 Database Console.                | HTML           |
+
+#### 3.2. Other Interfaces
+
+-   **Internal Java Interface (`IPersistenceLayer`)**: This is the most significant internal interface, defining the complete data access contract and decoupling business logic from the database. Its methods are logically grouped:
+    -   **Library Functions**: `saveNewBook`, `saveNewBorrower`, `createLoan`, `searchBooksByTitle`, `listAvailableBooks`, etc.
+    -   **Authentication Functions**: `saveNewUser`, `areCredentialsValid`, `searchForUserByName`.
+    -   **Utility Functions**: `cleanAndMigrateDatabase`, `runBackup`, `runRestore`.
+-   **Desktop Application Interface (`AutoInsuranceScriptServer`)**:
+    -   **Protocol**: Custom text-based protocol over TCP/IP on port `8000`.
+    -   **Interface**: Accepts string commands (`set age <AGE>`, `click calculate`, `get label`, `quit`) to programmatically control and query the Swing UI for automated testing.
+
+---
+
+### 4. Data Management
+
+#### 4.1. Persistence Layer
+-   **Interface**: `IPersistenceLayer` defines the repository contract for all data operations.
+-   **Implementation**: `PersistenceLayer` provides the H2 implementation using direct JDBC. It is the single point of contact with the database.
+-   **Password Security**: Implements password hashing using **SHA-256**. Plaintext passwords are never stored or handled for existing users.
+-   **Initialization**: The `WebAppListener` initializes a `DataSource` connection pool on application startup and triggers Flyway migrations to ensure a clean, consistent schema.
+
+#### 4.2. Database Schema
+The schema is managed by **Flyway**, with versioned SQL migration scripts in `src/main/resources/db/migration/`. The database is organized into two logical schemas: `auth` and `library`.
+
+-   **`auth.USER` Table**: Stores user credentials.
+    -   `id` (SERIAL, PK), `name` (VARCHAR(100)), `password_hash` (VARCHAR(100))
+-   **`library.BOOK` Table**: Stores book information.
+    -   `id` (SERIAL, PK), `title` (VARCHAR(100))
+-   **`library.BORROWER` Table**: Stores borrower information.
+    -   `id` (SERIAL, PK), `name` (VARCHAR(100))
+-   **`library.LOAN` Table**: Tracks book loans.
+    -   `id` (SERIAL, PK), `book` (INT, FK -> `library.BOOK.id`), `borrower` (INT, FK -> `library.BORROWER.id`), `borrow_date` (DATE)
+-   **Foreign Keys**: Foreign keys in the `LOAN` table are configured with `ON DELETE CASCADE`, automatically deleting loan records if the associated book or borrower is deleted.
+
+#### 4.3. Data Models (Java Domain Objects)
+-   These are implemented as immutable Plain Old Java Objects (POJOs), effectively serving as Data Transfer Objects (DTOs) to promote safer data handling.
+-   `User.java`: Maps to `auth.USER`.
+-   `Book.java`: Maps to `library.BOOK`.
+-   `Borrower.java`: Maps to `library.BORROWER`.
+-   `Loan.java`: Maps to `library.LOAN`, containing nested `Book` and `Borrower` objects.
+
+---
+
+### 5. Service Dependencies and Communication Patterns
+
+-   **Internal Communication**: Follows a strict layered pattern.
+    1.  **Servlets** act as Controllers, receiving HTTP requests.
+    2.  They delegate to business logic classes (e.g., `LibraryUtils`, `RegistrationUtils`).
+    3.  All business logic requiring data persistence communicates exclusively through the `IPersistenceLayer` interface.
+-   **Frontend-Backend Communication**:
+    -   The `library.js` script actively polls backend endpoints (`GET /listavailable`, `GET /borrower`) to fetch JSON data for rendering dynamic UI elements (AJAX-based client-side data fetching).
+    -   Other interactions are handled by AJAX-ified form posts, which return HTML fragments or data to be displayed on the page.
+
+---
+
+### 6. Configuration, Build, and Deployment
+
+-   **Configuration**:
+    -   Project properties are located in `gradle.properties`.
+    -   The JDBC URL is configured as `jdbc:h2:mem:training;MODE=PostgreSQL`.
+    -   `web.xml` is used to configure servlets, the H2 console (`/console/*`), and to set session tracking to use cookies only (disabling URL rewriting).
+-   **Build & Deployment**:
+    -   The application is built into a standard WAR (Web Application Archive) file using `gradlew assemble`.
+    -   Deployment is intended for a Tomcat application server.
+
+---
+
+### 7. CI/CD Pipeline (`Jenkinsfile`)
+
+A comprehensive pipeline is defined in `Jenkinsfile`, showcasing a mature DevOps process.
+-   **Stages**: Build, Unit Test, Database Test, BDD Test, Static Analysis (`SonarQube`), Deploy to Test, API Test, UI Tests (BDD and functional), Security Scans (`OWASP DependencyCheck`, `OWasp ZAP`), Performance Test (`JMeter`), Mutation Test (`Pitest`), and a final (mock) Deploy to Prod.
+-   **Tooling Integration**: Demonstrates integration with Jenkins, SonarQube, OWASP ZAP proxy, and JMeter.
+
+---
+
+### 8. Architectural Patterns & Frameworks
+
+-   **Layered Architecture**: Clear separation between Presentation (Servlets), Business Logic (`*Utils` classes), and Data Access (`PersistenceLayer`).
+-   **Repository / Gateway Pattern**: `IPersistenceLayer` acts as a repository interface, abstracting data storage details.
+-   **Data Mapper Pattern**: The `SqlData` and `ParameterObject` classes form a simple, custom data mapper to abstract JDBC operations.
+-   **Null Object Pattern**: `EmptyDataSource` is used to avoid null references for `javax.sql.DataSource`.
+-   **Database Migration**: Flyway is used for structured, version-controlled database schema management.
+-   **Behavior-Driven Development (BDD)**: Cucumber (Java) and Behave (Python) are used for testing, as seen in `.feature` files. A multi-language test suite (Java, Python, C#, JavaScript) is present.
+-   **Page Object Model (POM)**: Implied in UI testing documentation as a technique for robust test automation.
+-   **Testing Pyramid**: The codebase exemplifies a full testing pyramid with a large base of unit tests (JUnit, Mockito), integration/BDD tests, and a smaller number of API and end-to-end UI tests (Selenium, Selenified).

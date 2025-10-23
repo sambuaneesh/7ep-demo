@@ -1,0 +1,223 @@
+Of course. Here is a single, comprehensive architectural summary created by merging the detailed information from all five chunks. The summary is structured to eliminate redundancy while preserving all critical details for microservice decomposition analysis.
+
+***
+
+### Comprehensive Architectural Summary for Microservice Decomposition
+
+This document synthesizes architectural information from multiple analyses of a large codebase. The system is a demonstration project for software development, testing, and CI/CD practices, comprising a monolithic web application and a standalone desktop application.
+
+### 1. Overall System Architecture
+
+The codebase contains two primary, independent applications:
+
+1.  **Monolithic Java Web Application**: A classic monolith bundling multiple business domains into a single deployable WAR file. It serves as the primary focus for decomposition.
+2.  **Standalone Java Swing Desktop Application**: A self-contained GUI application for auto insurance quoting.
+
+#### 1.1. Technology Stack
+
+*   **Web Backend**: Java 8+, raw Java Servlet API (no Spring/Jakarta EE).
+*   **Web Frontend**: Basic HTML, CSS, JavaScript, JSP.
+*   **Desktop GUI**: Java Swing.
+*   **Application Server**: Apache Tomcat, with Gretty used for local development.
+*   **Database**: H2 (in-memory and file-based modes), configured for PostgreSQL compatibility.
+*   **Database Migrations**: FlywayDB.
+*   **Build & Dependencies**: Gradle 7.0, Pipenv (for Python test dependencies).
+*   **Logging**: SLF4J with Log4j2.
+*   **Password Hashing**: SHA-256 and the **Nbvcxz** library for entropy-based strength estimation.
+*   **Utility Libraries**: Apache Commons Lang3.
+*   **Testing Suite**:
+    *   **Unit**: JUnit, Mockito, EqualsVerifier.
+    *   **Integration**: JUnit against an H2 database.
+    *   **API**: Python (pytest), Postman, SoapUI, curl scripts.
+    *   **BDD**: Cucumber (Java), Behave (Python/Gherkin).
+    *   **UI/E2E**: A polyglot setup including Selenium WebDriver with Java (Selenified), Python (Behave, pytest), JavaScript (Mocha), and C# (NUnit). HtmlUnit is also used for headless testing.
+    *   **Performance**: JMeter.
+    *   **Security**: OWASP DependencyCheck (dependency scanning), OWASP ZAP (DAST proxy).
+    *   **Static & Quality Analysis**: SonarQube, Pitest (mutation testing).
+*   **CI/CD Orchestration**: Jenkins (`Jenkinsfile`).
+
+#### 1.2. Architectural Style & Principles
+
+*   **Style**: The web application is a classic **Monolith** with a simple **N-Tier/Layered Architecture**:
+    1.  **Presentation Layer**: Servlets, JSPs, and static frontend assets (`.html`, `.js`).
+    2.  **Business Logic Layer**: Domain-specific utility classes (e.g., `LibraryUtils.java`, `RegistrationUtils.java`).
+    3.  **Data Access Layer**: A centralized Data Access Object (DAO) component (`PersistenceLayer.java`).
+*   **Principles**:
+    *   **Domain-Driven Packaging**: Code is organized into packages by business domain (e.g., `com.coveros.training.authentication`, `com.coveros.training.library`).
+    *   **Centralized Persistence**: All database access is funneled through a single `PersistenceLayer` component.
+    *   **Immutability**: Data transfer objects (DTOs) and domain objects are designed to be immutable where possible.
+    *   **Avoidance of `null`**: A stated design goal to improve robustness.
+
+---
+
+### 2. Component: Web Application Monolith (`/src`)
+
+The core application, containing several distinct business domains and cross-cutting concerns.
+
+#### 2.1. Domains / Potential Microservices
+
+##### 2.1.1. Authentication Domain
+*   **Responsibilities**: Manages user (librarian) registration and login, including password validation.
+*   **Key Components**:
+    *   **Servlets**: `RegisterServlet.java`, `LoginServlet.java`.
+    *   **Business Logic**: `RegistrationUtils.java`, `LoginUtils.java`.
+*   **Key Logic & Algorithms**:
+    *   **Password Hashing**: Uses **SHA-256** for storing passwords.
+    *   **Password Strength**: Uses the **Nbvcxz** library (`RegistrationUtils.isPasswordGood`) to check password entropy, rejecting common or weak passwords based on time-to-crack estimations, not just simple rules.
+*   **Data Models**:
+    *   `User.java`: `(long id, String name)`.
+    *   `RegistrationResult.java`, `PasswordResult.java`: DTOs for operation results.
+*   **Database Schema**: Owns the `AUTH` schema, specifically the `USER` table.
+*   **Dependencies**: Tightly coupled with the shared `IPersistenceLayer`.
+*   **Microservice Candidate**: **Strong**. A self-contained, critical function (Identity and Access Management) with a clear bounded context and its own database schema.
+
+##### 2.1.2. Library Management Domain
+*   **Responsibilities**: Manages library inventory (books), members (borrowers), and the lending process (loans).
+*   **Key Components**:
+    *   **Servlets**: `LibraryRegisterBookServlet`, `LibraryRegisterBorrowerServlet`, `LibraryLendServlet`, `LibraryBookListSearchServlet`, etc.
+    *   **Business Logic**: `LibraryUtils.java` centralizes all library-related operations.
+*   **Key Logic & Business Rules**:
+    *   A book can only be loaned if it is not already checked out (`searchForLoanByBook`).
+    *   A book can only be loaned to a registered borrower.
+    *   Cascading deletes are configured in the database: deleting a book or borrower also deletes associated loans.
+    *   The UI dynamically changes input fields (dropdown vs. autocomplete) based on the number of books/borrowers in the system.
+*   **Data Models**:
+    *   `Book.java`: `(long id, String title)`.
+    *   `Borrower.java`: `(long id, String name)`.
+    *   `Loan.java`: `(long id, Book book, Borrower borrower, Date checkoutDate)`.
+*   **Database Schema**: Owns the entire `LIBRARY` schema (`BOOK`, `BORROWER`, `LOAN` tables).
+*   **Dependencies**: Tightly coupled with the shared `IPersistenceLayer`.
+*   **Microservice Candidate**: **Strong**. A clear, cohesive business domain with its own data, logic, and schema.
+
+##### 2.1.3. Mathematics Domain
+*   **Responsibilities**: Provides stateless endpoints for various mathematical calculations.
+*   **Key Components**:
+    *   **Servlets**: `MathServlet.java`, `AckServlet.java`, `FibServlet.java`.
+    *   **Business Logic**: `Calculator.java`, `Ackermann.java`, `AckermannIterative.java`, `Fibonacci.java`, `FibonacciIterative.java`. Uses `BigInteger` to handle large results.
+*   **Data Models**: None; operates on primitive types and `BigInteger`.
+*   **Dependencies**: None. This domain is completely decoupled from persistence and other business domains.
+*   **Microservice Candidate**: **Medium/Easy**. As a set of stateless, computational utilities, it is the easiest candidate to extract into a `CalculatorService`. It could also remain a shared library.
+
+##### 2.1.4. Expense Calculation Domain
+*   **Responsibilities**: Calculates the alcohol-related portion of a restaurant bill.
+*   **Key Components**: `AlcoholCalculator.java`.
+*   **Key Logic & Algorithms**: Splits a bill (subtotal, food total, tip, tax) into food and alcohol portions, correctly attributing the proportional tip and tax to the alcohol cost using a ratio-based approach.
+*   **Dependencies**: None. This is another stateless, computational domain.
+*   **Microservice Candidate**: **Medium/Easy**. Similar to the Mathematics domain, this could be extracted into a small, focused service.
+
+#### 2.2. Cross-Cutting Concerns
+
+##### 2.2.1. Persistence Layer
+*   **Component Names**: `IPersistenceLayer.java` (interface), `PersistenceLayer.java` (implementation).
+*   **Responsibilities**: Acts as a centralized **Data Access Object (DAO)** for the entire monolith.
+    *   Abstracts raw JDBC calls, managing connections via an H2 `JdbcConnectionPool`.
+    *   Implements a "micro-ORM" using `SqlData` and `ParameterObject` helper classes to encapsulate SQL statements, typed parameters, and result extraction logic, reducing boilerplate.
+    *   Wraps `SQLException` in a custom unchecked `SqlRuntimeException`.
+    *   Integrates with **Flyway** to manage database schema migrations (`clean`, `migrate`).
+    *   Provides database backup and restore capabilities.
+*   **Key Challenge for Decomposition**: This shared layer is the **primary point of coupling** between all domains. Decomposing the monolith requires breaking this component apart, giving each new microservice its own dedicated persistence logic.
+
+##### 2.2.2. Database Schema
+*   **Framework**: **Flyway** (`/src/main/resources/db/migration`) is used for database versioning.
+*   **Configuration**: Runs as an H2 database in **PostgreSQL compatibility mode**.
+    *   Runtime URL: `jdbc:h2:mem:training;MODE=PostgreSQL`
+    *   Integration Test URL: `jdbc:h2:./build/db/training;AUTO_SERVER=TRUE;MODE=PostgreSQL`
+*   **Schemas & Tables**: The database is logically separated into schemas, a strong indicator for decomposition boundaries.
+    *   **`AUTH` Schema**:
+        *   `USER`: `id` (SERIAL, PK), `name` (VARCHAR, UNIQUE), `password_hash` (VARCHAR).
+    *   **`LIBRARY` Schema**:
+        *   `BOOK`: `id` (SERIAL, PK), `title` (VARCHAR).
+        *   `BORROWER`: `id` (SERIAL, PK), `name` (VARCHAR).
+        *   `LOAN`: `id` (SERIAL, PK), `book` (INT, FK -> BOOK.id), `borrower` (INT, FK -> BORROWER.id), `borrow_date` (DATE). Foreign keys have `ON DELETE CASCADE`.
+    *   **`ADMINISTRATIVE` Schema**:
+        *   `flyway_schema_history`: Standard Flyway version tracking table.
+*   **Key Challenge for Decomposition**: While schemas are separate, they exist in a single database instance. A true microservice architecture would require splitting this into physically separate databases to ensure data autonomy for each service.
+
+##### 2.2.3. Web Application Lifecycle & Frontend
+*   **Lifecycle**: `WebAppListener.java` (a `ServletContextListener`) hooks into the Tomcat startup process to initialize the application, which includes wiping and migrating the database via Flyway.
+*   **Frontend Components**: Located in `/src/main/webapp`.
+    *   `index.html`: Main application entry point.
+    *   `library.html`: UI for all library and authentication functions.
+    *   `library.js`: Client-side logic for `library.html`, including **autocomplete** functionality that fetches data via asynchronous GET requests to `/listavailable` and `/borrower`.
+    *   `endpointcatalog.html` / `catalog.js`: A developer-facing UI for testing API endpoints via AJAX.
+    *   `result.jsp`, `restfulresult.jsp`: Server-side pages for rendering responses.
+    *   `WEB-INF/web.xml`: The application's deployment descriptor, mapping URL patterns to Servlets and configuring the H2 console.
+
+---
+
+### 3. Component: AutoInsurance Desktop Application (`/desktop_app`)
+
+*   **Responsibilities**: A standalone GUI application that calculates auto insurance premium adjustments based on driver age and previous claims.
+*   **Technology**: Java Swing.
+*   **Key Components**:
+    *   `AutoInsuranceUI.java`: The main View class and application entry point.
+    *   `AutoInsuranceProcessor.java`: The core business logic ("Model"), containing a stateless `process(claims, age)` method.
+    *   `AutoInsuranceAction.java`: A DTO representing the calculation result.
+*   **Service Dependencies**: None. It is fully self-contained.
+*   **Unique Feature**: Implements a **custom test automation server** (`AutoInsuranceScriptServer.java`).
+    *   **Mechanism**: On startup, it opens a `ServerSocket` on **TCP port 8000** and listens for plain-text commands (`set age 22`, `click calculate`, `get label`) to remotely drive the UI for automated testing.
+*   **Microservice Candidate**: **Strong**. The core business logic in `AutoInsuranceProcessor` is stateless and well-defined. It could be extracted, wrapped in a REST API, and deployed as a `QuotingService`.
+
+---
+
+### 4. Consolidated API Endpoints
+
+The web application exposes a set of HTTP endpoints, primarily using form-based POSTs and REST-like GETs.
+
+| Method | Path                        | Parameters (Form/Query)                                     | Domain         | Description                                                      |
+|--------|-----------------------------|-------------------------------------------------------------|----------------|------------------------------------------------------------------|
+| `POST` | `/demo/register`            | `username`, `password`                                      | Authentication | Registers a new user.                                            |
+| `POST` | `/demo/login`               | `username`, `password`                                      | Authentication | Authenticates a user.                                            |
+| `POST` | `/demo/registerbook`        | `book` (title)                                              | Library        | Adds a new book title.                                           |
+| `POST` | `/demo/registerborrower`    | `borrower` (name)                                           | Library        | Adds a new borrower.                                             |
+| `POST` | `/demo/lend`                | `book`, `borrower`                                          | Library        | Records a book loan.                                             |
+| `GET`  | `/demo/books`               | (optional) `search` (title)                                 | Library        | Lists all books or searches by title. Returns HTML.              |
+| `GET`  | `/demo/book`                | (optional) `id`, `title`                                    | Library        | Lists or searches for books. Returns JSON.                       |
+| `GET`  | `/demo/listavailable`       | -                                                           | Library        | Lists all available (un-loaned) books. Returns JSON.             |
+| `GET`  | `/demo/borrowers`           | (optional) `search` (name)                                  | Library        | Lists all borrowers or searches by name. Returns HTML.           |
+| `GET`  | `/demo/borrower`            | (optional) `id`, `name`                                     | Library        | Lists or searches for borrowers. Returns JSON.                   |
+| `POST` | `/demo/math`                | `item_a`, `item_b`                                          | Mathematics    | Adds two integers.                                               |
+| `POST` | `/demo/ack` / `/ackermann`  | `ack_param_m`, `ack_param_n`, `ack_algorithm_choice`        | Mathematics    | Calculates the Ackermann function.                               |
+| `POST` | `/demo/fib` / `/fibonacci`  | `fib_param_n`, `fib_algorithm_choice`                       | Mathematics    | Calculates a Fibonacci number.                                   |
+| `GET`  | `/demo/db` / `/flyway`      | `action` (`clean`, `migrate`)                               | Administration | Manages the database schema for testing. Wipes and rebuilds.     |
+| `GET`  | `/console/*`                | -                                                           | Administration | Exposes the H2 database management console.                      |
+
+---
+
+### 5. DevOps, CI/CD, and Testing Infrastructure
+
+The project features a comprehensive, documented DevOps environment built on VirtualBox VMs.
+
+#### 5.1. Infrastructure
+*   **`jenkinsbox` (CI/CD Server)**: CentOS 7 VM (`192.168.56.101`) running Jenkins, SonarQube, a local Git repository, and an H2O web server for hosting test reports.
+*   **`uitestbox` (Test Environment)**: CentOS 7 VM (`192.168.56.102`) running Apache Tomcat (to host the deployed WAR), OWASP ZAP, Google Chrome, Chromedriver, Python 3.7, and Java 11.
+
+#### 5.2. CI/CD Pipeline (`Jenkinsfile`)
+A declarative pipeline-as-code orchestrates the entire lifecycle:
+1.  **Trigger**: A Git `post-receive` hook on `jenkinsbox` triggers the Jenkins build via `jenkins-cli.jar`.
+2.  **Build**: Compiles Java code and packages the application into a `.war` file.
+3.  **Testing**: Executes the full, multi-layered test suite (Unit, Integration, BDD, API, UI, Performance, Mutation).
+4.  **Analysis**: Jenkins sends data to SonarQube for static analysis and runs OWASP DependencyCheck for vulnerability scanning.
+5.  **Deployment**: Deploys the application WAR to the Tomcat instance on `uitestbox`.
+6.  **Security Scan**: Automated tests are proxied through **OWASP ZAP** (running on `uitestbox` port `8888`) for dynamic application security testing (DAST).
+7.  **Reporting**: Jenkins collects and archives all test and security reports.
+
+---
+
+### 6. Final Architectural Analysis for Decomposition
+
+The current architecture, while monolithic, is well-structured and highly suitable for decomposition into microservices, thanks to clear domain separation, a comprehensive test suite, and automated deployment pipeline.
+
+*   **Identified Service Candidates**:
+    1.  **Authentication Service**: Based on the Authentication domain and `AUTH` schema.
+    2.  **Library Service**: Based on the Library Management domain and `LIBRARY` schema.
+    3.  **Mathematics Service**: A stateless, computational service based on the Mathematics domain.
+    4.  **Expense Service**: Another stateless, computational service based on the Expense Calculation domain.
+    5.  **Quoting Service**: A stateless business logic service extracted from the `AutoInsurance` desktop application.
+
+*   **Decomposition Strategy & Key Challenges**:
+    1.  **Database Separation**: The primary task is to move from a single database with multiple schemas to physically separate databases, one per service, to ensure true autonomy. The existing schema separation makes this a straightforward (though non-trivial) migration.
+    2.  **Persistence Layer Refactoring**: The monolithic `PersistenceLayer` must be broken up. Each new service will receive its own dedicated data access logic, tailored to its specific needs and database.
+    3.  **API Gateway**: The frontend (`library.html`, etc.) currently communicates with a single backend. After decomposition, an API Gateway would be required to route requests from the UI to the appropriate new microservices (`Auth Service`, `Library Service`, etc.).
+    4.  **Inter-Service Communication**: While the current domains are largely independent, a more complex system might require communication (e.g., the Library Service verifying a user's identity with the Auth Service). This would introduce the need for synchronous (REST) or asynchronous (messaging) communication patterns.
+    5.  **Leverage Existing Assets**: The extensive, multi-layered automated test suite is the project's greatest asset for a migration. These tests can be adapted to validate the new microservices individually and test the integrated system through the API Gateway, ensuring no regressions occur during the decomposition process.

@@ -1,0 +1,192 @@
+Of course. Here is a single, comprehensive architectural summary created by merging the provided documents. The summary eliminates redundancy, preserves all unique technical details, and is structured for microservice decomposition analysis.
+
+***
+
+## Comprehensive Architectural Summary
+
+This document synthesizes architectural information from multiple sources to provide a single, detailed overview of the codebase. The information is organized to support a microservice decomposition analysis by clearly defining system components, their responsibilities, dependencies, and interfaces.
+
+### 1. Overall Architecture
+
+The system consists of a monolithic application composed of two main, independent components: a Java-based web application and a Java Swing desktop application. The project serves as a demonstration of software development best practices, particularly in testing and CI/CD.
+
+*   **Architectural Style**: The web application is a classic **3-Tier (Layered) Monolith**. Business domains are logically separated by package structure but are tightly coupled and deployed as a single unit (a WAR file). The desktop application is a standalone thick client.
+    *   **Presentation/API Layer**: Implemented using Java Servlets (`javax.servlet.http.HttpServlet`) that handle HTTP requests and responses.
+    *   **Business Logic Layer**: Encapsulated in `*Utils` classes (e.g., `LibraryUtils`, `RegistrationUtils`). This layer contains the core application logic, business rules, and algorithms.
+    *   **Data Access Layer (DAL)**: A custom micro-ORM implemented in the `PersistenceLayer` class, abstracted by the `IPersistenceLayer` interface. It is the single gateway for all database interactions.
+
+*   **Technology Stack**:
+    *   **Backend**: Java 11+, Java Servlet API, JSP
+    *   **UI**: Simple HTML, CSS, and JavaScript using `XMLHttpRequest` for asynchronous calls.
+    *   **Desktop UI**: Java Swing
+    *   **Database**: H2 (in-memory for runtime, file-based for tests).
+    *   **Database Migrations**: Flyway
+    *   **Web Server**: Embedded Apache Tomcat (managed by the Gretty Gradle plugin).
+    *   **Build & Dependency Management**: Gradle, Pipenv (for Python test dependencies).
+    *   **Key Libraries**: `me.gosimple.nbvcxz` (for password strength analysis).
+
+*   **Key Architectural Principles**: The architecture emphasizes immutability, avoidance of nulls (using status/result objects like `RegistrationResult`), and a clear separation of concerns between layers.
+
+### 2. Bounded Contexts & Domain Analysis (Candidates for Microservices)
+
+The monolithic web application can be logically divided into several distinct business domains, each a strong candidate for decomposition into a microservice.
+
+#### 2.1. Authentication & User Management Domain
+
+This domain is responsible for user identity, including registration, login, and credential management.
+
+*   **Responsibilities**: Manages user registration, validates password strength, ensures username uniqueness, and authenticates users against stored credentials.
+*   **Components**:
+    *   **Servlets**: `RegisterServlet`, `LoginServlet`
+    *   **Business Logic**: `RegistrationUtils`, `LoginUtils`
+*   **Key Business Logic & Algorithms**:
+    *   **Password Hashing**: Passwords are not stored in plaintext. They are hashed using **SHA-256** before being persisted (`RegistrationUtils`).
+    *   **Password Strength Check**: Uses the `Nbvcxz` library to enforce password complexity rules based on length (10-100 chars) and entropy, preventing weak passwords (`RegistrationUtils.isPasswordGood()`).
+    *   **User Existence Check**: Ensures usernames are unique by querying the database before creating a new user.
+*   **Dependencies**: `IPersistenceLayer`.
+*   **Data Models**:
+    *   `User`: Represents a user entity (`long id`, `String name`).
+    *   `RegistrationResult`: A domain object representing the outcome of a registration attempt, containing a boolean flag and `RegistrationStatusEnums` status.
+    *   `PasswordResult`: A domain object detailing the results of a password strength check.
+
+#### 2.2. Library Management Domain
+
+This is the most complex domain, handling all library-related operations for managing books, borrowers, and the lending process.
+
+*   **Responsibilities**: Manages the inventory of books, registration of borrowers, and the transactional process of lending books. It also provides search and listing capabilities.
+*   **Components**:
+    *   **Servlets**: `LibraryRegisterBookServlet`, `LibraryRegisterBorrowerServlet`, `LibraryLendServlet`, `LibraryBookListSearchServlet`, `LibraryBookListAvailableServlet`, `LibraryBorrowerListSearchServlet`.
+    *   **Business Logic**: `LibraryUtils` (central component for all library business logic).
+*   **Key Business Logic & Algorithms**:
+    *   **Lending Transaction**: The `lendBook` method enforces several critical business rules:
+        1.  The book must exist in the system.
+        2.  The borrower must be registered.
+        3.  The book must not already be on loan (by checking for an existing loan record).
+    *   **Entity Management**: Provides CRUD-like operations for books and borrowers, including checks to prevent duplicate entries.
+*   **Dependencies**: `IPersistenceLayer`.
+*   **Data Models**:
+    *   `Book`: (`long id`, `String title`)
+    *   `Borrower`: (`long id`, `String name`)
+    *   `Loan`: (`long id`, `Book book`, `Borrower borrower`, `Date borrowDate`)
+    *   `LibraryActionResults`: Enum representing the outcome of library operations (e.g., `SUCCESS`, `BOOK_CHECKED_OUT`).
+
+#### 2.3. Mathematical Calculations Domain
+
+A stateless domain providing complex mathematical computations. This is a pure function-as-a-service candidate.
+
+*   **Responsibilities**: Exposes endpoints for various mathematical calculations, including simple arithmetic and computationally intensive functions.
+*   **Components**:
+    *   **Servlets**: `MathServlet`, `FibServlet`, `AckServlet`.
+    *   **Business Logic**: `Calculator`, `Ackermann`, `AckermannIterative`, `Fibonacci`, `FibonacciIterative`.
+*   **Key Business Logic & Algorithms**:
+    *   Provides both naive recursive and more performant iterative/tail-recursive algorithms for Fibonacci and Ackermann functions.
+    *   The specific algorithm can be selected via an API parameter (`fib_algorithm_choice`, `ack_algorithm_choice`).
+    *   Uses `java.math.BigInteger` to handle potentially very large results.
+*   **Dependencies**: This domain is completely self-contained and has **no dependencies** on the persistence layer or other domains.
+
+#### 2.4. System Administration Domain
+
+This domain provides administrative functions, primarily for managing the database state. It is essential for development and testing.
+
+*   **Responsibilities**: Exposes an endpoint to control the database schema state, enabling automated resets for testing.
+*   **Components**: `DbServlet`.
+*   **API Interface**: Exposes the `GET /flyway` endpoint, which accepts an `action` parameter (`clean`, `migrate`). The default behavior is to clean and then migrate the database.
+*   **Dependencies**: `IPersistenceLayer`.
+
+#### 2.5. Incomplete/Placeholder Domains
+
+The codebase contains packages for features that are not yet implemented.
+
+*   **`expenses`**: Contains `AlcoholCalculator` and related classes, which currently return empty/default values.
+*   **`cartesianproduct`**: Contains a placeholder `CartesianProduct` class with an empty implementation.
+
+#### 2.6. Desktop Application Component (`7ep-demo/desktop_app`)
+
+This is a self-contained Java Swing application with a distinct business domain, completely separate from the web application.
+
+*   **Responsibilities**: Calculates auto insurance premium adjustments based on a driver's age and number of prior claims. It determines premium increases, warning letters, or policy cancellation.
+*   **API and Interfaces**: Exposes a programmatic interface for test automation via a custom **TCP socket server**.
+    *   **`AutoInsuranceScriptServer.java`**: Listens on **TCP port 8000**.
+    *   **Protocol**: A simple, text-based request-response protocol with commands like `set age <int>`, `set claims <int>`, `get label`, `click calculate`, and `quit`.
+*   **Key Business Logic**: `AutoInsuranceProcessor.java` contains a rules engine that maps inputs (`claims`, `age`) to an `AutoInsuranceAction` output.
+    *   **Example Rules**: If `claims >= 5`, `isPolicyCanceled` is true. If `claims` is 2-4 and `age` is 16-25, the premium increases by $400.
+*   **Data Models**:
+    *   `AutoInsuranceAction`: The primary domain object representing the outcome (`premiumIncreaseDollars`, `warningLetterEnum`, `isPolicyCanceled`).
+    *   `InvalidClaimsException`: Custom exception for invalid input.
+*   **Dependencies**: This component is stateless, has no database, and does not interact with the web application.
+
+### 3. Shared Infrastructure & Cross-Cutting Concerns
+
+#### 3.1. API Endpoints (Web Application)
+
+All endpoints are prefixed with `/demo`.
+
+| Method | Endpoint Path                 | Servlet Class                           | Key Parameters                                     | Responsibility                                              |
+| :----- | :---------------------------- | :-------------------------------------- | :------------------------------------------------- | :---------------------------------------------------------- |
+| POST   | `/register`                   | `RegisterServlet`                       | `username`, `password`                             | Registers a new user.                                       |
+| POST   | `/login`                      | `LoginServlet`                          | `username`, `password`                             | Authenticates a user.                                       |
+| POST   | `/registerbook`               | `LibraryRegisterBookServlet`            | `book` (title)                                     | Registers a new book.                                       |
+| POST   | `/registerborrower`           | `LibraryRegisterBorrowerServlet`        | `borrower` (name)                                  | Registers a new borrower.                                   |
+| POST   | `/lend`                       | `LibraryLendServlet`                    | `book` (title), `borrower` (name)                  | Creates a loan record.                                      |
+| GET    | `/library-books-search`       | `LibraryBookListSearchServlet`          | `id` (optional), `title` (optional)                | Searches for books by ID or title.                          |
+| GET    | `/library-borrowers-search`   | `LibraryBorrowerListSearchServlet`      | `id` (optional), `name` (optional)                 | Searches for borrowers by ID or name.                       |
+| GET    | `/library-books-available`    | `LibraryBookListAvailableServlet`       | (none)                                             | Lists all books not currently on loan.                      |
+| POST   | `/math`                       | `MathServlet`                           | `item_a`, `item_b`                                 | Adds two integers.                                          |
+| POST   | `/fibonacci`                  | `FibServlet`                            | `fib_param_n`, `fib_algorithm_choice`              | Calculates a Fibonacci number.                              |
+| POST   | `/ackermann`                  | `AckServlet`                            | `ack_param_m`, `ack_param_n`, `ack_algorithm_choice` | Calculates an Ackermann number.                             |
+| GET    | `/flyway`                     | `DbServlet`                             | `action` (`clean`, `migrate`)                      | Resets/migrates the database schema.                        |
+| GET/POST | `/console/*`                | `org.h2.server.web.WebServlet`          | (H2 Console specific)                              | Provides a web-based console for the H2 database.           |
+
+#### 3.2. Persistence Layer and Database Schema
+
+The `PersistenceLayer` is a central point of coupling, as it is used by the Authentication, Library, and Admin domains.
+
+*   **Interface (`IPersistenceLayer`)**: Provides a clean separation of concerns. Inferred methods include:
+    *   **Authentication**: `areCredentialsValid(...)`, `searchForUserByName(...)`, `saveNewUser(...)`
+    *   **Library**: `searchBooksBy...`, `searchBorrowerDataByName(...)`, `searchForLoanBy...`, `saveNewBook(...)`, `saveNewBorrower(...)`, `createLoan(...)`, `deleteBook(...)`, `deleteBorrower(...)`, `listAllBooks()`, `listAvailableBooks()`
+    *   **Admin**: `cleanDatabase()`, `migrateDatabase()`, `cleanAndMigrateDatabase()`
+*   **SQL Handling**: Uses a lightweight custom framework (`SqlData`, `ParameterObject`) to build and execute prepared statements.
+*   **Database Schema**: A single H2 database is shared by all domains. Schema is managed by Flyway scripts (e.g., `V2__Rest_of_tables_for_auth_and_library.sql`).
+
+| Table                 | Schema         | Columns                                                                   | Java Domain Object | Description                                                   |
+| :-------------------- | :------------- | :------------------------------------------------------------------------ | :----------------- | :------------------------------------------------------------ |
+| `users`               | `AUTH`         | `id` (SERIAL, PK), `name` (VARCHAR, UNIQUE), `hash` (VARCHAR)             | `User`             | Stores user credentials with a SHA-256 password hash.         |
+| `books`               | `LIBRARY`      | `id` (SERIAL, PK), `title` (VARCHAR)                                      | `Book`             | Stores library book inventory.                                |
+| `borrowers`           | `LIBRARY`      | `id` (SERIAL, PK), `name` (VARCHAR)                                       | `Borrower`         | Stores registered library patrons.                            |
+| `loans`               | `LIBRARY`      | `id` (SERIAL, PK), `book` (INT, FK), `borrower` (INT, FK), `checkout_date` (DATE) | `Loan`             | Tracks book loans. `ON DELETE CASCADE` is enabled for FKs.    |
+| `flyway_schema_history` | `ADMINISTRATIVE` | (Flyway standard columns)                                                 | N/A                | Tracks which database migrations have been applied.           |
+
+### 4. Configuration, Deployment, and Lifecycle
+
+*   **Build System**: Gradle (`gradlew`). Project properties are in `gradle.properties`.
+*   **Deployment Unit**: A standard WAR (Web Application Archive) file.
+*   **Deployment Execution**: The `gradlew apprun` command starts an embedded Tomcat server, making the application available at `http://localhost:8080/demo`.
+*   **Application Lifecycle**: A `WebAppListener` is configured to run on application startup. Its `contextInitialized` method invokes `pl.cleanAndMigrateDatabase()`, completely resetting and re-applying the database schema with every restart. This makes the application effectively stateless between restarts.
+*   **Configuration**:
+    *   **Database URL**: Hardcoded in `PersistenceLayer` for runtime (`jdbc:h2:mem:training`) and `PersistenceLayerTests` for testing (`jdbc:h2:./build/db/training`).
+    *   **Logging**: Configured via `src/main/resources/log4j2.xml` to log `INFO` level to the console.
+    *   **Web Config**: `src/main/webapp/WEB-INF/web.xml` configures the H2 console servlet and cookie-based sessions.
+
+### 5. CI/CD Pipeline and Testing Strategy
+
+The project features a sophisticated CI/CD pipeline and a comprehensive, multi-language testing strategy, which are critical architectural assets.
+
+*   **CI/CD Pipeline (`jenkins/Jenkinsfile`)**: Automates a full quality assurance process with the following key stages:
+    1.  **Build**: Compiles code and assembles the WAR file.
+    2.  **Unit & DB Tests**: Runs fast, isolated tests and database-dependent integration tests.
+    3.  **BDD Tests**: Executes Cucumber feature tests.
+    4.  **Static Analysis**: Integrates with SonarQube and enforces a quality gate.
+    5.  **Deploy to Test**: Deploys the application to a test environment.
+    6.  **End-to-End Testing**: Executes a multi-framework suite of API and UI tests.
+    7.  **Security Testing**:
+        *   **Dependency Analysis (SCA)**: Uses OWASP DependencyCheck to find vulnerable libraries.
+        *   **Dynamic Scanning (DAST)**: Routes test traffic through an OWASP ZAP proxy (running on port **8888**) to generate a security report.
+    8.  **Performance Tests**: Executes JMeter load tests.
+    9.  **Mutation Tests**: Uses Pitest to assess test suite quality.
+    10. **Deploy to Prod**: A placeholder for production deployment.
+
+*   **Multi-Framework Testing Strategy**:
+    *   **Python (Behave & Pytest)**: For Behavior-Driven Development (BDD). `environment.py` resets the database via the `/flyway` endpoint before each scenario. Implements the **Page Object Model (POM)** pattern (`LibraryPageObjectModel`).
+    *   **Java (Selenium & HtmlUnit)**: For browser-based and headless UI testing. Includes an `ApiCalls.java` helper, which performs direct HTTP requests for efficient test setup.
+    *   **JavaScript (Mocha & Selenium)**
+    *   **C# (NUnit & Selenium)**
