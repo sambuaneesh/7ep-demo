@@ -1,0 +1,342 @@
+{
+  "tool": {
+    "decomposition": {
+      "Authentication Service": [
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegisterServlet"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "RegistrationResult"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        },
+        {
+          "id": "User"
+        },
+        {
+          "id": "LoginStepDefs"
+        },
+        {
+          "id": "RegistrationStepDefs"
+        },
+        {
+          "id": "LoginServletTests"
+        },
+        {
+          "id": "LoginUtilsTests"
+        },
+        {
+          "id": "RegisterServletTests"
+        },
+        {
+          "id": "RegistrationUtilsTests"
+        },
+        {
+          "id": "PasswordResultTests"
+        },
+        {
+          "id": "RegistrationResultTests"
+        },
+        {
+          "id": "UserTests"
+        }
+      ],
+      "Library Management Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "LibraryUtils"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "LibraryActionResults"
+        },
+        {
+          "id": "Loan"
+        },
+        {
+          "id": "AddDeleteListSearchBooksAndBorrowersStepDefs"
+        },
+        {
+          "id": "BookCheckOutStepDefs"
+        },
+        {
+          "id": "LendingTests"
+        },
+        {
+          "id": "LibraryBookListAvailableServletTests"
+        },
+        {
+          "id": "LibraryBookListSearchServletTests"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServletTests"
+        },
+        {
+          "id": "LibraryLendServletTests"
+        },
+        {
+          "id": "LibraryRegisterBookServletTests"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServletTests"
+        },
+        {
+          "id": "LibraryUtilsTests"
+        },
+        {
+          "id": "BookTests"
+        },
+        {
+          "id": "BorrowerTests"
+        },
+        {
+          "id": "LoanTests"
+        },
+        {
+          "id": "SelenifiedSample"
+        },
+        {
+          "id": "HtmlUnitTests"
+        },
+        {
+          "id": "SeleniumTests"
+        }
+      ],
+      "Mathematics Service": [
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "Fibonacci"
+        },
+        {
+          "id": "FibonacciIterative"
+        },
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "FunctionalField"
+        },
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "CartesianProduct"
+        },
+        {
+          "id": "AckermannStepDefs"
+        },
+        {
+          "id": "FibonacciStepDefs"
+        },
+        {
+          "id": "MathStepDefs"
+        },
+        {
+          "id": "CartesianProductStepDefs"
+        },
+        {
+          "id": "AckermannIterativeParameterizedTests"
+        },
+        {
+          "id": "AckermannParameterizedTests"
+        },
+        {
+          "id": "AckServletTests"
+        },
+        {
+          "id": "CalculatorTests"
+        },
+        {
+          "id": "FibonacciParameterizedTests"
+        },
+        {
+          "id": "FibonacciTests"
+        },
+        {
+          "id": "FibServletTests"
+        },
+        {
+          "id": "MathServletTests"
+        }
+      ],
+      "Expense Calculation Service": [
+        {
+          "id": "AlcoholCalculator"
+        },
+        {
+          "id": "AlcoholResult"
+        },
+        {
+          "id": "DinnerPrices"
+        },
+        {
+          "id": "AlcoholStepDefs"
+        }
+      ],
+      "Auto Insurance Service": [
+        {
+          "id": "AutoInsuranceAction"
+        },
+        {
+          "id": "AutoInsuranceProcessor"
+        },
+        {
+          "id": "AutoInsuranceScriptServer"
+        },
+        {
+          "id": "AutoInsuranceUI"
+        },
+        {
+          "id": "InvalidClaimsException"
+        },
+        {
+          "id": "WarningLetterEnum"
+        },
+        {
+          "id": "AutoInsuranceActionTests"
+        },
+        {
+          "id": "AutoInsuranceProcessorTests"
+        },
+        {
+          "id": "AutoInsuranceScriptClient"
+        },
+        {
+          "id": "DesktopTester"
+        },
+        {
+          "id": "DesktopUiTests"
+        }
+      ],
+      "Shared Infrastructure Service": [
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "StringUtils"
+        },
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "EmptyDataSource"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "NotImplementedException"
+        },
+        {
+          "id": "ParameterObject"
+        },
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "WebAppListener"
+        },
+        {
+          "id": "ExecutionDataClient"
+        },
+        {
+          "id": "PersistenceLayerTests"
+        },
+        {
+          "id": "CheckUtilsTests"
+        },
+        {
+          "id": "DateUtils"
+        },
+        {
+          "id": "DateUtilsTests"
+        },
+        {
+          "id": "StringUtilsTests"
+        },
+        {
+          "id": "DbServletTests"
+        },
+        {
+          "id": "EmptyDataSourceTests"
+        },
+        {
+          "id": "ParameterObjectTests"
+        },
+        {
+          "id": "SqlDataTests"
+        },
+        {
+          "id": "WebAppListenerTests"
+        },
+        {
+          "id": "ApiCalls"
+        }
+      ]
+    }
+  }
+}
