@@ -1,59 +1,159 @@
 {
-  "Authentication Service": [
-    "com.coveros.training.authentication.LoginServlet",
-    "com.coveros.training.authentication.LoginUtils",
-    "com.coveros.training.authentication.RegisterServlet",
-    "com.coveros.training.authentication.RegistrationUtils",
-    "com.coveros.training.authentication.domainobjects.PasswordResult",
-    "com.coveros.training.authentication.domainobjects.PasswordResultEnums",
-    "com.coveros.training.authentication.domainobjects.RegistrationResult",
-    "com.coveros.training.authentication.domainobjects.RegistrationStatusEnums",
-    "com.coveros.training.authentication.domainobjects.User"
-  ],
-  "Library Service": [
-    "com.coveros.training.library.LibraryBookListAvailableServlet",
-    "com.coveros.training.library.LibraryBookListSearchServlet",
-    "com.coveros.training.library.LibraryBorrowerListSearchServlet",
-    "com.coveros.training.library.LibraryLendServlet",
-    "com.coveros.training.library.LibraryRegisterBookServlet",
-    "com.coveros.training.library.LibraryRegisterBorrowerServlet",
-    "com.coveros.training.library.LibraryUtils",
-    "com.coveros.training.library.domainobjects.Book",
-    "com.coveros.training.library.domainobjects.Borrower",
-    "com.coveros.training.library.domainobjects.LibraryActionResults",
-    "com.coveros.training.library.domainobjects.Loan"
-  ],
-  "Mathematics Service": [
-    "com.coveros.training.mathematics.AckServlet",
-    "com.coveros.training.mathematics.Ackermann",
-    "com.coveros.training.mathematics.AckermannIterative",
-    "com.coveros.training.mathematics.Calculator",
-    "com.coveros.training.mathematics.FibServlet",
-    "com.coveros.training.mathematics.Fibonacci",
-    "com.coveros.training.mathematics.FibonacciIterative",
-    "com.coveros.training.mathematics.FunctionalField",
-    "com.coveros.training.mathematics.MathServlet",
-    "com.coveros.training.mathematics.TailRecursive"
-  ],
-  "Expense Calculation Service": [
-    "com.coveros.training.cartesianproduct.CartesianProduct",
-    "com.coveros.training.expenses.AlcoholCalculator",
-    "com.coveros.training.expenses.AlcoholResult",
-    "com.coveros.training.expenses.DinnerPrices"
-  ],
-  "Shared Infrastructure Service": [
-    "com.coveros.training.helpers.AssertionException",
-    "com.coveros.training.helpers.CheckUtils",
-    "com.coveros.training.helpers.ServletUtils",
-    "com.coveros.training.helpers.StringUtils",
-    "com.coveros.training.persistence.DbServlet",
-    "com.coveros.training.persistence.EmptyDataSource",
-    "com.coveros.training.persistence.IPersistenceLayer",
-    "com.coveros.training.persistence.NotImplementedException",
-    "com.coveros.training.persistence.ParameterObject",
-    "com.coveros.training.persistence.PersistenceLayer",
-    "com.coveros.training.persistence.SqlData",
-    "com.coveros.training.persistence.SqlRuntimeException",
-    "com.coveros.training.tomcat.WebAppListener"
-  ]
+  "tool": {
+    "decomposition": {
+      "Authentication Service": [
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegisterServlet"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "RegistrationResult"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        },
+        {
+          "id": "User"
+        }
+      ],
+      "Library Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "LibraryUtils"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "LibraryActionResults"
+        },
+        {
+          "id": "Loan"
+        }
+      ],
+      "Mathematics Service": [
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "Fibonacci"
+        },
+        {
+          "id": "FibonacciIterative"
+        },
+        {
+          "id": "FunctionalField"
+        },
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "CartesianProduct"
+        }
+      ],
+      "Data Persistence Service": [
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "EmptyDataSource"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "NotImplementedException"
+        },
+        {
+          "id": "ParameterObject"
+        },
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "WebAppListener"
+        }
+      ],
+      "Expense Calculation Service": [
+        {
+          "id": "AlcoholCalculator"
+        },
+        {
+          "id": "AlcoholResult"
+        },
+        {
+          "id": "DinnerPrices"
+        }
+      ],
+      "Shared Utilities Service": [
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "StringUtils"
+        }
+      ]
+    }
+  }
 }
