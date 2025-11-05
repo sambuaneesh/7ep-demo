@@ -1,0 +1,353 @@
+{
+  "tool": {
+    "decomposition": {
+      "Library Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryUtils"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "BookCheckOutStepDefs"
+        },
+        {
+          "id": "AddDeleteListSearchBooksAndBorrowersStepDefs"
+        },
+        {
+          "id": "LibraryBookListSearchServletTests"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServletTests"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServletTests"
+        },
+        {
+          "id": "LibraryBookListAvailableServletTests"
+        },
+        {
+          "id": "LibraryUtilsTests"
+        },
+        {
+          "id": "LibraryLendServletTests"
+        },
+        {
+          "id": "LibraryRegisterBookServletTests"
+        },
+        {
+          "id": "LendingTests"
+        },
+        {
+          "id": "LibraryActionResults"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "Loan"
+        },
+        {
+          "id": "BorrowerTests"
+        },
+        {
+          "id": "LoanTests"
+        },
+        {
+          "id": "BookTests"
+        },
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "DbServletTests"
+        },
+        {
+          "id": "PersistenceLayerTests"
+        }
+      ],
+      "Authentication Service": [
+        {
+          "id": "RegisterServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "LoginStepDefs"
+        },
+        {
+          "id": "RegistrationStepDefs"
+        },
+        {
+          "id": "NbvcxzTests"
+        },
+        {
+          "id": "RegistrationUtilsTests"
+        },
+        {
+          "id": "RegisterServletTests"
+        },
+        {
+          "id": "LoginServletTests"
+        },
+        {
+          "id": "LoginUtilsTests"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "User"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "RegistrationResult"
+        },
+        {
+          "id": "RegistrationResultTests"
+        },
+        {
+          "id": "UserTests"
+        },
+        {
+          "id": "PasswordResultTests"
+        },
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "PersistenceLayerTests"
+        }
+      ],
+      "Mathematics Service": [
+        {
+          "id": "CartesianProduct"
+        },
+        {
+          "id": "CartesianProductStepDefs"
+        },
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "Fibonacci"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "FibonacciIterative"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "FunctionalField"
+        },
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "AckServletTests"
+        },
+        {
+          "id": "AckermannIterativeParameterizedTests"
+        },
+        {
+          "id": "CalculatorTests"
+        },
+        {
+          "id": "FibonacciTests"
+        },
+        {
+          "id": "AckermannParameterizedTests"
+        },
+        {
+          "id": "FibonacciParameterizedTests"
+        },
+        {
+          "id": "FibServletTests"
+        },
+        {
+          "id": "MathServletTests"
+        },
+        {
+          "id": "FibonacciStepDefs"
+        },
+        {
+          "id": "AckermannStepDefs"
+        },
+        {
+          "id": "MathStepDefs"
+        }
+      ],
+      "Auto Insurance Simulation Service": [
+        {
+          "id": "AutoInsuranceProcessor"
+        },
+        {
+          "id": "AutoInsuranceUI"
+        },
+        {
+          "id": "AutoInsuranceAction"
+        },
+        {
+          "id": "InvalidClaimsException"
+        },
+        {
+          "id": "WarningLetterEnum"
+        },
+        {
+          "id": "AutoInsuranceProcessorTests"
+        },
+        {
+          "id": "AutoInsuranceActionTests"
+        },
+        {
+          "id": "ExecutionDataClient"
+        },
+        {
+          "id": "DesktopTester"
+        },
+        {
+          "id": "DesktopUiTests"
+        },
+        {
+          "id": "AutoInsuranceScriptClient"
+        }
+      ],
+      "Expense Tracking Service": [
+        {
+          "id": "AlcoholCalculator"
+        },
+        {
+          "id": "AlcoholResult"
+        },
+        {
+          "id": "DinnerPrices"
+        },
+        {
+          "id": "AlcoholStepDefs"
+        }
+      ],
+      "Shared Infrastructure Service": [
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "StringUtils"
+        },
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "CheckUtilsTests"
+        },
+        {
+          "id": "DateUtils"
+        },
+        {
+          "id": "DateUtilsTests"
+        },
+        {
+          "id": "StringUtilsTests"
+        },
+        {
+          "id": "WebAppListener"
+        },
+        {
+          "id": "WebAppListenerTests"
+        },
+        {
+          "id": "ParameterObject"
+        },
+        {
+          "id": "EmptyDataSource"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "NotImplementedException"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "EmptyDataSourceTests"
+        },
+        {
+          "id": "ParameterObjectTests"
+        },
+        {
+          "id": "SqlDataTests"
+        }
+      ],
+      "E2E Testing Service": [
+        {
+          "id": "ApiCalls"
+        },
+        {
+          "id": "SeleniumTests"
+        },
+        {
+          "id": "HtmlUnitTests"
+        },
+        {
+          "id": "SelenifiedSample"
+        }
+      ]
+    }
+  }
+}
