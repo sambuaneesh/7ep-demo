@@ -1,8 +1,9 @@
 | Component Name | Language | Frameworks | Database | Communication | Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Core Application & Integration** | Java | Spring Boot, Testcontainers, Spring MVC | MySQL | HTTP/REST | Spring Boot Application, Integration Testing, Testcontainers for DB Isolation, Ahead-Of-Time (AOT) Compilation |
-| **Owner & Pet Management** | Java | Spring Boot, Spring MVC, Spring Data JPA, Bean Validation (JSR-303) | Relational (via JPA) | HTTP | Model-View-Controller (MVC), Repository, Domain-Driven Design (DDD), Server-Side Validation, Data Binding & Formatting |
-| **Veterinarian Management** | Java | Spring Boot, Spring MVC, Spring Data JPA, JAXB | Relational (via JPA) | HTTP, REST (JSON/XML) | Model-View-Controller (MVC), Repository, Data Transfer Object (DTO), Caching, Transactional Management |
-| **Domain Model Foundation** | Java | Spring Data JPA, Bean Validation (JSR-303) | N/A (ORM Annotations) | Internal Data Structures | Object-Oriented Design (OOD) with Inheritance, Mapped Superclass, Domain-Driven Design (DDD) |
-| **System & Cross-Cutting Concerns** | Java | Spring Boot, Spring MVC, Spring Cache, JCache | N/A | HTTP | Separation of Concerns, Declarative Caching, Internationalization (i18n), Global Error Handling |
-| **Service Layer & Persistence Validation** | Java | Spring Boot, Spring Data JPA | Relational (via JPA) | Internal Method Calls | Service Layer, Repository, Integration Testing, Utility Class |
+| **Authentication Service** | Java | Java Servlets, JUnit, Mockito, Cucumber, SLF4J | H2 (via Persistence Layer) | HTTP (POST) | Layered Architecture, Service Pattern, TDD/BDD, Domain-Driven Design (Value Objects), Immutability |
+| **Library Management Service** | Java | Java Servlets, JUnit, Mockito, Cucumber, SLF4J | H2 (via Persistence Layer) | HTTP (GET/POST) | Layered Architecture, MVC-like, Service Layer, Dependency Inversion, TDD/BDD, Domain-Driven Design (Entities) |
+| **Educational Services** | Java | Java Servlets, JUnit, Cucumber | N/A | HTTP (POST) | TDD/BDD, Functional Programming (Tail Recursion Emulation), Layered Architecture, Immutability |
+| **Auto Insurance Simulation** | Java | Swing, JUnit | N/A | TCP/IP Sockets (Client-Server), JaCoCo Agent | Client-Server Architecture, Facade, Immutability, Separation of Concerns (UI/Logic), TDD |
+| **Persistence Layer** | Java | JDBC, Flyway | H2 | N/A (Internal Library) | Data Access Object (DAO), Abstraction (Interface-based), Command Object, Parameter Object, TDD |
+| **Web Application Infrastructure** | Java | Java Servlets (`ServletContextListener`) | H2 (manages lifecycle) | N/A (Servlet Container Events) | Listener Pattern, Utility Pattern, Separation of Concerns |
+| **Automated Testing Suite** | Java | JUnit, Mockito, Cucumber, Selenium WebDriver, Selenified, HtmlUnit | H2 (for test data management) | HTTP (for API calls and UI automation) | Behavior-Driven Development (BDD), Test-Driven Development (TDD), Layered Testing Strategy |

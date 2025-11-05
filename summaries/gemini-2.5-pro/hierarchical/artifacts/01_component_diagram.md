@@ -1,77 +1,61 @@
 ```mermaid
 graph TB
-    subgraph "External Actors"
-        User[User / API Client]
+    subgraph "External Actors & QA"
+        User(["<font size=5><b>User</b></font><br/>(via Browser)"])
+        TestingSuite["<b>Automated Testing Suite</b><br/>(Selenium, HtmlUnit, Cucumber BDD)"]
     end
 
-    subgraph "Presentation Layer (Spring MVC)"
-        direction LR
-        subgraph "Owner & Pet Management"
-            OwnerController[OwnerController]
-            PetController[PetController]
-            VisitController[VisitController]
+    subgraph "7ep-demo Application"
+        subgraph "Application Core Layers"
+            WebLayer["<b>Web Presentation Layer</b><br/>Servlets for Library, Auth, Math"]
+            BusinessLayer["<b>Business Logic Layer</b><br/>LibraryUtils, LoginUtils, RegistrationUtils, Math Calculators"]
+            PersistenceLayer["<b>Persistence Layer</b><br/>IPersistenceLayer, PersistenceLayer<br/><i>(JDBC, Flyway Migrations)</i>"]
+            DomainModel["<b>Domain Model</b><br/>Book, Borrower, Loan, User,<br/>RegistrationResult"]
         end
-        subgraph "Veterinarian Management"
-            VetController[VetController]
-        end
-        subgraph "System & Web"
-             SystemControllers[System Controllers <br> Welcome, Crash]
-        end
-    end
 
-    subgraph "Service & Data Access Layer (Spring Data JPA)"
-        direction LR
-        subgraph "Owner & Pet Persistence"
-            OwnerRepository[OwnerRepository]
-            PetTypeRepository[PetTypeRepository]
+        subgraph "Supporting Infrastructure"
+            AppLifecycle["<b>Application Lifecycle</b><br/>WebAppListener"]
+            Helpers["<b>Utilities / Helpers</b><br/>CheckUtils, StringUtils, ServletUtils"]
         end
-        subgraph "Veterinarian Persistence"
-            VetRepository[VetRepository <br> @Cacheable]
+
+        subgraph "Self-Contained Educational Modules"
+            AutoInsurance["<b>Auto Insurance System</b><br/>UI, Processor, Client-Server Demo"]
+            OtherModules["<b>Other Modules</b><br/>Cartesian Product, Expenses"]
         end
     end
 
-    subgraph "Domain Model"
-        direction LR
-        OwnerModel[Owner, Pet, Visit]
-        VetModel[Vet, Specialty]
-        BaseModel[BaseEntity, Person]
-    end
+    %% --- Core Application Interactions ---
+    User --> WebLayer
+    WebLayer -- "Delegates to" --> BusinessLayer
+    WebLayer -- "Uses for dispatch" --> Helpers
 
-    subgraph "Cross-Cutting Concerns (System Package)"
-        direction LR
-        I18n[Internationalization]
-        ErrHandling[Global Error Handling]
-        CachingConfig[Cache Configuration]
-    end
+    BusinessLayer -- "Uses (CRUD ops via Interface)" --> PersistenceLayer
+    BusinessLayer -- "Operates on" --> DomainModel
+    BusinessLayer -- "Uses for validation" --> Helpers
+
+    PersistenceLayer -- "Manages" --> DomainModel
     
-    subgraph "Persistence"
-        DB[(Database)]
-    end
+    AppLifecycle -- "Initializes / Migrates DB on Startup" --> PersistenceLayer
 
-    %% Main Flow
-    User --> OwnerController
-    User --> VetController
-    User --> SystemControllers
-
-    OwnerController --> OwnerRepository
-    PetController --> OwnerRepository & PetTypeRepository
-    VisitController --> OwnerRepository
-    VetController --> VetRepository
-
-    OwnerRepository --> DB
-    PetTypeRepository --> DB
-    VetRepository --> DB
-
-    %% Layer Dependencies
-    OwnerController & PetController & VisitController -- uses --> OwnerModel
-    VetController -- uses --> VetModel
-    OwnerRepository & PetTypeRepository -- manages --> OwnerModel
-    VetRepository -- manages --> VetModel
-    OwnerModel & VetModel -- extends --> BaseModel
+    %% --- Testing Interactions ---
+    TestingSuite -- "UI/API Tests" --> WebLayer
+    TestingSuite -- "BDD/Unit Tests & DB Setup" --> BusinessLayer
+    TestingSuite -- "DB Reset" --> PersistenceLayer
+    TestingSuite -- "Tests Modules" --> AutoInsurance
+    TestingSuite -- "Tests Modules" --> OtherModules
     
-    %% Cross-Cutting Application
-    I18n & ErrHandling -- applies to --> "Presentation Layer (Spring MVC)"
-    CachingConfig -.-> VetRepository
+    %% --- Styling ---
+    classDef core fill:#e6f3ff,stroke:#005cb3,stroke-width:2px;
+    classDef support fill:#e6ffe6,stroke:#006400,stroke-width:2px;
+    classDef qa fill:#fff0e6,stroke:#d95f00,stroke-width:2px;
+    classDef external fill:#f2f2f2,stroke:#333,stroke-width:2px;
+    classDef educational fill:#f3e6ff,stroke:#6a00a7,stroke-width:2px;
+
+    class WebLayer,BusinessLayer,PersistenceLayer,DomainModel core;
+    class AppLifecycle,Helpers support;
+    class TestingSuite qa;
+    class User external;
+    class AutoInsurance,OtherModules educational;
 ```
 
-The system exhibits a classic layered architecture, separating the Presentation (Spring MVC Controllers), Data Access (Spring Data JPA Repositories), and a central Domain Model. Communication is streamlined with controllers directly invoking repositories to manage persistence for distinct domain components like Owner/Pet and Vet. Cross-cutting concerns such as caching, error handling, and internationalization are managed in a dedicated system component, applying their services across the appropriate layers.
+The system employs a classic layered architecture where a Web Presentation Layer (Servlets) handles HTTP requests and delegates operations to a cohesive Business Logic Layer. This layer, in turn, interacts with an abstracted Persistence Layer for all data storage and retrieval, ensuring a clear separation of concerns. All components rely on a central Domain Model for data representation and are rigorously validated by a comprehensive, multi-level automated testing suite.

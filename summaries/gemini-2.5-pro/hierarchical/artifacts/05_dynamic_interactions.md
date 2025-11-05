@@ -1,292 +1,231 @@
-### 1. Find and View Owner Details Workflow
+### 1. Application Startup and Database Migration
 
-**Description:**
-This workflow describes the process of a clinic staff member searching for a pet owner by their last name and then viewing their detailed profile. The system handles cases where one, multiple, or no owners are found. The detailed view includes the owner's information, a list of their pets, and each pet's medical visit history.
-
-**Triggers:**
-- User submits the "Find owners" form.
-
-**Communication Patterns:**
-- **Synchronous:** The entire flow is synchronous, initiated by user HTTP requests.
-- **REST/HTTP:** User interaction is managed via GET requests to the `OwnerController`.
-- **Database Transactions:** Data retrieval is handled through read-only transactions via Spring Data JPA (`OwnerRepository`).
+-   **Workflow Purpose and Triggers**: This workflow is triggered when the web application is started by the Tomcat server. Its purpose is to initialize the application environment, ensuring the database schema is clean and migrated to the latest version using Flyway. This provides a consistent and predictable state for every application run, which is critical for a demonstration and testing-focused system.
+-   **Communication Patterns**: This flow is initiated by a Java EE Application Lifecycle Event (`ServletContextListener`). It involves direct synchronous method calls between the listener and the persistence layer, which in turn uses JDBC to communicate with the H2 database via the Flyway library.
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant Browser
-    participant OwnerController
-    participant OwnerRepository
-    participant Database
+    participant Tomcat as Tomcat Server
+    participant WebAppListener as WebAppListener
+    participant PersistenceLayer as IPersistenceLayer
+    participant Flyway as Flyway Library
+    participant H2 as H2 Database
 
-    User->>Browser: Enters last name and clicks "Find Owner"
-    Browser->>OwnerController: GET /owners?lastName=...
-    OwnerController->>OwnerRepository: findByLastName("...")
-    OwnerRepository->>Database: SELECT * FROM owners WHERE last_name = ?
-    Database-->>OwnerRepository: Returns List<Owner>
-    OwnerRepository-->>OwnerController: returns List<Owner>
-
-    alt One Owner Found
-        OwnerController-->>Browser: HTTP 302 Redirect to /owners/{ownerId}
-        Browser->>OwnerController: GET /owners/{ownerId}
-        OwnerController->>OwnerRepository: findById(ownerId)
-        Note right of OwnerController: Fetch owner with pets and visits (JPA Eager/Lazy Fetch)
-        OwnerRepository->>Database: SELECT * FROM owners o LEFT JOIN pets p ... LEFT JOIN visits v ... WHERE o.id = ?
-        Database-->>OwnerRepository: Returns Owner object with collections
-        OwnerRepository-->>OwnerController: returns Owner
-        OwnerController->>Browser: Renders ownerDetails.html view with Owner data (200 OK)
-    else Multiple Owners Found
-        OwnerController->>Browser: Renders ownersList.html view with List<Owner> data (200 OK)
-    else No Owner Found
-        OwnerController->>Browser: Renders findOwners.html view with error message (200 OK)
-    end
-    Browser-->>User: Displays owner details / list / error
+    Tomcat ->>+ WebAppListener: Starts Web Application
+    WebAppListener ->> WebAppListener: contextInitialized()
+    WebAppListener ->>+ PersistenceLayer: new PersistenceLayer()
+    WebAppListener ->> PersistenceLayer: cleanAndMigrateDatabase()
+    PersistenceLayer ->>+ Flyway: flyway.clean()
+    Flyway ->>+ H2: Connect and DROP ALL OBJECTS
+    H2 -->>- Flyway: Acknowledge
+    Flyway -->>- PersistenceLayer: Clean Complete
+    PersistenceLayer ->>+ Flyway: flyway.migrate()
+    Flyway ->>+ H2: Connect and apply migration scripts (CREATE TABLE, etc.)
+    H2 -->>- Flyway: Acknowledge
+    Flyway -->>- PersistenceLayer: Migration Complete
+    PersistenceLayer -->>- WebAppListener: Database Ready
+    WebAppListener -->>- Tomcat: Initialization Complete
 ```
 
----
+### 2. New User Registration (Successful)
 
-### 2. Add a New Owner Workflow
-
-**Description:**
-This workflow details the process of registering a new pet owner. The user navigates to a creation form, fills in the owner's details, and submits the form. The system validates the input and, if successful, saves the new owner to the database and redirects the user to the newly created owner's profile.
-
-**Triggers:**
-- User clicks the "Add Owner" button/link.
-- User submits the new owner form.
-
-**Communication Patterns:**
-- **Synchronous:** A standard request-response web flow.
-- **REST/HTTP:** The workflow uses GET to display the form and POST to submit the new data.
-- **Database Transactions:** A write transaction is used to persist the new `Owner` entity.
-- **Server-Side Validation:** JSR-303 Bean Validation is used to ensure data integrity before persistence.
+-   **Workflow Purpose and Triggers**: This workflow is triggered when a new user submits the registration form through their web browser. Its purpose is to create a new user account, provided the username is unique and the password meets the required strength criteria.
+-   **Communication Patterns**: The flow starts with an HTTP POST request. Interactions are synchronous and follow a layered architecture: the Servlet (Controller) calls a utility class (Service), which in turn calls the persistence layer (DAO). The persistence layer uses JDBC for database operations, and data is passed using primitive types and domain objects (`User`, `RegistrationResult`).
 
 ```mermaid
 sequenceDiagram
     actor User
     participant Browser
-    participant OwnerController
-    participant OwnerRepository
-    participant Database
+    participant RegisterServlet
+    participant RegistrationUtils
+    participant PersistenceLayer as IPersistenceLayer
+    participant H2 as H2 Database
 
-    User->>Browser: Clicks "Add Owner"
-    Browser->>OwnerController: GET /owners/new
-    OwnerController-->>Browser: Renders createOrUpdateOwnerForm.html (200 OK)
-
-    User->>Browser: Fills form and submits
-    Browser->>OwnerController: POST /owners/new with Owner form data
-    OwnerController->>OwnerController: validate(owner)
-    alt Validation Fails
-        OwnerController-->>Browser: Re-renders createOrUpdateOwnerForm.html with error messages (200 OK)
-    else Validation Succeeds
-        OwnerController->>OwnerRepository: save(owner)
-        OwnerRepository->>Database: BEGIN TRANSACTION
-        OwnerRepository->>Database: INSERT INTO owners (...) VALUES (...)
-        Database-->>OwnerRepository: Returns new owner with generated ID
-        OwnerRepository->>Database: COMMIT TRANSACTION
-        OwnerRepository-->>OwnerController: returns saved Owner object
-        OwnerController-->>Browser: HTTP 302 Redirect to /owners/{newId}
-        Browser->>OwnerController: GET /owners/{newId}
-        Note right of Browser: Follows the "View Owner Details" workflow
-    end
-    Browser-->>User: Displays new owner's profile or form with errors
-```
-
----
-
-### 3. Add a New Pet to an Owner Workflow
-
-**Description:**
-This flow captures how a clinic staff member adds a new pet to an existing owner's record. The process starts from the owner's detail page, involves filling out a pet information form (including selecting a pet type), server-side validation, and persisting the new pet in relation to its owner.
-
-**Triggers:**
-- User clicks "Add New Pet" on an owner's detail page.
-
-**Communication Patterns:**
-- **Synchronous:** Standard request-response web flow.
-- **REST/HTTP:** GET for the form, POST for the submission.
-- **Server-Side Validation:** A custom `PetValidator` and JSR-303 annotations are used to check for required fields and business rules (e.g., unique pet name per owner).
-- **Database Transactions:** A write transaction saves the new `Pet`, typically cascaded from saving the parent `Owner` entity.
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Browser
-    participant PetController
-    participant PetValidator
-    participant OwnerRepository
-    participant PetTypeRepository
-    participant Database
-
-    User->>Browser: On owner details page, clicks "Add New Pet"
-    Browser->>PetController: GET /owners/{ownerId}/pets/new
-    PetController->>OwnerRepository: findById(ownerId)
-    OwnerRepository-->>PetController: returns Owner
-    PetController->>PetTypeRepository: findPetTypes()
-    PetTypeRepository-->>PetController: returns Collection<PetType>
-    PetController-->>Browser: Renders createOrUpdatePetForm.html with PetTypes (200 OK)
-
-    User->>Browser: Fills pet form and submits
-    Browser->>PetController: POST /owners/{ownerId}/pets/new with Pet data
-    PetController->>PetValidator: validate(pet)
-    alt Validation Fails
-        PetValidator-->>PetController: returns validation errors
-        PetController->>PetTypeRepository: findPetTypes() (to re-populate form)
-        PetTypeRepository-->>PetController: returns Collection<PetType>
-        PetController-->>Browser: Re-renders createOrUpdatePetForm.html with errors (200 OK)
-    else Validation Succeeds
-        PetValidator-->>PetController: returns no errors
-        PetController->>OwnerRepository: findById(ownerId)
-        OwnerRepository-->>PetController: returns Owner
-        PetController->>OwnerRepository: owner.addPet(pet); save(owner)
-        Note right of PetController: JPA cascades the save to the new Pet
-        OwnerRepository->>Database: BEGIN TRANSACTION
-        OwnerRepository->>Database: INSERT INTO pets (...) VALUES (...)
-        Database-->>OwnerRepository: Confirms insert
-        OwnerRepository->>Database: COMMIT TRANSACTION
-        OwnerRepository-->>PetController: returns updated Owner
-        PetController-->>Browser: HTTP 302 Redirect to /owners/{ownerId}
-    end
-    Browser-->>User: Displays owner profile with new pet or form with errors
-```
-
----
-
-### 4. Add a New Medical Visit Workflow
-
-**Description:**
-This workflow outlines the process of recording a new medical visit for a specific pet. Starting from the owner's detail page, the user initiates the action for a particular pet, fills in the visit details (date and description), and submits the information. The system validates and saves the visit, linking it to the correct pet.
-
-**Triggers:**
-- User clicks "Add Visit" for a specific pet.
-
-**Communication Patterns:**
-- **Synchronous:** Standard web request-response cycle.
-- **REST/HTTP:** GET to display the form, POST to submit the new visit data.
-- **Database Transactions:** A write transaction persists the new `Visit` entity, cascaded from the owner/pet.
-- **Server-Side Validation:** Bean Validation on the `Visit` entity ensures required fields are present.
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Browser
-    participant VisitController
-    participant OwnerRepository
-    participant Database
-
-    User->>Browser: On owner page, clicks "Add Visit" for a pet
-    Browser->>VisitController: GET /owners/{ownerId}/pets/{petId}/visits/new
-    VisitController->>OwnerRepository: findById(ownerId)
-    OwnerRepository-->>VisitController: returns Owner with its Pets
-    Note right of VisitController: Controller finds the correct Pet and prepares a new Visit object
-    VisitController-->>Browser: Renders createOrUpdateVisitForm.html (200 OK)
-
-    User->>Browser: Fills visit form and submits
-    Browser->>VisitController: POST /owners/{ownerId}/pets/{petId}/visits/new with Visit data
-    VisitController->>VisitController: validate(visit)
-    alt Validation Fails
-        VisitController-->>Browser: Re-renders createOrUpdateVisitForm.html with errors (200 OK)
-    else Validation Succeeds
-        VisitController->>OwnerRepository: findById(ownerId)
-        OwnerRepository-->>VisitController: returns Owner with its Pets
-        Note right of VisitController: Adds new Visit to the Pet's collection
-        VisitController->>OwnerRepository: save(owner)
-        Note right of VisitController: JPA cascades the save to the new Visit
-        OwnerRepository->>Database: BEGIN TRANSACTION
-        OwnerRepository->>Database: INSERT INTO visits (...) VALUES (...)
-        Database-->>OwnerRepository: Confirms insert
-        OwnerRepository->>Database: COMMIT TRANSACTION
-        OwnerRepository-->>VisitController: returns updated Owner
-        VisitController-->>Browser: HTTP 302 Redirect to /owners/{ownerId}
-    end
-    Browser-->>User: Displays owner profile with new visit or form with errors
-```
-
----
-
-### 5. View Veterinarian List with Caching Workflow
-
-**Description:**
-This workflow shows how the system displays the list of veterinarians. It highlights the use of a caching mechanism to improve performance. On the first request, the data is fetched from the database and stored in a cache. Subsequent requests for the same data are served directly from the cache, avoiding unnecessary database queries.
-
-**Triggers:**
-- User navigates to the "Veterinarians" page.
-
-**Communication Patterns:**
-- **Synchronous:** Standard HTTP GET request.
-- **In-Memory Caching:** Spring's `@Cacheable` annotation intercepts method calls to the repository.
-- **Database Transaction:** A read-only transaction is used only on a cache miss.
-- **REST/HTTP:** The controller also provides a JSON/XML endpoint for API consumers, which would follow the same caching logic.
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Browser
-    participant VetController
-    participant CacheManager
-    participant VetRepository
-    participant Database
-
-    User->>Browser: Clicks "Veterinarians" link
-    Browser->>VetController: GET /vets.html
-    VetController->>VetRepository: findAll()
-    Note over VetController, VetRepository: VetRepository.findAll() is annotated with @Cacheable("vets")
-
-    CacheManager->>CacheManager: Intercepts call to VetRepository.findAll()
-    CacheManager->>CacheManager: Check "vets" cache for entry
+    User ->> Browser: Fills and submits registration form
+    Browser ->>+ RegisterServlet: POST /register (username, password)
+    RegisterServlet ->>+ RegistrationUtils: registerUser(username, password)
     
-    alt Cache Miss (First Request)
-        CacheManager->>VetRepository: Cache entry not found. Proceed with method execution.
-        VetRepository->>Database: SELECT * FROM vets
-        Database-->>VetRepository: Returns List<Vet>
-        VetRepository-->>CacheManager: returns List<Vet>
-        CacheManager->>CacheManager: Store List<Vet> in "vets" cache
-        CacheManager-->>VetController: returns List<Vet>
-    else Cache Hit (Subsequent Requests)
-        CacheManager-->>VetController: returns List<Vet> from cache
-        Note right of CacheManager: VetRepository and Database are NOT contacted
-    end
+    RegistrationUtils ->>+ PersistenceLayer: findUserByName(username)
+    PersistenceLayer ->>+ H2: SELECT * FROM users WHERE name = ?
+    H2 -->>- PersistenceLayer: No user found
+    PersistenceLayer -->>- RegistrationUtils: Optional.empty()
 
-    VetController->>Browser: Renders vets/vetList.html view with vet data (200 OK)
-    Browser-->>User: Displays list of veterinarians
+    RegistrationUtils ->> RegistrationUtils: isPasswordGood(password)
+    Note over RegistrationUtils: Validates entropy and strength.
+    
+    RegistrationUtils ->>+ PersistenceLayer: saveUser(user, password)
+    PersistenceLayer ->> PersistenceLayer: hashPassword(password) (e.g., SHA-256)
+    PersistenceLayer ->>+ H2: INSERT INTO users (name, hash) VALUES (?, ?)
+    H2 -->>- PersistenceLayer: Returns new user ID
+    PersistenceLayer -->>- RegistrationUtils: new User(id, name)
+    
+    RegistrationUtils ->> RegisterServlet: return RegistrationResult(SUCCESS)
+    deactivate RegistrationUtils
+    
+    RegisterServlet ->> RegisterServlet: setAttribute("result", "Success")
+    RegisterServlet ->> Browser: Forward to result.jsp
+    deactivate RegisterServlet
+    Browser ->> User: Display Success Page
 ```
 
----
+### 3. User Login (Successful)
 
-### 6. System Error Handling Workflow
-
-**Description:**
-This workflow illustrates the system's robust error handling pattern. When an unexpected runtime exception occurs during a request, a global exception handler (`@ControllerAdvice`) intercepts it. It then provides a different response based on the client type: a structured JSON error for API clients and a user-friendly HTML error page for web browser users.
-
-**Triggers:**
-- An unhandled `RuntimeException` is thrown during request processing.
-
-**Communication Patterns:**
-- **Exception Handling:** Centralized exception handling using a Spring `@ControllerAdvice`.
-- **AOP:** The controller advice acts as an aspect that wraps controller methods.
-- **Content Negotiation:** The handler inspects the `Accept` header to differentiate between API and browser clients.
-- **REST/HTTP:** Responds with a 500 Internal Server Error status code.
+-   **Workflow Purpose and Triggers**: Triggered when an existing user submits their credentials via the login form. The purpose is to authenticate the user and grant them access to the system.
+-   **Communication Patterns**: This workflow uses an HTTP POST request for credential submission. It involves synchronous, direct method calls from the `LoginServlet` to `LoginUtils`, and then to the `PersistenceLayer`. The persistence layer securely validates credentials by hashing the submitted password and comparing it against the stored hash in the H2 database via a JDBC query.
 
 ```mermaid
 sequenceDiagram
-    participant Client as (Browser/API Client)
-    participant Controller as (e.g., OwnerController)
-    participant Service_Or_Repo as (Service/Repository Layer)
-    participant GlobalExceptionHandler as (ControllerAdvice)
+    actor User
+    participant Browser
+    participant LoginServlet
+    participant LoginUtils
+    participant PersistenceLayer as IPersistenceLayer
+    participant H2 as H2 Database
 
-    Client->>Controller: Sends HTTP Request (e.g., POST /owners/new)
-    Controller->>Service_Or_Repo: Invokes business logic method
-    Service_Or_Repo-->>Controller: Throws RuntimeException (e.g., DataAccessException)
+    User ->> Browser: Enters credentials and submits login form
+    Browser ->>+ LoginServlet: POST /login (username, password)
     
-    Note over Controller, GlobalExceptionHandler: Spring container routes unhandled exception to ControllerAdvice
+    LoginServlet ->>+ LoginUtils: isUserRegistered(username, password)
+    LoginUtils ->>+ PersistenceLayer: isUserPasswordCorrect(username, password)
     
-    GlobalExceptionHandler->>GlobalExceptionHandler: Intercepts RuntimeException
+    PersistenceLayer ->>+ H2: SELECT hash FROM users WHERE name = ?
+    H2 -->>- PersistenceLayer: Returns stored password hash
     
-    alt API Client Request (Accept: application/json)
-        GlobalExceptionHandler->>GlobalExceptionHandler: Creates JSON error response DTO
-        GlobalExceptionHandler-->>Client: HTTP 500 with JSON body <br> { "error": "Internal Server Error", ... }
-    else Web Browser Request (Accept: text/html)
-        GlobalExceptionHandler->>GlobalExceptionHandler: Creates ModelAndView for 'error.html'
-        GlobalExceptionHandler-->>Client: Renders custom error.html page (HTTP 500)
+    PersistenceLayer ->> PersistenceLayer: hashPassword(password)
+    Note over PersistenceLayer: Hashes submitted password with SHA-256.
+    PersistenceLayer ->> PersistenceLayer: compareHashes()
+    Note over PersistenceLayer: Compares submitted hash with stored hash.
+    
+    PersistenceLayer -->>- LoginUtils: return true
+    LoginUtils -->>- LoginServlet: return true
+    deactivate LoginUtils
+    
+    LoginServlet ->> LoginServlet: Log successful authentication
+    Note over LoginServlet: Creates session (implied)
+    LoginServlet ->> Browser: Forward to library.html
+    deactivate LoginServlet
+    
+    Browser ->> User: Display main library page
+```
+
+### 4. Lend a Book (Check-out)
+
+-   **Workflow Purpose and Triggers**: This workflow is triggered when a librarian uses the system to lend a book to a registered borrower. It validates that the book is available and the borrower is registered, then records the loan transaction.
+-   **Communication Patterns**: The process begins with an HTTP POST request. The `LibraryLendServlet` orchestrates the operation by making a synchronous call to `LibraryUtils`. `LibraryUtils` enforces business rules by making a series of synchronous calls to the `PersistenceLayer` to fetch book and borrower data, check book availability, and finally save the new loan record. All database interactions are via JDBC.
+
+```mermaid
+sequenceDiagram
+    actor Librarian
+    participant Browser
+    participant LibraryLendServlet
+    participant LibraryUtils
+    participant PersistenceLayer as IPersistenceLayer
+    participant H2 as H2 Database
+
+    Librarian ->> Browser: Submits "Lend Book" form (book title, borrower name)
+    Browser ->>+ LibraryLendServlet: POST /lend
+    
+    LibraryLendServlet ->>+ LibraryUtils: lendBook(bookTitle, borrowerName)
+    
+    alt Validate Inputs
+        LibraryUtils ->>+ PersistenceLayer: findBookByTitle(bookTitle)
+        PersistenceLayer -->>- LibraryUtils: Book object
+        
+        LibraryUtils ->>+ PersistenceLayer: findBorrowerByName(borrowerName)
+        PersistenceLayer -->>- LibraryUtils: Borrower object
+        
+        LibraryUtils ->>+ PersistenceLayer: isBookLoaned(book.id)
+        PersistenceLayer ->>+ H2: SELECT * FROM loans WHERE book_id = ? AND return_date IS NULL
+        H2 -->>- PersistenceLayer: No active loan found
+        PersistenceLayer -->>- LibraryUtils: return false
     end
+    
+    LibraryUtils ->> LibraryUtils: Create new Loan(book, borrower, checkoutDate)
+    
+    LibraryUtils ->>+ PersistenceLayer: saveLoan(newLoan)
+    PersistenceLayer ->>+ H2: INSERT INTO loans (...) VALUES (...)
+    H2 -->>- PersistenceLayer: Acknowledge success
+    PersistenceLayer -->>- LibraryUtils: Saved Loan object
+    
+    LibraryUtils -->>- LibraryLendServlet: return LibraryActionResults.SUCCESS
+    deactivate LibraryUtils
+    
+    LibraryLendServlet ->> Browser: Forward to success page
+    deactivate LibraryLendServlet
+    
+    Browser ->> Librarian: Display "Loan Successful" message
+```
 
+### 5. Error Handling: Attempting to Lend an Unavailable Book
+
+-   **Workflow Purpose and Triggers**: This flow demonstrates the system's error handling. It's triggered when a librarian attempts to lend a book that is already checked out. The purpose is to prevent the transaction and provide clear feedback.
+-   **Communication Patterns**: The communication pattern is identical to the successful "Lend a Book" workflow up to the point of validation. It uses synchronous HTTP and method calls. The key is the early return from the `LibraryUtils` service layer with a specific error enum (`BOOK_CHECKED_OUT`) after a database check confirms the book's unavailability.
+
+```mermaid
+sequenceDiagram
+    actor Librarian
+    participant Browser
+    participant LibraryLendServlet
+    participant LibraryUtils
+    participant PersistenceLayer as IPersistenceLayer
+    participant H2 as H2 Database
+
+    Librarian ->> Browser: Submits form to lend an already-loaned book
+    Browser ->>+ LibraryLendServlet: POST /lend
+    
+    LibraryLendServlet ->>+ LibraryUtils: lendBook(bookTitle, borrowerName)
+    
+    LibraryUtils ->>+ PersistenceLayer: findBookByTitle(bookTitle)
+    PersistenceLayer -->>- LibraryUtils: Book object
+    
+    LibraryUtils ->>+ PersistenceLayer: findBorrowerByName(borrowerName)
+    PersistenceLayer -->>- LibraryUtils: Borrower object
+    
+    LibraryUtils ->>+ PersistenceLayer: isBookLoaned(book.id)
+    PersistenceLayer ->>+ H2: SELECT * FROM loans WHERE book_id = ? AND return_date IS NULL
+    H2 -->>- PersistenceLayer: Active loan record found
+    PersistenceLayer -->>- LibraryUtils: return true
+    
+    Note right of LibraryUtils: Book is already checked out. Abort operation.
+    LibraryUtils -->>- LibraryLendServlet: return LibraryActionResults.BOOK_CHECKED_OUT
+    deactivate LibraryUtils
+    
+    LibraryLendServlet ->> LibraryLendServlet: setAttribute("error", "Book is already checked out")
+    LibraryLendServlet ->> Browser: Forward to result page with error
+    deactivate LibraryLendServlet
+    
+    Browser ->> Librarian: Display Error Message
+```
+
+### 6. Perform a Mathematical Calculation (Educational Module)
+
+-   **Workflow Purpose and Triggers**: This workflow is part of the educational system, triggered when a user requests a mathematical calculation (e.g., Fibonacci) via a web form. Its purpose is to perform the computation and display the result, demonstrating algorithmic logic.
+-   **Communication Patterns**: This is a stateless, computation-heavy workflow initiated by an HTTP POST. The `FibServlet` directly calls a static utility method in a mathematical helper class (`FibonacciIterative`). There is no interaction with the persistence layer. Communication is entirely synchronous within the application's business logic layer, followed by a standard servlet forward to the view.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant FibServlet
+    participant FibonacciIterative
+    participant ServletUtils
+
+    User ->> Browser: Submits form with N and chosen algorithm
+    Browser ->>+ FibServlet: POST /fib (n=20, algorithm="iterative1")
+    
+    FibServlet ->> FibServlet: Parse request parameters
+    
+    alt Based on chosen algorithm
+        FibServlet ->> FibonacciIterative: fibAlgo1(20)
+        Note over FibonacciIterative: Performs iterative calculation using BigInteger
+        FibonacciIterative -->> FibServlet: return result
+    end
+    
+    FibServlet ->> FibServlet: setAttribute("result", calculatedValue)
+    FibServlet ->>+ ServletUtils: forwardToRestfulResult(req, resp)
+    ServletUtils ->> Browser: Forwards to result.jsp
+    deactivate ServletUtils
+    deactivate FibServlet
+    
+    Browser ->> User: Display calculated Fibonacci number
 ```

@@ -1,19 +1,14 @@
 | Component Name | HTTP Method | Endpoint Path | Brief Description |
 | :--- | :--- | :--- | :--- |
-| System | GET | `/` | Displays the application's welcome page. |
-| System | GET | `/oups` | Intentionally triggers a server error to test error handling. |
-| Owner Management | GET | `/owners/find` | Displays the form to search for pet owners. |
-| Owner Management | GET | `/owners` | Processes owner search requests and displays results. |
-| Owner Management | GET | `/owners/new` | Displays the form for registering a new pet owner. |
-| Owner Management | POST | `/owners/new` | Processes the submission for a new pet owner. |
-| Owner Management | GET | `/owners/{ownerId}` | Displays the detailed information for a specific pet owner. |
-| Owner Management | GET | `/owners/{ownerId}/edit` | Displays the form for updating an existing pet owner's details. |
-| Owner Management | POST | `/owners/{ownerId}/edit` | Processes the submission for updating a pet owner's details. |
-| Owner Management | GET | `/owners/{ownerId}/pets/new` | Displays the form for adding a new pet to an owner. |
-| Owner Management | POST | `/owners/{ownerId}/pets/new` | Processes the submission for adding a new pet. |
-| Owner Management | GET | `/owners/{ownerId}/pets/{petId}/edit` | Displays the form for updating an existing pet's details. |
-| Owner Management | POST | `/owners/{ownerId}/pets/{petId}/edit` | Processes the submission for updating a pet's details. |
-| Owner Management | GET | `/owners/{ownerId}/pets/{petId}/visits/new` | Displays the form for adding a new medical visit for a pet. |
-| Owner Management | POST | `/owners/{ownerId}/pets/{petId}/visits/new` | Processes the submission for a new medical visit. |
-| Vet Management | GET | `/vets` | Displays a paginated list of all veterinarians for the web UI. |
-| Vet Management | GET | `/vets` (API) | Returns a list of all veterinarians and their specialties (JSON/XML). |
+| Library Management | POST | `/registerbook` | Registers a new book into the library's catalog. |
+| Library Management | POST | `/registerborrower` | Registers a new borrower into the system. |
+| Library Management | POST | `/lend` | Lends a book to a registered borrower and records the loan. |
+| Library Management | GET | `/listavailablebooks` | Retrieves a list of all books that are currently available for lending. |
+| Library Management | GET | `/searchbooks` | Searches for books by ID or title, or lists all books in the catalog. |
+| Library Management | GET | `/searchborrowers` | Searches for borrowers by ID or name, or lists all registered borrowers. |
+| User Authentication | POST | `/register` | Handles new user registration, including password strength validation. |
+| User Authentication | POST | `/login` | Authenticates an existing user's credentials and logs them in. |
+| Educational Demonstrations (Mathematics) | POST | `/fib` | Calculates a Fibonacci number using a user-selected algorithm. |
+| Educational Demonstrations (Mathematics) | POST | `/ack` | Calculates an Ackermann function value using a user-selected algorithm. |
+| Educational Demonstrations (Mathematics) | POST | `/math` | Performs a basic arithmetic (addition) calculation on two numbers. |
+| Database Management | GET | `/db` | Manages the application database with actions like clean and migrate. |
