@@ -1,0 +1,419 @@
+Architectural Summary (Chunk 3 of 3)
+
+Overview
+- This chunk contains extensive unit/integration/UI tests that reveal the main web application architecture, responsibilities, entry points, data models, and interaction patterns.
+- The application runs as a Java webapp (Servlets/JSP) on Tomcat and exposes multiple HTTP endpoints grouped logically into:
+  - Authentication (registration/login)
+  - Library (books/borrowers/lending + search/list APIs)
+  - Mathematics (Ackermann/Fibonacci/Arithmetic)
+  - Persistence admin (database migration/reset)
+- A layered structure is consistently used:
+  - HTTP controllers (Servlets) -> Application services (Utils classes) -> Persistence (IPersistenceLayer)
+  - Views are JSPs with two flavors: a general result JSP and a “RESTful-style” result JSP.
+- UI flows are tested via Selenium/HtmlUnit/Behave across multiple languages (Java, Python, JS, C#), verifying contract behavior and endpoint semantics.
+
+Components and Responsibilities
+1) Authentication module
+- LoginServlet (com.coveros.training.authentication.LoginServlet)
+  - Responsibility: Handles POST login. Validates input presence. Delegates credential validation to LoginUtils. Sets result messages and forwards to result JSP.
+  - Dependencies:
+    - LoginUtils (static field loginUtils for injection in tests)
+    - ServletUtils.forwardToResult (static) and RESULT_JSP
+  - Request params: username, password
+  - Result (request attribute result):
+    - “access granted” (valid credentials)
+    - “access denied” (invalid)
+    - “no username provided”
+    - “no password provided”
+- LoginUtils (com.coveros.training.authentication.LoginUtils)
+  - Responsibility: “isUserRegistered(username, password)” delegating to IPersistenceLayer.areCredentialsValid.
+  - Factory method createEmpty() with isEmpty() flag.
+  - Dependencies: IPersistenceLayer
+- RegisterServlet (com.coveros.training.authentication.RegisterServlet)
+  - Responsibility: Handles POST registration. Validates inputs, calls RegistrationUtils.processRegistration, forwards to result JSP.
+  - Dependencies:
+    - RegistrationUtils (static field registrationUtils)
+    - ServletUtils.RESULT_JSP
+  - Request params: username, password
+  - Result (request attribute result):
+    - “no username provided”, “no password provided” (input validation by servlet)
+    - Else, registration result’s pretty string is available; tests assert successful cases include “successfully registered: true” and “status: SUCCESSFULLY_REGISTERED”.
+- RegistrationUtils (com.coveros.training.authentication.RegistrationUtils)
+  - Responsibility:
+    - processRegistration(username, password)
+      - Throws IllegalArgumentException on empty username.
+      - Validates password via RegistrationUtils.isPasswordGood.
+      - Checks for existing user via IPersistenceLayer.searchForUserByName.
+      - Returns RegistrationResult with appropriate status:
+        - SUCCESSFULLY_REGISTERED
+        - BAD_PASSWORD (includes PasswordResult details in message)
+        - ALREADY_REGISTERED
+    - isUserInDatabase(username) -> boolean via persistence.
+    - isPasswordGood(password) -> PasswordResult with:
+      - status (PasswordResultEnums: SUCCESS, TOO_SHORT, EMPTY_PASSWORD, etc.)
+      - entropy (double), timeToCrackOffline/Online, message
+    - createEmpty(), isEmpty()
+  - Dependencies: IPersistenceLayer; functional-only password quality logic.
+
+2) Library module
+- LibraryUtils (com.coveros.training.library.LibraryUtils)
+  - Responsibility: Core domain operations:
+    - Lending:
+      - lendBook(Book, Borrower, Date) -> LibraryActionResults
+        - Fails if book or borrower is empty (BOOK_NOT_REGISTERED/BORROWER_NOT_REGISTERED).
+        - Checks current loan via searchForLoanByBook; if found, returns BOOK_CHECKED_OUT; else createLoan(book, borrower, date) then SUCCESS.
+      - lendBook(String title, String borrowerName, Date) -> wrapper that translates to domain objects via searchForBookByTitle/searchForBorrowerByName.
+    - Registration:
+      - registerBorrower(String name) -> SUCCESS if not registered; calls saveNewBorrower; else returns appropriate error result.
+      - registerBook(String title) -> SUCCESS if not registered; calls saveNewBook; throws IllegalArgumentException if empty title.
+    - Deletion:
+      - deleteBook(Book) -> SUCCESS if registered (validated via searchBooksByTitle) then delete by id; else NON_REGISTERED_BOOK_CANNOT_BE_DELETED.
+      - deleteBorrower(Borrower) -> analogous.
+    - Search/List:
+      - searchForLoanByBook(Book)
+      - searchForLoanByBorrower(Borrower)
+      - searchForBorrowerByName(String) (validates input)
+      - searchForBookByTitle(String) (throws IllegalArgumentException if title empty)
+      - searchForBookById(int) (throws IllegalArgumentException if id < 1)
+      - listAllBooks(), listAllBorrowers()
+      - listAvailableBooks()
+    - Internal methods used by tests:
+      - createLoan(book, borrower, date), saveNewBorrower(name), saveNewBook(title)
+    - createEmpty(), isEmpty()
+  - Dependencies: IPersistenceLayer
+  - Result enumerations: LibraryActionResults includes SUCCESS, BORROWER_NOT_REGISTERED, BOOK_NOT_REGISTERED, BOOK_CHECKED_OUT, NO_BORROWER_PROVIDED, NO_BOOK_TITLE_PROVIDED, NON_REGISTERED_BOOK_CANNOT_BE_DELETED, NON_REGISTERED_BORROWER_CANNOT_BE_DELETED
+- Library servlets (thin controllers using LibraryUtils and JSP forwarding):
+  - LibraryLendServlet
+    - POST params: book, borrower
+    - Validates empty fields -> sets result to NO_BOOK_TITLE_PROVIDED/NO_BORROWER_PROVIDED
+    - Uses date via getDateNow() (java.sql.Date of current day)
+    - Calls LibraryUtils.lendBook(title, borrower, date)
+    - Sets request attribute result = enum name (e.g., “SUCCESS”)
+  - LibraryRegisterBookServlet
+    - POST param: book
+    - Validates empty -> result “NO_BOOK_TITLE_PROVIDED”; else calls libraryUtils.registerBook, forwards to ServletUtils.RESULT_JSP
+  - LibraryRegisterBorrowerServlet
+    - POST param: borrower
+    - Validates empty -> “NO_BORROWER_PROVIDED”; else calls libraryUtils.registerBorrower, forwards to ServletUtils.RESULT_JSP
+  - LibraryBookListSearchServlet (REST-style GET, forwards to ServletUtils.RESTFUL_RESULT_JSP)
+    - Query params: id, title
+    - Behavior:
+      - If neither provided: listAllBooks; if empty -> “No books exist in the database”; else returns JSON array of books.
+      - If both provided: “Error: please search by either title or id, not both”.
+      - If id provided (parsable int): searchForBookById -> returns JSON array with a single book if found; else “No books found with an id of X”. If id not parseable: error message.
+      - If title provided: searchForBookByTitle -> JSON array with one book if found; else “No books found with a title of <title>”.
+    - Sets request attribute RESULT (constant) to the JSON or message.
+  - LibraryBookListAvailableServlet (REST-style GET)
+    - No params; Calls listAvailableBooks.
+    - If empty -> “No books exist in the database”; else returns JSON array of books.
+    - Sets attribute RESULT to JSON/message; forwards to RESTFUL_RESULT_JSP.
+  - LibraryBorrowerListSearchServlet (REST-style GET)
+    - Query params: id, name
+    - Behavior analogous to books:
+      - Neither -> listAllBorrowers; empty -> “No borrowers exist in the database”; else JSON list
+      - Both provided -> “Error: please search by either name or id, not both”
+      - id provided and parsable: not found -> “No borrowers found with an id of X”; found -> JSON array with one borrower
+      - id not parseable -> “Error: could not parse the borrower id as an integer”
+      - name provided: not found -> “No borrowers found with a name of <name>”; found -> JSON array with one borrower
+    - Sets attribute RESULT to JSON/message; forwards to RESTFUL_RESULT_JSP
+- Library domain objects
+  - Book (id:int, title:String)
+    - createEmpty(), isEmpty(), toString()
+    - JSON output used in REST: {"Title": "<title>", "Id": "<id>"} (string values)
+  - Borrower (id:int, name:String)
+    - createEmpty(), isEmpty(), toString()
+    - toOutputString(): {"Name": "<name>", "Id": "<id>"}
+  - Loan (book:Book, borrower:Borrower, id:int, borrowDate:java.sql.Date)
+    - createEmpty(), isEmpty(), toString()
+
+3) Mathematics module
+- AckServlet (REST-style)
+  - POST params: ack_param_m, ack_param_n, ack_algorithm_choice
+  - Routes to algorithm:
+    - “regular_recursive” -> regular recursive Ackermann
+    - “tail_recursive” -> tail-recursive variant
+  - Forwards to ServletUtils.RESTFUL_RESULT_JSP using forwardToResult(request, response, result)
+  - Logging via static Logger (SLF4J); errors logged when forwarding fails
+- Ackermann calculators:
+  - Ackermann.calculate(m, n) (regular recursive)
+  - AckermannIterative.calculate(m, n) (iterative version)
+- FibServlet (REST-style)
+  - POST params: fib_param_n, fib_algorithm_choice
+  - Routes to:
+    - “regular_recursive” -> defaultRecursiveCalculation
+    - “tail_recursive_1” -> tailRecursiveAlgo1Calc
+    - “tail_recursive_2” -> tailRecursiveAlgo2Calc
+  - Forwards to RESTFUL_RESULT_JSP; logs errors on exceptions
+- Fibonacci calculators:
+  - Fibonacci.calculate(n) (naive recursion)
+  - FibonacciIterative.fibAlgo1(n), fibAlgo2(n) (iterative BigInteger implementations)
+- MathServlet (REST-style)
+  - POST params: item_a, item_b
+  - Behavior: sums integers, sets result to sum, forwards to RESTFUL_RESULT_JSP, logs errors upon forward exception
+
+4) Persistence/admin module
+- IPersistenceLayer (core interface used by services; methods inferred from tests)
+  - Authentication:
+    - areCredentialsValid(String username, String password) -> boolean
+    - searchForUserByName(String username) -> Optional<User>
+  - Library entities:
+    - searchForLoanByBook(Book)
+    - searchForLoanByBorrower(Borrower)
+    - searchBorrowerDataByName(String) -> Optional<Borrower>
+    - searchBooksByTitle(String) -> Optional<Book>
+    - searchBooksById(int) -> Optional<Book>
+    - listAllBooks() -> Optional<List<Book>>
+    - listAllBorrowers() -> Optional<List<Borrower>>
+    - listAvailableBooks() -> Optional<List<Book>> or list
+    - deleteBook(int id)
+    - deleteBorrower(int id)
+    - (Insert/update methods are implied via LibraryUtils.saveNewBook/saveNewBorrower/createLoan)
+  - Database lifecycle:
+    - cleanDatabase()
+    - migrateDatabase()
+    - cleanAndMigrateDatabase()
+- DbServlet (com.coveros.training.persistence.DbServlet)
+  - GET param: action
+    - “clean” -> pl.cleanDatabase()
+    - “migrate” -> pl.migrateDatabase()
+    - default/empty -> pl.cleanAndMigrateDatabase()
+  - Endpoint is used in UI tests at /demo/flyway to reset DB.
+- WebAppListener (com.coveros.training.tomcat.WebAppListener)
+  - On application startup (contextInitialized): calls IPersistenceLayer.cleanAndMigrateDatabase() to ensure a clean schema.
+  - On shutdown: no-op
+  - Constructed with IPersistenceLayer (tests verify injection)
+- Persistence utilities:
+  - SqlData<T>
+    - Holds SQL description and prepared statement text; accumulates parameters (ParameterObject) and applies them onto a PreparedStatement.
+    - Supported param types: Long, String, Integer, java.sql.Date; wraps SQLException as SqlRuntimeException.
+  - ParameterObject<T>
+    - Wrapper holding data and type Class for prepared statements; has createEmpty(), isEmpty().
+  - EmptyDataSource
+    - Placeholder javax.sql.DataSource throwing NotImplementedException on all methods.
+
+5) Helper utilities and patterns
+- ServletUtils
+  - Constants:
+    - RESULT_JSP (HTML result page for human-facing flows)
+    - RESTFUL_RESULT_JSP (REST-like result page used by algorithm and list/search endpoints)
+  - Method: forwardToResult(request, response, [path]) – encapsulates dispatcher forwarding (tests mock request.getRequestDispatcher(path)).
+- StringUtils
+  - makeNotNullable(String) -> never returns null (null -> “”), used for safe handling
+  - escapeForJson(String) -> escapes double quotes and backslashes as required for JSON emission
+  - Constants: BACKSLASH, DOUBLE_QUOTE
+- CheckUtils
+  - IntParameterMustBePositive(int) -> throws IllegalArgumentException for 0 or negative
+- DateUtils
+  - isTimeEven() -> whether current time millis is even
+
+Domain Models (Authentication)
+- User (name:String, id:int)
+  - createEmpty(), isEmpty(), toString() includes name and id
+
+Domain Models (Authentication–Registration outcome)
+- RegistrationResult
+  - wasSuccessfullyRegistered:boolean
+  - status: RegistrationStatusEnums
+    - Known statuses: SUCCESSFULLY_REGISTERED, ALREADY_REGISTERED, BAD_PASSWORD, EMPTY_USERNAME, EMPTY
+  - message:String (optional, e.g., password quality message)
+  - createEmpty(), isEmpty(), toString()
+
+- PasswordResult
+  - status: PasswordResultEnums
+    - Known: SUCCESS, TOO_SHORT, EMPTY_PASSWORD, BASIC_PASSWORD_CHECKS_FAILED (message example from test)
+  - entropy:double
+  - timeToCrackOffline:long/string
+  - timeToCrackOnline:long/string
+  - message:String
+  - createDefault(status), createEmpty(), isEmpty(), toPrettyString(), toString()
+
+HTTP Endpoints and Interfaces (as evidenced by tests/UI)
+- Authentication:
+  - POST /demo/register
+    - Params: username, password
+    - Response: forwarded to RESULT_JSP; includes a textual summary. Success includes “successfully registered: true” and “status: SUCCESSFULLY_REGISTERED”. Error states from RegistrationUtils or input empty messages.
+  - POST /demo/login (implied by library.html login form; LoginServlet handles)
+    - Params: username, password
+    - Response: forwarded to RESULT_JSP; result contains “access granted” or “access denied” or missing input messages.
+
+- Library admin and lending:
+  - POST /demo/registerbook
+    - Params: book
+    - Response: RESULT_JSP; result “SUCCESS” or “NO_BOOK_TITLE_PROVIDED”
+  - POST /demo/registerborrower
+    - Params: borrower
+    - Response: RESULT_JSP; result “SUCCESS” or “NO_BORROWER_PROVIDED”
+  - POST /demo/lend (name inferred; UI uses “lend_book_submit” on library.html; LibraryLendServlet handles)
+    - Params: book, borrower
+    - Response: RESULT_JSP; result is LibraryActionResults name (“SUCCESS”, etc.)
+  - GET /demo/books/search (name inferred; LibraryBookListSearchServlet handles)
+    - Query: title or id (string). If both -> error. Neither -> list all.
+    - Response: RESTFUL_RESULT_JSP; attribute RESULT contains either:
+      - JSON array of Books: [{"Title": "<title>", "Id": "<id>"}...]
+      - Error string (“No books exist in the database”, “No books found with an id of X”, “No books found with a title of <title>”, “Error: please search by either title or id, not both”)
+  - GET /demo/books/available (name inferred; LibraryBookListAvailableServlet handles)
+    - Response: RESTFUL_RESULT_JSP; RESULT is JSON list of available books or “No books exist in the database”
+  - GET /demo/borrowers/search (name inferred; LibraryBorrowerListSearchServlet handles)
+    - Query: name or id (string). If both -> error. Neither -> list all.
+    - Response: RESTFUL_RESULT_JSP; RESULT contains:
+      - JSON array of Borrowers: [{"Name": "<name>", "Id": "<id>"}...]
+      - Error strings analogous to books; id parse error -> “Error: could not parse the borrower id as an integer”
+  - UI page: GET /demo/library.html
+    - Contains forms for user registration/login and library operations. Client-side behavior determines input modes:
+      - Lending inputs adapt:
+        - 0 items: input locked (non-interactable).
+        - 1–9 items: HTML select dropdown options.
+        - 10+ items: autocomplete list (li-based suggestions).
+    - Results presented by navigating to RESULT_JSP; “Return” links go back to library.html.
+
+- Mathematics:
+  - POST /demo/ack (name inferred; AckServlet handles form on GET /demo)
+    - Params: ack_param_m, ack_param_n, ack_algorithm_choice (“regular_recursive”, “tail_recursive”)
+    - Response: RESTFUL_RESULT_JSP; returns computed result in result area.
+  - POST /demo/fib (FibServlet)
+    - Params: fib_param_n, fib_algorithm_choice (“regular_recursive”, “tail_recursive_1”, “tail_recursive_2”)
+    - Response: RESTFUL_RESULT_JSP
+  - POST /demo/math (MathServlet)
+    - Params: item_a, item_b
+    - Response: RESTFUL_RESULT_JSP; result sum
+  - UI page: GET /demo
+    - Contains Ackermann and Fibonacci forms, and math sum form.
+
+- Persistence admin:
+  - GET /demo/flyway (DbServlet)
+    - Query param action: “clean”, “migrate”, or empty/default -> cleanAndMigrate
+    - Used in tests to reset DB before UI scenarios.
+
+Database schema and data models (inferred)
+- users
+  - id (int, PK)
+  - name (varchar, unique)
+  - password (storage detail not shown; persistence allows areCredentialsValid(username, password))
+- books
+  - id (int, PK)
+  - title (varchar, unique)
+- borrowers
+  - id (int, PK)
+  - name (varchar, unique)
+- loans
+  - id (int, PK)
+  - book_id (FK -> books.id)
+  - borrower_id (FK -> borrowers.id)
+  - borrow_date (date)
+  - (possibly other fields, not used in tests)
+
+Service Dependencies and Communication Patterns
+- Each Servlet (controller) depends on a corresponding Utils/service class and on ServletUtils for forwarding to JSPs:
+  - LoginServlet -> LoginUtils -> IPersistenceLayer
+  - RegisterServlet -> RegistrationUtils -> IPersistenceLayer
+  - Library*Servlets -> LibraryUtils -> IPersistenceLayer
+  - Ack/Fib/MathServlet -> algorithm classes; they directly prepare output without persistence
+- Utils classes encapsulate domain logic and all calls to IPersistenceLayer.
+- Persistence operations are abstracted via IPersistenceLayer interface; SQL helper classes (SqlData, ParameterObject) apply parameters to PreparedStatements with typed binding.
+- Synchronous in-process calls; no external network calls between services (monolith-style). HTTP interfaces are presented to UI and automated tests.
+- JSON emitted by “RESTful” list/search endpoints is built via string concatenation and helper escaping (StringUtils.escapeForJson). The attributes used in requests:
+  - Traditional pages: request attribute “result”
+  - RESTful list/search: request attribute RESULT (constant from servlet class, typically named “RESULT”)
+- Logging:
+  - SLF4J Logger used by AckServlet and FibServlet; logs error on forward exceptions.
+
+Key Business Logic and Algorithms
+- Authentication:
+  - Login: validates non-empty input; checks credentials via persistence; sets “access granted/denied”
+  - Registration: rejects empty username; password must pass entropy/length/other checks; rejects duplicates; successful insert returns SUCCESSFULLY_REGISTERED
+- Password quality:
+  - RegistrationUtils.isPasswordGood returns PasswordResult with entropy and time-to-crack metrics; fails on empty/too short; success otherwise
+- Library:
+  - Lending:
+    - Fails if book/borrower not registered
+    - Fails if loan exists for book (checked via searchForLoanByBook)
+    - Otherwise creates loan and returns SUCCESS
+  - Registration: preventing duplicates; title cannot be empty; borrower name cannot be empty
+  - Search/list:
+    - Validation of input (non-empty title, id >= 1)
+    - Errors when no records found or when both id and title/name are provided
+  - Deletion guarded by existence checks
+- Mathematics:
+  - Ackermann: regular and tail-recursive variants; iterative version available
+  - Fibonacci: two iterative BigInteger implementations and a naive recursive
+  - Arithmetic Sum: simple add
+- UI behavior:
+  - Lending form dynamically changes input mode based on inventory size (0 -> locked, 1–9 -> dropdown, 10+ -> autocomplete)
+  - JSON escaping ensures quotes/backslashes in titles/names don’t break UI parsing
+
+Configuration and Deployment Details
+- App server: Tomcat (ServletContextListener implemented by WebAppListener)
+  - On startup: cleans and migrates database via IPersistenceLayer.cleanAndMigrateDatabase()
+- Views: Two JSPs:
+  - RESULT_JSP: general human-readable “result” page (used by registration/login/library reg/lend)
+  - RESTFUL_RESULT_JSP: simple result page used for algorithm outputs and JSON REST responses
+- Logging: SLF4J API; UI test tree includes a log4j2.xml for tests (not necessarily for app runtime)
+- Build/test:
+  - Unit tests: JUnit4, Mockito, EqualsVerifier, Hamcrest
+  - UI tests: Selenium WebDriver (ChromeDriver), HtmlUnit, Behave (Python), Mocha (NodeJS), NUnit (C#), PyTest
+  - Java UI tests include Gradle wrapper configuration
+- Admin endpoint /demo/flyway for DB reset is used in tests, likely backed by Flyway migrations (naming suggests Flyway; methods migrateDatabase/cleanDatabase used)
+
+Architectural Patterns and Notable Frameworks
+- Patterns:
+  - Layered architecture (Controllers -> Services -> Persistence)
+  - MVC-lite with JSP views
+  - Domain-driven data objects (POJOs with createEmpty/isEmpty idiom)
+  - Dependency injection is ad-hoc via static fields in servlets for tests (LoginServlet.loginUtils, RegisterServlet.registrationUtils, Library*Servlet.libraryUtils)
+- Frameworks/Libraries:
+  - Java Servlet API, JSP
+  - JUnit4, Mockito, EqualsVerifier, Hamcrest
+  - SLF4J (logging)
+  - Selenium WebDriver, HtmlUnit
+  - Apache HttpClient Fluent API (for UI tests’ ApiCalls)
+  - Gradle (for Java UI tests), NodeJS + Mocha (JS UI tests), Python Behave/PyTest, C# NUnit
+  - Likely Flyway for database migrations inferred by naming and methods
+
+Data Serialization and UI Contract
+- JSON emitted by list/search endpoints:
+  - Book: {"Title": "<title>", "Id": "<id>"}
+  - Borrower: {"Name": "<name>", "Id": "<id>"}
+  - Arrays are simple concatenations without whitespace, e.g.:
+    - [{"Title": "a book", "Id": "1"}]
+    - Multiple elements: [{"Title": "a book", "Id": "1"},{"Title": "a book", "Id": "1"}]
+- Error messages are literal strings (case-sensitive) verified by tests; clients (UI) rely on exact strings.
+
+Assumptions/Implicit Details for Microservice Decomposition
+- Authentication, Library, Math, and Persistence admin are logically separable bounded contexts with minimal shared state (except Persistence).
+- The UI is thin and mostly delegates behavior to server endpoints.
+- Persistence access is centralized behind IPersistenceLayer; data models are stable (User, Book, Borrower, Loan).
+- Migration/reset endpoints are used in test environments; in production this likely would be secured or moved to an operations pipeline.
+
+Security and Validation Notes
+- Input validation:
+  - Presence checks for login/register and library reg/lend
+  - Parsing validation for numeric IDs
+  - Consistent error messages expected by clients and tests
+- Credential checking uses raw username/password via areCredentialsValid; password hashing/salting is not visible in tests (likely omitted in this demo).
+
+Summary of Critical Interfaces for Refactoring/Microservices
+- Service interfaces (to be extracted/decoupled if split):
+  - IAuthenticationService (login, register, password quality)
+  - ILibraryService (books, borrowers, loans: CRUD/search/list/lend)
+  - IMathService (ackermann/fibonacci/sum)
+  - IPersistenceService (data access operations; DB migrations)
+- HTTP API contracts (stable):
+  - POST /demo/register
+  - POST /demo/login
+  - POST /demo/registerbook
+  - POST /demo/registerborrower
+  - POST /demo/lend
+  - GET /demo/books/search
+  - GET /demo/books/available
+  - GET /demo/borrowers/search
+  - GET /demo/flyway?action=clean|migrate|[empty]
+  - POST /demo/ack
+  - POST /demo/fib
+  - POST /demo/math
+  - GET /demo (ack/fib/math UI), GET /demo/library.html (library UI)
+- Data models (stable):
+  - User(id, name), Book(id, title), Borrower(id, name), Loan(id, book, borrower, borrowDate)
+  - RegistrationResult, PasswordResult enums and structure
+  - LibraryActionResults enum conveying domain state transitions
+
+This summary captures component responsibilities, API surfaces, domain models, dependency chains, key business rules, and deployment/config patterns inferred from tests, suitable for microservice decomposition analysis.

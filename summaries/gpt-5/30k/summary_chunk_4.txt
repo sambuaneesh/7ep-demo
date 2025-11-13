@@ -1,0 +1,365 @@
+Architectural summary for Codebase Chunk 4 (persistence, startup, web resources, tests)
+
+Overview
+- This chunk contains the persistence layer (a micro ORM and data access for library and authentication domains), Tomcat startup listener, DB migration scripts (Flyway), static web resources (HTML/CSS/JS/JSP), web.xml config (H2 console), and tests (unit and UI). It exposes multiple HTTP endpoints (library, authentication, math) via servlets defined elsewhere but exercised here.
+
+Key components and responsibilities
+1) com.coveros.training.persistence
+- PersistenceLayer (implements IPersistenceLayer; interface defined elsewhere)
+  - Central DAO/repository for two bounded contexts:
+    - Library: borrowers, books, loans (CRUD, search, listing, lending queries)
+    - Authentication: users (registration and credential validation)
+  - Micro ORM utilities (execute templates, parameter binding, result extraction)
+  - Database lifecycle and ops: Flyway clean/migrate, backup/restore
+  - Connection management: H2 in-memory via JdbcConnectionPool
+  - Password hashing: SHA-256 to hex (no salt)
+  - Methods (see “APIs/Interfaces” below)
+  - Dependencies: javax.sql.DataSource, H2 JDBC, Flyway, java.sql PreparedStatement/ResultSet, Apache commons-lang3, checkerframework nullness annotations
+  - Error handling: wraps SQLExceptions in SqlRuntimeException (unchecked)
+
+- SqlData<R> (package-private)
+  - Encapsulates a SQL operation: description, prepared statement string, parameters, and a result extractor Function<ResultSet, Optional<R>>
+  - Provides parameter list management and PreparedStatement binding (supported types: String, Integer, Long, java.sql.Date)
+  - Helper createExtractor to convert a throwing lambda into Optional<T> with rs.next() semantics
+  - Used by PersistenceLayer.runQuery, executeInsertTemplate, executeUpdateTemplate
+
+- ParameterObject<T> (package-private)
+  - POJO for a single SQL parameter: raw data and type Class<T>
+  - Equality/hash/toString via commons-lang3 builders
+  - Empty marker factory (createEmpty())
+
+- SqlRuntimeException (package-private)
+  - Unchecked exception used throughout the persistence layer
+
+2) com.coveros.training.tomcat
+- WebAppListener (@WebListener, implements ServletContextListener)
+  - On app startup: invokes IPersistenceLayer.cleanAndMigrateDatabase() to reset DB and apply migration scripts
+  - Dependency injection supported via alternate constructor (default uses new PersistenceLayer)
+
+3) Static web resources (src/main/webapp)
+- index.html: links to Library UI, Endpoint catalog, and commit info
+- library.html: forms for librarian workflows:
+  - POST /login (username, password)
+  - POST /register (username, password)
+  - POST /lend (book, borrower)
+  - POST /registerbook (book)
+  - POST /registerborrower (borrower)
+  - Flyway admin buttons: GET /flyway?action=clean, GET /flyway?action=migrate, GET /flyway (clean/migrate combo)
+  - Links to H2 database console (/console) and help
+- library.js: rich client UX helpers
+  - AJAX function talk(verb, path, data) with x-www-form-urlencoded body
+  - Adds autocomplete/dropdowns for available books and borrowers
+  - Calls:
+    - GET /listavailable to prefill book choices
+    - GET /borrower to prefill borrower choices
+  - Provides lightweight UI tests and optional integration script (calls /flyway and /registerborrower)
+- main.css: responsive styling for forms and searchbox UI
+- endpointcatalog.html & catalog.js: form-driven manual testing for endpoints:
+  - POST /math (item_a, item_b)
+  - POST /fibonacci (fib_param_n, fib_algorithm_choice: default_recursive|tail_recursive_1|tail_recursive_2)
+  - POST /ackermann (ack_param_m, ack_param_n, ack_algorithm_choice: default_recursive|tail_recursive)
+  - GET /book (id?, title?) - conflict is error
+  - GET /borrower (id?, name?) - conflict is error
+- restfulresult.jsp: raw response passthrough (${result})
+- result.jsp: formatted result page with return link
+- dbhelp.html: H2 console connection string guidance
+
+4) DB migration and resources
+- log4j2.xml: console appender, INFO root, pattern layout
+- src/main/resources/db/migration
+  - V1__Create_person_table.sql (initial library.PERSON table)
+  - V2__Rest_of_tables_for_auth_and_library.sql
+    - Drops library.person
+    - Creates:
+      - library.BORROWER (id serial PK, name varchar(100) not null)
+      - library.BOOK (id serial PK, title varchar(100) not null)
+      - library.LOAN (id serial PK, book int FK library.BOOK on delete cascade, borrower int FK library.BORROWER on delete cascade, borrow_date date not null)
+      - auth.USER (id serial PK, name varchar(100) not null, password_hash varchar(100))
+- Flyway configured with schemas: ADMINISTRATIVE, LIBRARY, AUTH
+
+5) web.xml (Servlet 2.4)
+- H2Console servlet mapping /console/* (org.h2.server.web.WebServlet), webAllowOthers=true
+- JSP config UTF-8
+- Session tracking via cookies only (no URL-based jsessionid)
+
+6) Tests (insight into APIs and expected behaviors)
+- Unit tests for servlets and utils validate endpoints’ response messages and flow:
+  - LoginServletTests: POST /login -> “access granted” or “access denied”, validates missing input handling
+  - RegisterServletTests: POST /register -> forwards to result JSP, returns messages like “no username provided”, “no password provided”
+  - LibraryBookListAvailableServletTests: GET /listavailable returns JSON list or “No books exist in the database”
+  - LibraryBookListSearchServletTests: GET /book returns lists or single book JSON; errors for conflicts or not-found
+  - LibraryBorrowerListSearchServletTests: GET /borrower returns lists or single borrower JSON; errors for malformed id, conflicts, or not-found
+  - LibraryLendServletTests: POST /lend returns LibraryActionResults string (SUCCESS, NO_BOOK_TITLE_PROVIDED, NO_BORROWER_PROVIDED)
+  - LibraryRegisterBookServletTests: POST /registerbook returns SUCCESS or NO_BOOK_TITLE_PROVIDED
+  - LibraryRegisterBorrowerServletTests: POST /registerborrower returns SUCCESS or NO_BORROWER_PROVIDED
+  - LibraryUtilsTests, LendingTests: show typical flows and library action result semantics
+- SelenifiedSample (UI/e2e)
+  - Uses Chrome (headless=false)
+  - Navigates to library.html, uses /flyway to reset DB, /register to create a user, verifies /login grants access
+
+APIs and interfaces (server-side)
+Note: Servlets are defined elsewhere; inferred from tests and HTML.
+
+- Authentication
+  - POST /register
+    - Form params: username, password
+    - Behavior: Validates inputs; password quality handled by RegistrationUtils; creates user if not exists; persists password hash
+    - Responses (result.jsp, ${result}): messages include
+      - “successfully registered: true|false”
+      - “no username provided”, “no password provided”
+      - Error messages for existing user or bad password
+    - Persistence calls:
+      - PersistenceLayer.searchForUserByName(String)
+      - saveNewUser(String), updateUserWithPassword(long, String)
+  - POST /login
+    - Form params: username, password
+    - Behavior: Validates; checks credentials
+    - Responses: “access granted” or “access denied”
+    - Persistence calls: areCredentialsValid(String, String)
+
+- Library management
+  - POST /lend
+    - Params: book (title), borrower (name)
+    - Behavior: Resolve title->Book, name->Borrower; check book availability; create loan
+    - Responses: LibraryActionResults codes as strings:
+      - “SUCCESS”, “BOOK_CHECKED_OUT”, “NO_BOOK_TITLE_PROVIDED”, “NO_BORROWER_PROVIDED”, “BOOK_NOT_REGISTERED”, “BORROWER_NOT_REGISTERED”
+    - Persistence calls: createLoan(Book, Borrower, Date), searchForLoanByBook(Book)
+  - POST /registerbook
+    - Params: book (title)
+    - Behavior: Register book if not already registered; disallow empty title
+    - Responses: “SUCCESS”, “NO_BOOK_TITLE_PROVIDED”
+    - Persistence calls: saveNewBook(String)
+  - POST /registerborrower
+    - Params: borrower (name)
+    - Behavior: Register borrower if not registered; disallow empty name
+    - Responses: “SUCCESS”, “NO_BORROWER_PROVIDED”
+    - Persistence calls: saveNewBorrower(String)
+  - GET /book
+    - Query params: id? (number), title? (string) — if both provided, error
+    - Behavior:
+      - No params: list all books
+      - id only: get by id
+      - title only: search by title
+    - Responses (restfulresult.jsp, ${result}): JSON array of books or error strings:
+      - Example JSON: [{"Title": "a book", "Id": "1"}]
+      - Errors: “No books exist in the database”, “No books found with an id of X”, “No books found with a title of Y”, “Error: please search by either title or id, not both”
+    - Persistence calls: listAllBooks(), searchBooksById(long), searchBooksByTitle(String)
+  - GET /borrower
+    - Query params: id? (number), name? (string) — if both provided, error
+    - Behavior: list all or search by id/name
+    - Responses: JSON array of borrowers or error strings:
+      - Example JSON: [{"Name": "abe borrower", "Id": "1"}]
+      - Errors: “No borrowers exist in the database”, “Error: could not parse the borrower id as an integer”, “No borrowers found with an id of X”, “No borrowers found with a name of Y”, “Error: please search by either name or id, not both”
+    - Persistence calls: listAllBorrowers(), searchBorrowersById(long), searchBorrowerDataByName(String)
+  - GET /listavailable
+    - Behavior: list books “available” (see SQL note below)
+    - Responses: JSON array as in /book, or “No books exist in the database”
+    - Persistence calls: listAvailableBooks()
+
+- Admin/DevOps
+  - GET /flyway
+    - Query param: action? (clean|migrate)
+    - Behavior: If action absent, likely clean/migrate; if set, do the action
+    - Used for DB reset in tests
+    - Persistence calls: cleanDatabase(), migrateDatabase(), or cleanAndMigrateDatabase()
+  - GET /console/*
+    - H2 Web Console embedded servlet
+
+- Math/computation (purely computational)
+  - POST /math
+    - Params: item_a, item_b (integers in 32-bit bounds)
+    - Behavior: Adds two integers with overflow checks
+  - POST /fibonacci
+    - Params: fib_param_n (number), fib_algorithm_choice
+  - POST /ackermann
+    - Params: ack_param_m, ack_param_n, ack_algorithm_choice
+
+PersistenceLayer: database access methods (IPersistenceLayer)
+- Library
+  - long saveNewBorrower(String borrowerName)
+  - long createLoan(Book book, Borrower borrower, Date borrowDate)
+  - long saveNewBook(String bookTitle)
+  - void updateBorrower(long id, String borrowerName)
+  - void deleteBook(long id)
+  - void deleteBorrower(long id)
+  - Optional<String> getBorrowerName(long id)
+  - Optional<Borrower> searchBorrowerDataByName(String borrowerName)
+  - Optional<Book> searchBooksByTitle(String bookTitle)
+  - Optional<Book> searchBooksById(long id)
+  - Optional<Borrower> searchBorrowersById(long id)
+  - Optional<List<Book>> listAllBooks()
+  - Optional<List<Book>> listAvailableBooks()
+  - Optional<List<Borrower>> listAllBorrowers()
+  - Optional<List<Loan>> searchForLoanByBorrower(Borrower borrower)
+  - Optional<Loan> searchForLoanByBook(Book book)
+- Authentication
+  - long saveNewUser(String username)
+  - Optional<User> searchForUserByName(String username)
+  - Optional<Boolean> areCredentialsValid(String username, String password)  // returns Optional.of(true) when valid, Optional.empty() otherwise
+  - void updateUserWithPassword(long id, String password)
+- DB admin
+  - void runBackup(String backupFileName) // H2 SCRIPT TO ?
+  - void runRestore(String backupFileName) // Drops schemas and runs RUNSCRIPT FROM path
+  - void cleanAndMigrateDatabase()
+  - void cleanDatabase()
+  - void migrateDatabase()
+- Utility
+  - static IPersistenceLayer createEmpty()
+  - boolean isEmpty()
+
+Database schema and data models
+- Schemas: LIBRARY, AUTH (also ADMINISTRATIVE registered in Flyway configuration)
+- Tables:
+  - library.BORROWER
+    - id: serial PRIMARY KEY
+    - name: VARCHAR(100) NOT NULL
+  - library.BOOK
+    - id: serial PRIMARY KEY
+    - title: VARCHAR(100) NOT NULL
+  - library.LOAN
+    - id: serial PRIMARY KEY
+    - book: INT NOT NULL REFERENCES library.BOOK(id) ON DELETE CASCADE
+    - borrower: INT NOT NULL REFERENCES library.BORROWER(id) ON DELETE CASCADE
+    - borrow_date: DATE NOT NULL
+  - auth.USER
+    - id: serial PRIMARY KEY
+    - name: VARCHAR(100) NOT NULL
+    - password_hash: VARCHAR(100)
+- Relationships:
+  - LOAN.book -> BOOK.id (CASCADE on delete)
+  - LOAN.borrower -> BORROWER.id (CASCADE on delete)
+- Data objects (external to this chunk; inferred fields):
+  - com.coveros.training.library.domainobjects.Book: id (long), title (String)
+  - Borrower: id (long), name (String)
+  - Loan: id (long), book (Book), borrower (Borrower), borrow_date (Date)
+  - com.coveros.training.authentication.domainobjects.User: name (String), id (long)
+- Query logic:
+  - Available books: SELECT b.id, b.title FROM library.book b LEFT JOIN library.loan l ON b.id = l.book WHERE l.borrow_date IS NULL;
+    - Returns books with no loan rows (never loaned). There is no notion of returns; borrow_date is NOT NULL in schema, so only books without any loan will appear as available.
+
+Service dependencies and communication patterns
+- Client-side (browser)
+  - library.html and endpointcatalog.html use XHR via catalog.js and library.js to hit endpoints; content-type application/x-www-form-urlencoded
+  - library.js uses GET /listavailable and GET /borrower to populate form controls
+- Server-side
+  - HTTP servlets (not in this chunk) call Utils classes (e.g., LibraryUtils, LoginUtils, RegistrationUtils), which depend on IPersistenceLayer
+  - PersistenceLayer uses JDBC (H2) with prepared statements. Each method:
+    - Opens a connection from H2 JdbcConnectionPool DataSource
+    - Performs query or update within try-with-resources
+    - Maps ResultSet via extractor functions to Optional<T>
+    - Does not manage transactions explicitly (auto-commit default)
+  - Startup: WebAppListener contextInitialized runs cleanAndMigrateDatabase() via IPersistenceLayer
+  - DB Console embedded servlet at /console/*
+
+Key business logic and algorithms
+- Micro ORM pattern
+  - SqlData encapsulates SQL statement, parameters, result extractor
+  - ParameterObject tracks parameter types; bind only supports String, Integer, Long, Date
+  - executeInsertTemplate returns autogenerated key (throws if missing)
+  - runQuery wraps ResultSet extraction in Optional, with first row semantics by default
+- Authentication password hashing
+  - SHA-256 of UTF-8 password; hex encoding via bytesToHex
+  - No salt/pepper; no iterations; validation compares stored hex hash
+- Library logic (via persistence)
+  - Registrations: insert book/borrower, uniqueness and error messaging enforced at higher layer (Utils/Servlets)
+  - Lending: checks for existing loan by book; if none, creates loan with current date (Utils handle orchestration)
+  - Listings/search: various query methods; JSON prepared in servlets (as per tests)
+- Backup/Restore
+  - H2-specific SCRIPT TO and RUNSCRIPT; destructive restore drops schemas first
+
+Configuration and deployment details
+- App server: Tomcat (Servlet 2.4 descriptors), uses @WebListener (annotation scanning) for startup
+- DB: H2 in-memory, URL "jdbc:h2:mem:training;MODE=PostgreSQL" (Pooling via org.h2.jdbcx.JdbcConnectionPool)
+  - dbhelp.html suggests console connection URL: jdbc:h2:mem:training;MODE=PostgreSQL;DB_CLOSE_DELAY=-1 (to keep DB alive for console)
+- DB migrations: Flyway with schemas ADMINISTRATIVE, LIBRARY, AUTH; migration files under classpath: db/migration
+- Logging: Log4j2, console appender, INFO level
+- JSPs: result.jsp and restfulresult.jsp, UTF-8
+- Session management: cookie-only sessions
+- Selenium/UI test config: Selenified, Chrome, headless=false (can be toggled), defaultWait=5, defaultPoll=50
+
+Architectural patterns and frameworks used
+- Patterns:
+  - Repository/DAO consolidated into PersistenceLayer
+  - Template method for DB operations (executeInsertTemplate, executeUpdateTemplate)
+  - Lightweight micro-ORM encapsulation (SqlData, ParameterObject)
+  - Startup listener (ServletContextListener) for DB lifecycle
+  - Optional<T> for query results
+- Frameworks/Libraries:
+  - Flyway (DB migrations)
+  - H2 (in-memory DB + web console servlet)
+  - Apache Commons Lang3 (EqualsBuilder/HashCodeBuilder/ToStringBuilder)
+  - Log4j2 (logging)
+  - Servlet API/JSP
+  - Testing: JUnit, Mockito, EqualsVerifier, Selenium/Selenified, TestNG annotations in Selenified tests
+
+Notable behaviors, constraints, and risks (important for microservice decomposition)
+- Cross-domain persistence: Authentication and Library share the same PersistenceLayer and DB; consider splitting into separate services with separate data stores or schemas, exposing service APIs instead of shared code.
+- Password hashing lacks salt/iterations; improve for production (bcrypt/argon2 and per-user salts).
+- No explicit transaction boundaries; each operation is a single statement; complex operations spanning multiple statements would need transactions.
+- SqlData parameter binding supports only four types (String, Integer, Long, Date); extending would require code changes.
+- areCredentialsValid returns Optional<Boolean> rather than a simple boolean; callers treat presence as “valid”; beware semantics when migrating.
+- listAvailableBooks query returns only books never loaned (due to NOT NULL borrow_date and WHERE l.borrow_date IS NULL); no return/checked-in concept modeled; define desired availability semantics before extracting as a separate service.
+- Backup/restore paths are H2-specific; runRestore hardcodes a relative path (“src/integration_test/resources/db_sample_files/”) that may not exist in deployments; intended for integration testing.
+
+Microservice decomposition guidance (based on this chunk)
+- Authentication service
+  - Endpoints: POST /register, POST /login
+  - Data: auth.USER table
+  - Responsibilities: user lifecycle, credential verification, password hashing
+  - Should own password policy logic and hashing
+  - Separate DB/schema (“auth”), independent persistence component
+- Library service
+  - Endpoints: POST /registerbook, POST /registerborrower, POST /lend, GET /book, GET /borrower, GET /listavailable
+  - Data: library.BOOK, library.BORROWER, library.LOAN
+  - Responsibilities: catalog management, borrower registry, loan operations
+  - Should define availability/return semantics and transactional behavior
+- Admin/DB management service (optional or ops tooling)
+  - Endpoint: GET /flyway (and potential backup/restore)
+  - H2 console /console for dev/test only
+  - Flyway actions and DB scripts; in production move to CI/CD migration steps
+- Math service (stateless compute)
+  - Endpoints: POST /math, POST /fibonacci, POST /ackermann
+  - No persistence
+- Shared libraries
+  - Micro ORM layer (SqlData, ParameterObject, Persistence abstractions) can be extracted into a shared jvm library, or duplicated per service with domain-specific repositories
+
+Data flow examples (end-to-end)
+- Register borrower
+  - Client POST /registerborrower -> LibraryRegisterBorrowerServlet -> LibraryUtils.registerBorrower -> IPersistenceLayer.saveNewBorrower -> JDBC INSERT library.borrower
+  - Response -> result.jsp -> UI
+- Login
+  - Client POST /login -> LoginServlet -> LoginUtils.isUserRegistered -> IPersistenceLayer.areCredentialsValid -> SHA-256 hash -> SELECT auth.user WHERE name AND password_hash -> returns boolean result -> result.jsp
+- List available books for autocomplete
+  - Client GET /listavailable -> LibraryBookListAvailableServlet -> LibraryUtils.listAvailableBooks -> IPersistenceLayer.listAvailableBooks -> SELECT LEFT JOIN ... WHERE l.borrow_date IS NULL -> JSON -> restfulresult.jsp -> library.js builds dropdown/autocomplete
+
+Configuration touchpoints to externalize (for microservices)
+- DB URL/credentials, pool settings
+- Flyway configuration (schemas, locations)
+- Logging levels and appenders
+- Security (disable H2 console; CORS; CSRF)
+- Hashing algorithm and parameters
+
+Summary of SQL per operation (for clarity)
+- INSERT library.borrower(name) VALUES (?)
+- INSERT library.loan(book, borrower, borrow_date) VALUES (?, ?, ?)
+- INSERT library.book(title) VALUES (?)
+- UPDATE library.borrower SET name=? WHERE id=?
+- DELETE FROM library.book WHERE id=?
+- DELETE FROM library.borrower WHERE id=?
+- SELECT name FROM library.borrower WHERE id=?
+- SELECT id, name FROM library.borrower WHERE name=?
+- SELECT id FROM library.book WHERE title=?
+- SELECT id, title FROM library.book WHERE id=?
+- SELECT id, name FROM library.borrower WHERE id=?
+- SELECT id, title FROM library.book
+- SELECT b.id, b.title FROM library.book b LEFT JOIN library.loan l ON b.id = l.book WHERE l.borrow_date IS NULL
+- SELECT loan.id, loan.borrow_date, loan.book, book.title FROM library.loan JOIN library.book ON book.id=loan.book WHERE loan.borrower=?
+- SELECT loan.id, loan.borrow_date, loan.borrower, bor.name FROM library.loan JOIN library.borrower bor ON bor.id=loan.borrower WHERE loan.book=?
+- INSERT INTO auth.user(name) VALUES (?)
+- SELECT id FROM auth.user WHERE name=?
+- SELECT id FROM auth.user WHERE name=? AND password_hash=?
+- UPDATE auth.user SET password_hash=? WHERE id=?
+- Backup: SCRIPT TO ?
+- Restore: DROP SCHEMA IF EXISTS ADMINISTRATIVE|AUTH|LIBRARY CASCADE; RUNSCRIPT FROM ?
+
+This summary captures the key components, endpoints, DB schema, dependencies, patterns, and operational details necessary to analyze and plan microservice decomposition.

@@ -1,0 +1,256 @@
+Architectural Summary (Part 1 of 5)
+
+System overview
+- Purpose: A monolithic Java web application (“Demo”) with multiple business domains and extensive automated testing, plus a separate Swing desktop application used to demonstrate desktop UI testing and automation. The project is Gradle-based and demonstrates CI/CD, testing, DB migration/versioning, and quality/security tooling.
+- Runtime endpoints:
+  - Web app served at http://localhost:8080/demo (via Gradle Gretty during development; deployable to Tomcat).
+  - H2 console and monitoring pages are referenced in docs (e.g., /demo/console and /demo/monitoring).
+  - Desktop automation TCP server listens on port 8000.
+
+Major modules and components
+- Web application (monolith)
+  - Packages under com.coveros.training (see src/main/java):
+    - authentication: user registration & login logic and servlets.
+    - library: book/borrower registration, lending, listing and searching, with servlets and domain objects.
+    - mathematics: stateless computational endpoints (math, Fibonacci, Ackermann) with servlets.
+    - expenses: simple domain (alcohol expense rules).
+    - cartesianproduct: math utility/service.
+    - persistence: DB access abstraction and servlet; integration with H2; Flyway migrations.
+    - helpers: utilities for assertions, strings, servlet helpers.
+    - tomcat: WebAppListener for server lifecycle hooks.
+  - Web resources (src/main/webapp): HTML pages (index, library), JS (catalog.js, library.js), CSS, JSP (result.jsp, restfulresult.jsp), web.xml.
+  - DB migrations (Flyway): main/resources/db/migration/V1__Create_person_table.sql and V2__Rest_of_tables_for_auth_and_library.sql.
+- Desktop application (Swing): com.coveros.training.autoinsurance
+  - AutoInsuranceUI: Swing UI with inputs (previous claims, age) and button; controls a background socket server for automation.
+  - AutoInsuranceScriptServer: TCP command server (port 8000) to automate UI (get/set fields, click button, quit).
+  - AutoInsuranceProcessor: business rules to compute premium increases, warning letters, cancellations.
+  - AutoInsuranceAction, WarningLetterEnum, InvalidClaimsException: domain model and error types.
+
+HTTP API endpoints and interfaces (web app)
+- Authentication
+  - POST /demo/register (RegisterServlet)
+    - Params: username, password
+    - Responsibility: create/register a user; returns a result page/JSP or text via JSP helper.
+  - POST /demo/login (LoginServlet)
+    - Params: username, password
+    - Responsibility: authenticate user; return success/failure result.
+  - Helper utilities: LoginUtils, RegistrationUtils; domain objects: User, RegistrationResult, RegistrationStatusEnums, PasswordResult, PasswordResultEnums.
+- Library
+  - POST /demo/registerbook (LibraryRegisterBookServlet)
+    - Params: book (title)
+    - Responsibility: register a new book into the catalog.
+  - POST /demo/registerborrower (LibraryRegisterBorrowerServlet)
+    - Params: borrower (name)
+    - Responsibility: register a new borrower.
+  - POST /demo/lend (LibraryLendServlet)
+    - Params: book, borrower
+    - Responsibility: record a loan of a book to a borrower.
+  - GET/POST /demo/list/available?… (LibraryBookListAvailableServlet) [exact path inferred from name; exact mapping may be defined in web.xml]
+    - Responsibility: list available books (not on loan).
+  - GET/POST /demo/search/books?… (LibraryBookListSearchServlet)
+    - Responsibility: find books by criteria (likely title).
+  - GET/POST /demo/search/borrowers?… (LibraryBorrowerListSearchServlet)
+    - Responsibility: search borrowers.
+  - Utilities: LibraryUtils; domain objects: Book, Borrower, Loan, LibraryActionResults.
+- Mathematics
+  - POST /demo/math (MathServlet)
+    - Params: item_a, item_b
+    - Responsibility: add two integers with validation and overflow checks.
+    - Error semantics (observable via tests/docs):
+      - “Error: only accepts integers”
+      - “Error: addend too large - maximum of 2,147,483,647 in a single addend”
+      - “Error: sum too large - maximum of (absolute) 2,147,483,647”
+    - Response: plain text/HTML (JSP-backed).
+  - GET/POST /demo/fib (FibServlet)
+    - Responsibility: compute Fibonacci (Fibonacci, FibonacciIterative).
+  - GET/POST /demo/ack (AckServlet)
+    - Responsibility: compute Ackermann function (Ackermann, AckermannIterative).
+- Persistence utilities
+  - DbServlet: likely an internal endpoint for DB help/inspection (dbhelp.html present).
+  - IPersistenceLayer, PersistenceLayer, SqlData, ParameterObject: DAO-like abstraction for DB operations; H2-based in tests.
+- Helpers
+  - ServletUtils, StringUtils, CheckUtils, AssertionException: utility functions leveraged across servlets and services.
+- Static UI and catalog
+  - endpointcatalog.html: lists available endpoints.
+  - index.html, library.html and supporting JS (catalog.js, library.js).
+
+Database schema and data models
+- Technology: H2 relational DB (in-memory or file-based).
+  - Dev/test DB connection:
+    - URL examples:
+      - jdbc:h2:./build/db/training (file)
+      - jdbc:h2:mem:training (in-memory) referenced in docs for console usage
+    - H2 console available via the app (docs refer to /demo/console).
+  - Flyway migrations:
+    - V1__Create_person_table.sql: creates a person table (likely supporting auth or shared identity).
+    - V2__Rest_of_tables_for_auth_and_library.sql: creates remaining tables, including authentication and library domains.
+  - Integration test sample SQL (src/integration_test/resources/db_sample_files):
+    - v2_empty_schema.sql
+    - v2_one_book_one_borrower.sql
+    - v2_one_loan.sql
+    - v2_one_user.sql
+    - v2_three_books_three_borrowers.sql
+- Domain objects (implying DB tables/columns; exact schemas in Flyway scripts):
+  - authentication.User: typically includes id, username, password hash/salt (inferred), registration status.
+  - library.Book, Borrower, Loan: typical fields include ids, names/titles, and loan relationships (book_id, borrower_id, loan_date/return_date or status).
+  - Results/status enums map to persistence layer outputs.
+
+Service dependencies and communication patterns
+- Web app (monolith)
+  - Each servlet handles HTTP requests directly (Servlet API). View rendering via JSP (result.jsp/restfulresult.jsp) or plain text.
+  - Authentication and library servlets depend on the persistence layer (IPersistenceLayer/PersistenceLayer) to read/write H2 DB.
+  - Mathematics endpoints are stateless and compute-only (no DB).
+  - Shared DB across authentication and library domains (single schema managed by Flyway).
+  - No inter-service HTTP calls within the monolith; modules communicate via in-process method calls and shared DB.
+- Desktop app
+  - Swing UI exposes a simple TCP automation protocol on localhost:8000.
+  - External test clients connect and issue commands:
+    - set age <int>, set claims <int>, click calculate, get label, quit.
+  - Desktop app is not integrated with the web app; it is a separate process, used for demonstrating desktop automation and coverage collection (JaCoCo client provided).
+- External systems (for CI/CD and quality)
+  - Jenkins: pipeline runs build/test/analysis, serves static reports.
+  - SonarQube: static analysis.
+  - OWASP DependencyCheck: dependency vulnerability scanning.
+  - JMeter: performance testing (reports served via Tomcat as configured in docs).
+  - ZAP proxy: security scanning (reports served).
+  - ChromeDriver/Chrome and Selenium for UI tests.
+
+Key business logic and algorithms
+- Auto insurance (desktop app)
+  - Inputs: prior claims (0,1,2-4,>=5 mapped to integers), driver age.
+  - Outputs: AutoInsuranceAction with fields:
+    - premiumIncreaseDollars (int)
+    - warningLetterEnum (NONE, LTR1, LTR2, LTR3)
+    - isPolicyCanceled (boolean)
+    - isError (boolean)
+  - Rules (from AutoInsuranceProcessor):
+    - claims=0:
+      - age 16–25 → +$50
+      - age 26–85 → +$25
+    - claims=1:
+      - age 16–25 → +$100, LTR1
+      - age 26–85 → +$50
+    - claims 2–4:
+      - age 16–25 → +$400, LTR2
+      - age 26–85 → +$200, LTR3
+    - claims≥5 → cancel policy (isPolicyCanceled=true), +$0
+    - Otherwise → error response (isError=true)
+- Math addition (web app)
+  - Validates both inputs are integers (no decimals).
+  - Rejects addends > 2,147,483,647 (absolute).
+  - Rejects sums with absolute value > 2,147,483,647.
+  - Returns sum on success or error messages as noted above.
+- Mathematics (Fibonacci/Ackermann)
+  - Provides both recursive and iterative implementations for compute endpoints; likely exposed for teaching algorithmic concepts and performance characteristics.
+
+Configuration and deployment details
+- Build/Run (Gradle)
+  - gradlew apprun: runs the web app via Gretty (hot-swap capable), accessible at http://localhost:8080/demo.
+  - gradlew check: unit tests (Java only).
+  - gradlew runAllTests: runs API + UI tests; requires app running and Python/Chromedriver installed.
+  - gradlew integrate: database integration tests (H2).
+  - gradlew startH2Console: launches H2 console for inspecting DB (URL jdbc:h2:./build/db/training, user/password empty).
+  - Additional tasks: dependencyCheckAnalyze, sonarqube, pitest, generateCucumberReport, etc.
+- Gradle configuration (gradle.properties)
+  - Memory: org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8.
+  - Optional: chromedriver.path can be set here.
+  - Workers: org.gradle.workers.max=1; console plain.
+- Logging
+  - log4j2.xml (root level INFO) under main and desktop_app resources.
+- Web deployment
+  - web.xml present under WEB-INF.
+  - Docs provide Tomcat 9 deployment guidance:
+    - Place Jenkins war into Tomcat webapps (for CI).
+    - Server side configuration to serve Jenkins workspace artifacts at /workspace.
+    - JMX enabled via setenv.[bat|sh] (monitoring).
+- CI/CD (jenkins/Jenkinsfile; docs/ci_and_cd)
+  - Pipeline includes: build, unit/integration tests, BDD reports, Selenium UI tests, SonarQube, DependencyCheck, Pitest, performance testing (JMeter), ZAP scanning.
+  - Jenkins triggers can be wired via Git post-receive hooks (docs include setup).
+- Python/Selenium
+  - Pipfile includes: requests, behave, pyhamcrest, selenium, pytest, behave2cucumber.
+  - UI tests available in multiple languages (Java, Python, JS, C#), demonstrating cross-language automation.
+
+Architectural patterns and frameworks
+- Web layer: Java Servlets + JSP (classic MVC pattern).
+- Persistence: custom thin DAO-like layer via IPersistenceLayer/PersistenceLayer; Flyway for DB migrations/versioning; H2 as embedded DB; integration tests validate SQL/data behaviors.
+- Testing: JUnit 4 (including Parameterized), Cucumber (Java BDD), Behave (Python BDD), Selenium WebDriver, Selenified, Postman/SoapUI collections for API testing, JaCoCo for coverage, Pitest for mutation testing.
+- Observability/operations: Log4j2 + SLF4J; Tomcat monitoring (docs); SonarQube static analysis; OWASP DependencyCheck; ZAP proxy security scan.
+- Build/run: Gradle wrapper (Gretty for hot-swap), Jenkins for CI/CD.
+
+Desktop application (autoinsurance) details
+- UI: Swing-based with fields:
+  - claimsDropDown: “0”, “1”, “2-4”, “>=5”
+  - ageField: numeric text field
+  - claimsCalcButton: “Crunch” button triggers computation and sets label
+  - label: output text
+- Automation protocol over TCP (AutoInsuranceScriptServer):
+  - Commands:
+    - set label <text>
+    - set age <int>
+    - set claims <int>
+    - get label | get age | get claims
+    - click calculate
+    - quit
+  - Response: "OK" or value (for get), "FAILURE" on errors
+- Tests:
+  - DesktopUiTests boots UI (AutoInsuranceUI.main) and drives it via DesktopTester → AutoInsuranceScriptClient.
+  - AutoInsuranceProcessorTests: parameterized boundary testing of business rules.
+  - AutoInsuranceActionTests: equals/hashCode/toString behavior.
+
+Quality and test coverage structure
+- Unit tests: substantial coverage across all domains (authentication, library, mathematics, persistence, helpers).
+- Integration tests: DB-oriented tests against H2 with sample schemas and dataset scripts.
+- BDD tests: feature files for multiple domains (auth, library, math, cartesian product, expenses).
+- UI tests: Selenium-based tests (Java, Python, JS, C#). Python behave tests require Chromedriver.
+- API tests: Python pytest (src/api_tests/test_api.py), Postman collection, SoapUI suite.
+
+Security, performance, and monitoring
+- Security scanning: OWASP DependencyCheck (Gradle task dependencyCheckAnalyze).
+- ZAP proxy scanning: docs include configuration; reports served via Jenkins/Tomcat.
+- Performance testing: JMeter scripts and reporting (docs/performance_testing).
+- Monitoring: Tomcat monitoring instructions (docs/dev_notes/monitoring_tomcat.txt); JMX configuration for Tomcat.
+
+Microservice decomposition considerations (based on this chunk)
+- Natural bounded contexts (candidates for separation):
+  - Authentication Service:
+    - Owns users/credentials, registration and login flows (LoginServlet, RegisterServlet, User/Registration domain objects).
+    - Depends on persistence with Flyway-managed auth tables.
+    - Clear API boundary: /demo/register, /demo/login.
+  - Library Service:
+    - Owns books, borrowers, and loans (Library* servlets and domain objects).
+    - API boundary: /demo/registerbook, /demo/registerborrower, /demo/lend, book/borrower listing/search.
+    - Own schema entities: books, borrowers, loans (currently co-migrated with auth in V2; should be isolated per service).
+  - Math Service:
+    - Stateless compute endpoints (MathServlet, FibServlet, AckServlet); no persistence.
+    - API boundary: /demo/math, /demo/fib, /demo/ack.
+    - Simple to deploy independently and scale separately.
+- Shared infrastructure concerns (to be decoupled for microservices):
+  - Database: Auth and Library share migrations and likely schema; in a microservice split each service should own its database and migrations (separate Flyway tracks).
+  - Web front-end: Static pages (index, library.html) and JSPs are coupled to monolith servlet mappings; in microservices, consider an API gateway or reverse proxy and separate web front-end.
+  - Persistence layer: IPersistenceLayer/PersistenceLayer is a monolith-wide abstraction; should be split per service or replaced with per-service repositories/ORM and data source configurations.
+- Communication patterns post-split:
+  - Currently none between domains via HTTP; if workflows require cross-domain coordination (e.g., auth check before lending) consider synchronous HTTP calls or asynchronous events.
+- Observability and CI/CD:
+  - Pipeline and analysis tooling are centralized; post-split, replicate per service or adopt a mono-repo with multi-pipeline or a poly-repo strategy.
+- Desktop app:
+  - Independent process with its own automation server; not coupled to web app. If productized, could be wrapped as a separate service for the insurance domain, but currently only a demo UI with TCP automation.
+
+Notable configurations and operational details
+- Ports:
+  - Web app (Gretty/Tomcat): 8080
+  - Desktop automation server: 8000
+  - SonarQube (default): 9000 (as per docs)
+  - Tomcat JMX (example): 9999 (set via setenv)
+- Logging: log4j2 root level INFO to console for both web app and desktop app.
+- Environment prerequisites for full test suite:
+  - JDK (11 recommended for SonarQube 8; app itself runs on Java 8+).
+  - Python + Pipenv, Chromedriver and Chrome for UI/API tests.
+- Gradle tasks of note:
+  - apprun, check, runAllTests, integrate, startH2Console, generateCucumberReport, pitest, dependencyCheckAnalyze, sonarqube.
+
+Gaps and assumptions (from Part 1 data)
+- Exact DB schemas/columns are defined in Flyway SQL files (V1, V2) not shown here; inferred entities are Person, Users/Auth tables, Books, Borrowers, Loans.
+- Exact URL patterns for some servlets are configured in web.xml (not shown); endpoint list is inferred from filenames and docs (endpointcatalog.html, curl/SoapUI/Postman examples).
+- Library search/list endpoints are named by servlet classes; actual HTTP methods and parameters are assumed conventional (GET/POST with query/form params).
+
+This summary captures all currently visible components and interfaces and highlights clear bounded contexts suitable for microservice decomposition: Authentication, Library, and Math. The desktop auto-insurance module is separate and demonstrates a distinct automation protocol that could be service-ified if required.

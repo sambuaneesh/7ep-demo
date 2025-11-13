@@ -1,0 +1,326 @@
+Architectural Summary (Chunk 5 of 5)
+
+Scope note: This chunk contains unit/parameterized tests for domain, math, persistence, servlet, and startup components, plus multi-language UI/acceptance tests. While many implementation classes are not shown here, the tests define clear contracts, endpoints, data models, and behaviors. This summary captures those interfaces and interactions to support microservice decomposition.
+
+1) Modules, Components, and Responsibilities
+
+- Library Domain Objects (com.coveros.training.library.domainobjects)
+  - Book
+    - Fields: id (int), title (String).
+    - Methods: createEmpty(), isEmpty(), equals/hashCode, toString.
+  - Borrower
+    - Fields: id (int), name (String).
+    - Methods: createEmpty(), isEmpty(), equals/hashCode, toString, toOutputString() -> JSON of form {"Name": "<name>", "Id": "<id>"}.
+  - Loan
+    - Fields: book (Book), borrower (Borrower), id (int), borrowDate (java.sql.Date).
+    - Methods: createEmpty(), isEmpty(), equals/hashCode, toString.
+
+- Mathematics (com.coveros.training.mathematics)
+  - Algorithms
+    - Ackermann
+      - calculate(int m, int n) -> BigInteger. Regular recursive implementation.
+    - AckermannIterative
+      - calculate(int m, int n) -> BigInteger. Iterative/tail-recursive style to handle larger values.
+    - Fibonacci
+      - calculate(int n) -> int. Recursive implementation.
+    - FibonacciIterative
+      - fibAlgo1(int n) -> BigInteger.
+      - fibAlgo2(int n) -> BigInteger.
+  - Servlets (front controllers for math UI/APIs)
+    - AckServlet
+      - doPost: reads parameters ack_param_m, ack_param_n, ack_algorithm_choice with values "regular_recursive" or "tail_recursive".
+      - Dispatches to regularRecursive(req, m, n) or tailRecursive(req, m, n).
+      - Forwards to result JSP via forwardToResult(req, res, ...).
+      - Static Logger logger (org.slf4j.Logger); logs error on forward exception.
+    - FibServlet
+      - doPost: reads parameters fib_param_n, fib_algorithm_choice with values "regular_recursive", "tail_recursive_1", "tail_recursive_2".
+      - Dispatches to defaultRecursiveCalculation(req, n), tailRecursiveAlgo1Calc(req, n), tailRecursiveAlgo2Calc(req, n).
+      - Forwards to result JSP via forwardToResult(req, res, ...).
+      - Static Logger logger; logs error on forward exception.
+    - MathServlet
+      - doPost: reads parameters item_a, item_b (two integers to sum).
+      - setResultToSum(req, a, b), then forwardToResult(req, res, ...).
+      - Static Logger logger; logs error on forward exception.
+
+- Persistence (com.coveros.training.persistence)
+  - Interfaces and DTOs
+    - IPersistenceLayer
+      - Methods: cleanDatabase(), migrateDatabase(), cleanAndMigrateDatabase().
+      - Used by DbServlet and WebAppListener.
+    - ParameterObject<T>
+      - Fields: data (T), type (Class<T>).
+      - Methods: createEmpty(), isEmpty(), equals/hashCode, toString (prints data and type).
+    - SqlData<T>
+      - Fields: description (String), preparedStatement (String), parameters (list of ParameterObject<?> internally).
+      - Methods:
+        - createEmpty(), isEmpty(), equals/hashCode, toString.
+        - addParameter(Object value, Class<T> type).
+        - applyParametersToPreparedStatement(PreparedStatement): sets parameters by type (Long -> setLong, String -> setString, Integer -> setInt, Date -> setDate); wraps SQLException in SqlRuntimeException.
+    - EmptyDataSource
+      - Implements DataSource; all methods throw NotImplementedException (guard/fake datasource used for tests).
+    - SqlRuntimeException, NotImplementedException (custom runtime exceptions; thrown by failure scenarios in SqlData and EmptyDataSource).
+  - Servlets
+    - DbServlet
+      - Constructor: DbServlet(IPersistenceLayer).
+      - doGet: reads query parameter action:
+        - "clean" -> pl.cleanDatabase()
+        - "migrate" -> pl.migrateDatabase()
+        - default/empty -> pl.cleanAndMigrateDatabase()
+
+- Tomcat Integration (com.coveros.training.tomcat)
+  - WebAppListener
+    - Constructor: WebAppListener(IPersistenceLayer).
+    - contextInitialized(ServletContextEvent): calls pl.cleanAndMigrateDatabase() (ensures schema reset/migration on startup).
+    - contextDestroyed: no-op.
+
+- UI/Acceptance Tests (multi-language)
+  - Behavior (Python Behave BDD)
+    - Features: authentication_ui.feature, librarian_ui.feature, ackermann/fibonacci calculations.
+    - Steps:
+      - Authentication: register/login via library.html; asserts "successfully registered: true" and "access granted".
+      - Librarian: register borrower and book, lend book; asserts "SUCCESS".
+      - Ackermann/Fibonacci: interact with /demo landing UI; submit forms; assert result element shows expected value.
+    - Environment:
+      - before_all: opens Chrome (optionally via proxy localhost:8888).
+      - before_scenario: resets DB via GET http://localhost:8080/demo/flyway.
+      - after_all: closes browser.
+  - Java UI tests (Gradle project)
+    - HtmlUnitTests (headless, JS disabled):
+      - Uses ApiCalls helper (Apache HttpClient Fluent) to call POST endpoints:
+        - /demo/register (username, password) returns text including "status: SUCCESSFULLY_REGISTERED".
+        - /demo/registerbook (book).
+        - /demo/registerborrower (borrower).
+      - Lend flow through library.html; asserts result = "SUCCESS".
+      - Login flow through library.html; asserts text contains "access granted".
+    - SeleniumTests (Chrome)
+      - Validates dynamic UI modes for lending inputs:
+        - 0 items: lend_book input is locked (ElementNotInteractableException).
+        - 1–9 items: use dropdown (<select>), selecting <option>.
+        - 10+ items: use autocomplete (type and select <li> suggestion).
+      - End-to-end lending and auth flows.
+  - JavaScript (Mocha + selenium-webdriver)
+    - Replicates lending flow through library.html; asserts "SUCCESS".
+  - C# (NUnit + Selenium)
+    - Replicates lending flow; asserts "SUCCESS".
+  - Python (pytest + Selenium)
+    - End-to-end lending and a small Page Object Model for various flows.
+
+2) API Endpoints and HTTP Interfaces
+
+- Admin/DB Migration
+  - GET /demo/flyway?action=clean           -> triggers IPersistenceLayer.cleanDatabase()
+  - GET /demo/flyway?action=migrate         -> triggers IPersistenceLayer.migrateDatabase()
+  - GET /demo/flyway (no/empty action)      -> triggers IPersistenceLayer.cleanAndMigrateDatabase()
+  - Used to reset system state before UI tests; also invoked on startup via WebAppListener (programmatic call, not HTTP).
+
+- Authentication
+  - POST /demo/register
+    - Form params: username, password.
+    - Response: includes "status: SUCCESSFULLY_REGISTERED" and/or "successfully registered: true".
+  - Login form on /demo/library.html:
+    - Form fields: login_username, login_password, submit id login_submit.
+    - Response page shows element with id result containing "access granted" if successful.
+
+- Library
+  - POST /demo/registerbook
+    - Form param: book (Book title).
+    - Registers a book available for lending.
+  - POST /demo/registerborrower
+    - Form param: borrower (Borrower name).
+  - Lending UI (/demo/library.html)
+    - Fields: lend_book (input behavior depends on catalog size), lend_borrower, submit id lend_book_submit.
+    - Result element id result with text "SUCCESS" on success.
+    - Dynamic field behavior:
+      - 0 items -> input disabled/locked.
+      - 1–9 items -> dropdown/select (options populated).
+      - 10+ items -> autocomplete (type to filter; select suggestions as <li>).
+
+- Mathematics
+  - Ackermann calculator on /demo:
+    - Form fields: ack_param_m, ack_param_n, ack_algorithm_choice ("regular_recursive" | "tail_recursive"), submit id calculate_ackermann.
+    - Served by AckServlet.doPost; forwards to ServletUtils.RESTFUL_RESULT_JSP; result shown in id result.
+  - Fibonacci calculator on /demo:
+    - Form fields: fib_param_n, fib_algorithm_choice ("regular_recursive" | "tail_recursive_1" | "tail_recursive_2"), submit id calculate_fibonacci.
+    - Served by FibServlet.doPost.
+  - Simple addition on /demo:
+    - MathServlet.doPost reads item_a, item_b; Python UI page shows addend_a/addend_b inputs with submit id math_submit (front-end may map to MathServlet via different name attributes).
+
+- Presentation
+  - All above servlets forward results to a JSP via RequestDispatcher with path provided by ServletUtils.RESTFUL_RESULT_JSP. The JSP renders an element with id result containing the outcome text.
+
+3) Data Models and Database Schemas (inferred)
+
+- Book
+  - id: int (primary key).
+  - title: String (unique or at least stored).
+- Borrower
+  - id: int (primary key).
+  - name: String.
+- Loan
+  - id: int (primary key).
+  - book_id: int (FK -> Book.id).
+  - borrower_id: int (FK -> Borrower.id).
+  - borrow_date: date.
+- User (authentication)
+  - id: int (primary key).
+  - username, password hash (not explicitly shown, but SqlData test queries SELECT * FROM user WHERE id = ?).
+- Schema migration
+  - Managed by Flyway; administrative servlet and startup listener ensure clean/migrate states.
+
+4) Service Dependencies and Communication Patterns
+
+- UI -> Servlets
+  - Browser submits HTML forms to servlets (MathServlet, AckServlet, FibServlet, registration/borrower/book endpoints, login).
+  - Servlets select appropriate algorithms/services then forward to a common JSP (ServletUtils.RESTFUL_RESULT_JSP) to render results.
+
+- Servlet -> Business Logic
+  - AckServlet/FibServlet invoke computational functions (Ackermann.*, Fibonacci*).
+  - Library endpoints invoke registration/lending services (not shown here; inferred).
+  - MathServlet computes sum internally (setResultToSum).
+
+- Persistence
+  - Library and Authentication backends use IPersistenceLayer (or repository-level constructs) and JDBC. SqlData encapsulates SQL description, prepared statement string, and typed parameters; it binds parameters to PreparedStatement safely and consistently.
+  - EmptyDataSource is a testing stub for DataSource.
+
+- Administrative
+  - WebAppListener calls IPersistenceLayer.cleanAndMigrateDatabase() on context startup (Tomcat deployment), ensuring a known DB state.
+  - DbServlet exposes HTTP control for clean/migrate/reset.
+
+- Cross-cutting
+  - Logging via SLF4J (AckServlet.logger, FibServlet.logger, MathServlet.logger) for error reporting in forwarding/dispatch.
+
+5) Key Business Logic and Algorithms
+
+- Ackermann (very fast-growing function)
+  - Regular recursive implementation (Ackermann.calculate) validated for m,n combinations up to (4,0) yielding 13.
+  - Iterative/tail-optimized implementation (AckermannIterative.calculate) validated for larger inputs (e.g., (4,2)); supports BigInteger results; an example of overflow/limitations referenced in comments (a huge literal expected value for (4,2)).
+
+- Fibonacci
+  - Recursive (Fibonacci.calculate(int)).
+  - Two fast iterative algorithms (FibonacciIterative.fibAlgo1/2) scalable to n=2000, returning BigInteger; values validated at n=43, 200, 2000.
+
+- Library Lending UI logic
+  - Dynamic UX based on catalog sizes:
+    - none -> inputs are disabled.
+    - 1–9 -> select dropdowns, choose via option.
+    - 10+ -> autocomplete list with suggestions as list items (<li>), filter as the user types.
+  - Lending result returns "SUCCESS" on completion.
+
+- Authentication
+  - Registration responds with SUCCESSFUL status; login responds with "access granted" when credentials are recognized.
+
+6) Configuration and Deployment Details
+
+- Deployment
+  - Application runs in a Tomcat servlet container; reachable at http://localhost:8080/demo.
+  - Startup listener (WebAppListener) triggers Flyway clean-and-migrate.
+
+- Presentation Layer
+  - JSP identified by ServletUtils.RESTFUL_RESULT_JSP used by math servlets (and likely others) to show results in element id result.
+
+- Logging
+  - SLF4J Logger instances within servlets; log error messages upon dispatcher forward exceptions.
+
+- UI Test Tooling
+  - Java UI tests use Gradle 7.0 wrapper (distributionUrl=https://services.gradle.org/distributions/gradle-7.0-bin.zip).
+  - Java UI test logging: log4j2.xml configured with Console appender at INFO.
+  - Selenium driver management:
+    - Java: WebDriverManager sets up chromedriver (SeleniumTests).
+    - JS: selenium-webdriver with Chrome.
+    - Python: Selenium; optional proxy support at localhost:8888.
+    - C#: Selenium ChromeDriver.
+  - Headless testing: HtmlUnit (Java) with JS disabled.
+  - BDD: Behave (Python) configured in setup.cfg for JUnit output to build/test-results/bdd_ui; per-scenario DB reset via /demo/flyway.
+  - UI test proxies:
+    - Some tests attempt to route through a local proxy (e.g., HttpUnit on localhost:10888 or Chrome proxy on localhost:8888) and fallback to direct when unavailable.
+
+7) Interfaces and Contracts (summarized)
+
+- IPersistenceLayer
+  - cleanDatabase()
+  - migrateDatabase()
+  - cleanAndMigrateDatabase()
+
+- SqlData<T>
+  - new SqlData<>(description, preparedStatement)
+  - addParameter(value, Class<T>)
+  - applyParametersToPreparedStatement(PreparedStatement)
+  - createEmpty(), isEmpty()
+
+- ParameterObject<T>
+  - new ParameterObject<>(data, Class<T>)
+  - createEmpty(), isEmpty()
+
+- Servlets
+  - AckServlet.doPost
+    - Inputs: ack_param_m, ack_param_n, ack_algorithm_choice
+    - Delegates to: regularRecursive(req, m, n) | tailRecursive(req, m, n)
+    - Forwards to: ServletUtils.RESTFUL_RESULT_JSP
+  - FibServlet.doPost
+    - Inputs: fib_param_n, fib_algorithm_choice
+    - Delegates to: defaultRecursiveCalculation(req, n) | tailRecursiveAlgo1Calc(req, n) | tailRecursiveAlgo2Calc(req, n)
+    - Forwards to: ServletUtils.RESTFUL_RESULT_JSP
+  - MathServlet.doPost
+    - Inputs: item_a, item_b
+    - Action: setResultToSum(req, a, b); forward to result JSP
+  - DbServlet.doGet
+    - Input: action (clean|migrate|default/empty)
+    - Actions: calls corresponding IPersistenceLayer method
+
+- UI Field IDs (contract with front-end)
+  - Common result element id: result.
+  - Library page (/demo/library.html):
+    - Registration: register_username, register_password, register_submit
+    - Login: login_username, login_password, login_submit
+    - Register book: register_book, register_book_submit
+    - Register borrower: register_borrower, register_borrower_submit
+    - Lend: lend_book, lend_borrower, lend_book_submit
+  - Math landing page (/demo):
+    - Ackermann: ack_param_m, ack_param_n, calculate_ackermann; ack_algorithm_choice
+    - Fibonacci: fib_param_n, calculate_fibonacci; fib_algorithm_choice
+    - Summation (Python tests): addend_a, addend_b, math_submit (servlet expects item_a/item_b server-side)
+
+8) Architectural Patterns and Frameworks
+
+- Web/MVC
+  - Java Servlet-based MVC with JSP for views (RequestDispatcher to a shared result JSP).
+  - ServletContextListener for lifecycle management (DB migration at startup).
+
+- Domain Model
+  - Value objects for Book, Borrower, Loan with value semantics (equals/hashCode verified) and “empty” sentinel via createEmpty/isEmpty.
+
+- Persistence
+  - JDBC with prepared statements wrapped by SqlData to enforce parameter typing and error handling.
+  - IPersistenceLayer abstraction decouples web components from DB implementation.
+  - Flyway-based migration (invoked via listener and an admin servlet).
+
+- Testing/Quality
+  - Unit tests: JUnit 4, Mockito, EqualsVerifier, Hamcrest.
+  - UI tests: Selenium WebDriver (Java/Python/C#/JS), HtmlUnit.
+  - BDD: Behave (Python) with JUnit XML output.
+  - HTTP client for API tests: Apache HttpClient Fluent API.
+
+9) Observations for Microservice Decomposition
+
+- Candidate bounded contexts
+  - Authentication
+    - User registration and login; separate domain (User) and endpoints; minimal coupling to library aside from UI co-location.
+  - Library
+    - Catalog (Book, Borrower) and Circulation (Loan) with persistence; UI-specific behaviors around lending suggest its own service/UI module; depends on shared persistence layer and DB schema.
+  - Mathematics
+    - Stateless compute service (Ackermann, Fibonacci); no persistence; clean separation with per-request algorithm choice; ideal as a standalone compute microservice.
+  - Admin/DB Management
+    - Flyway management exposed via servlet and startup listener; sensitive operation; could be an admin-only service or kept internal to services owning schemas.
+
+- Communication patterns
+  - Current architecture is monolithic servlet app with shared JSP and persistence layer; endpoints accessed via HTML forms and direct HTTP POSTs.
+  - If decomposed:
+    - Authentication, Library, Math can expose REST endpoints; UI can call directly or via API gateway.
+    - DB migration should be owned by services that own their data (separate schemas/migrations per service).
+
+- Data ownership
+  - Library service owns Book, Borrower, Loan tables.
+  - Authentication service owns User table.
+  - No shared writes inferred; interactions across services (e.g., a librarian login) occur at the UI layer.
+
+This summary preserves the interfaces and behaviors established by the tests so that decomposition or refactoring can honor existing contracts and flows.

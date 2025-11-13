@@ -1,0 +1,272 @@
+Architectural summary (Chunk 2 of 5)
+
+Overview
+- The application is a monolithic, server-side rendered Java web app deployed on Tomcat under the context path /demo. It uses H2 as the database (both in-memory and file modes), with FlywayDB for schema migrations.
+- The codebase strongly emphasizes testing and DevSecOps tooling: unit, integration, BDD (Cucumber-JVM), UI testing (Python Selenium/Behave and Java Selenified), performance (JMeter), static analysis (SonarQube), security scanning (OWASP DependencyCheck and OWASP ZAP), mutation testing (PIT), and coverage (JaCoCo). CI/CD is orchestrated by Jenkins with a scripted pipeline.
+- Two VM environments are used for education/demo purposes: jenkinsbox (CI/CD, Git, SonarQube, H2O web server) and uitestbox (Tomcat app server, Chrome/Chromedriver, ZAP, optional Selenium Grid). Communication is via VirtualBox host-only networking.
+
+Components and responsibilities
+1) Monolithic Web Application (“demo”)
+- Technology: Java, packaged as WAR, served by Apache Tomcat (port 8080 by default; optional SSL on 8443).
+- Sub-domains and utilities (business logic mainly in classes ending with Utils):
+  - Authentication
+    - RegistrationUtils: registration flow, password quality validation
+    - LoginUtils: authentication (isUserRegistered)
+    - Domain: RegistrationResult, RegistrationStatusEnums (e.g., ALREADY_REGISTERED), PasswordResult, PasswordResultEnums (INSUFFICIENT_ENTROPY)
+  - Library
+    - LibraryUtils: register/delete/list/search books and borrowers, lend books, list available books, search loans by book/borrower
+    - Domain: Book(id:int, title:String), Borrower(id:int, name:String), Loan(checkoutDate:Date, …), LibraryActionResults (SUCCESS, ALREADY_REGISTERED_BOOK, NON_REGISTERED_BOOK_CANNOT_BE_DELETED, ALREADY_REGISTERED_BORROWER, NON_REGISTERED_BORROWER_CANNOT_BE_DELETED, BORROWER_NOT_REGISTERED, BOOK_CHECKED_OUT, …)
+  - Mathematics and utilities for demonstrations
+    - Fibonacci.calculate(n) -> long
+    - Ackermann.calculate(m, n) -> BigInteger
+    - CartesianProduct.calculate(Set<Set<String>>) -> formatted String (step def currently PendingException)
+    - AlcoholCalculator.calculate(DinnerPrices) -> AlcoholResult (calculation of alcohol vs food portion of a restaurant bill, including allocations of tip/tax)
+- Persistence
+  - PersistenceLayer implements IPersistenceLayer, acts as the single gateway to the database; step defs call pl.cleanAndMigrateDatabase() to reset state.
+  - H2 database (in-memory for app runtime, file-based for tests). File location for tests: build/db/training.mv.db.
+  - FlywayDB manages migrations, producing a clean, reproducible schema.
+- Architectural practices
+  - Avoidance of null (prefer richer domain results/option-like patterns).
+  - Preference for immutability in data structures.
+  - Packages grouped by domain (e.g., com.coveros.training.library).
+
+2) CI/CD and Supporting Services
+- Jenkins (console-only on CentOS; port 8080)
+  - Triggers: Git post-receive hook using Jenkins CLI to start “demo” pipeline job.
+  - Plugins: Sidebar Link (for report links), SonarQube Scanner, JUnit parsing.
+  - Pipeline stages (from jenkins/Jenkinsfile):
+    - Build: ./gradlew clean assemble (produces WAR)
+    - Unit Tests: ./gradlew test; publish JUnit (build/test-results/test/*.xml)
+    - Database Tests: ./gradlew integrate; publish JUnit (build/test-results/integrate/*.xml)
+    - BDD Tests (backend): ./gradlew generateCucumberReports and jacocoTestReport; publish JUnit (build/test-results/bdd/*.xml)
+    - Static Analysis: ./gradlew sonarqube; wait and ./gradlew checkQualityGate
+    - Deploy to Test (local Windows in this Jenkinsfile variant): ./gradlew deployToTestWindowsLocal; pipenv install; ./gradlew waitForHeartBeat; clear ZAP session via curl (proxy localhost:9888)
+    - API Tests (Python): ./gradlew runApiTests; publish JUnit (build/test-results/api_tests/*.xml)
+    - UI BDD Tests (Python Behave): ./gradlew runBehaveTests; ./gradlew generateCucumberReport; publish (build/test-results/bdd_ui/*.xml)
+    - UI Tests (Java Selenified): cd src/ui_tests/java && ./gradlew clean test; publish (src/ui_tests/java/build/test-results/test/*.xml)
+    - Security Dependency Analysis: ./gradlew dependencyCheckAnalyze
+    - Performance Tests: ./gradlew runPerfTests (JMeter)
+    - Mutation Tests: ./gradlew pitest
+    - Build Documentation: ./gradlew javadoc
+    - Collect ZAP Report: curl ZAP HTML report via proxy -> build/reports/zap/zap_report.html
+    - Deploy to Prod: placeholder sleep 5
+  - Environment variables: HTTP_PROXY='http://127.0.0.1:9888' so Python tests route via ZAP.
+  - Sidebar links to reports (served by H2O on jenkinsbox):
+    - Cucumber: http://jenkinsbox/reports/bdd/cucumber-html-reports/overview-features.html
+    - SonarQube: http://jenkinsbox:9000/
+    - Dependency-check: http://jenkinsbox/reports/dependency-check-report.html
+    - ZAP: http://jenkinsbox/reports/zap_report.html
+- Git
+  - Bare repository on jenkinsbox at /home/cuser/demo.
+  - post-receive hook invokes Jenkins CLI: java -jar ~/jenkins-cli.jar -s http://localhost:8080/ -auth admin:admin build demo
+- SonarQube
+  - Installed as a systemd service on jenkinsbox, runs on 9000. Start via systemd using a lightweight Java command (small heap).
+- H2O web server (on jenkinsbox)
+  - Serves static reports via /reports mapped to /var/lib/jenkins/workspace/demo/build/reports/.
+  - h2o.conf sets: user cuser, dirlisting ON, listen on 0.0.0.0:80.
+- OWASP ZAP
+  - Installed on uitestbox via yum repo; configured to run headless as a systemd service with api.disablekey=true (no API key).
+  - Local proxy port varies in docs (see “Ports” below); Jenkins expects to talk via localhost:9888.
+- Selenium / UI testing
+  - Chrome + Chromedriver on uitestbox; Python Selenium/Behave tests; Java-based UI tests (Selenified) also present.
+  - Optional Selenium Grid instructions provided (hub + nodes for Chrome/Firefox/Edge); selenified.properties set hub URL and browsers.
+- JMeter (Performance Testing)
+  - JMX plans (demo.jmx, 50_users_at_once.jmx). Integrated into Gradle pipeline (runPerfTests). JMC monitoring recommended with JMX port 9999.
+
+3) Environments and Deployment Targets
+- jenkinsbox (CentOS 7 VM)
+  - Services: Jenkins (8080), SonarQube (9000), H2O (80), Git bare repo with hook.
+  - Networking (VirtualBox): Adapter 1 NAT, Adapter 2 Host-only with static IP 192.168.56.101. Host OS entries map jenkinsbox to this IP.
+  - SSH configuration allows empty passwords and disables strict host key checking (educational, insecure by design).
+  - Hosts file maps uitestbox to 192.168.56.102 for cross-VM communication.
+- uitestbox (CentOS 7 VM)
+  - Services: Tomcat 9 (8080, plus optional SSL 8443), OWASP ZAP proxy (daemon), Chrome/Chromedriver for UI testing.
+  - Optional: Selenium Grid nodes, JMX for Tomcat (port 9999).
+  - Networking: Adapter 1 NAT, Adapter 2 Host-only 192.168.56.102.
+- Local Windows (as per sample Jenkinsfile)
+  - The provided Jenkinsfile runs “Deploy to Test” locally on Windows; in VM-based deployment, Tomcat on uitestbox hosts the app WAR.
+
+API endpoints and interfaces (observed from tests)
+- Base URL: http://<server>:8080/demo
+- /flyway [GET]
+  - Resets DB by running clean and migrate (calls Flyway via PersistenceLayer). Side effects only; no payload required.
+- /math [POST, form-urlencoded]
+  - Params: item_a, item_b (integers only)
+  - Behavior:
+    - Returns sum of two integers as text in response (e.g., “16”).
+    - For non-integers (floats, non-numeric), returns error message containing “Error: only accepts integers”.
+- /register [POST, form-urlencoded]
+  - Params: username, password
+  - Responses (text contains):
+    - “successfully registered: true” on success
+    - “no password provided” if password empty
+    - “no username provided” if username empty
+    - Failure on duplicate user appears via RegistrationStatusEnums (not shown in this test file).
+- /login [POST, form-urlencoded]
+  - Params: username, password
+  - Responses (text contains):
+    - “access granted” on successful auth
+    - “no username provided” if username empty
+    - “no password provided” if password empty
+- /registerbook [POST, form-urlencoded]
+  - Params: book (title)
+  - Responses:
+    - “SUCCESS” on registration
+    - “ALREADY_REGISTERED_BOOK” if duplicate
+- /registerborrower [POST, form-urlencoded]
+  - Params: borrower (name)
+  - Responses:
+    - “SUCCESS” on registration
+    - “ALREADY_REGISTERED_BORROWER” if duplicate
+- /lend [POST, form-urlencoded]
+  - Params: borrower (name), book (title)
+  - Responses:
+    - “SUCCESS” on successful loan creation
+    - “BOOK_CHECKED_OUT” if already loaned
+- Additional: BDD step definitions imply searching/listing endpoints exist at server-side (but not explicitly tested as HTTP). The operations are implemented in LibraryUtils and exercised via in-process tests.
+
+Data models and schema (inferred)
+- Users
+  - Fields: username (String), password (String, likely stored in some secured form), registration constraints (unique username).
+- Books
+  - Fields: id (int, auto-generated), title (String, unique)
+- Borrowers
+  - Fields: id (int, auto-generated), name (String, unique)
+- Loans
+  - Fields: id (int), bookId (int), borrowerId (int), checkoutDate (Date), possibly due date and return date (not referenced here), constraints preventing multiple open loans for same book.
+- Persistence and migration
+  - Managed by PersistenceLayer and FlywayDB. Database: H2.
+  - Test database persists at build/db/training.mv.db; app likely uses in-memory H2 for runtime under Tomcat.
+
+Service dependencies and communication patterns
+- Developer workflow -> Git push to bare repo on jenkinsbox -> post-receive hook invokes Jenkins CLI -> Jenkins pipeline executes.
+- Jenkins -> Gradle tasks for build/test/analysis -> SonarQube via gradle-sonarqube plugin -> quality gate check.
+- Jenkins -> Deploy stage:
+  - Copies WAR to test environment (in this Jenkinsfile variant, Windows local); VM-based documents suggest deploying to Tomcat on uitestbox.
+  - Waits for heart beat indicating app is up.
+  - Clears ZAP session via HTTP call to ZAP API using local proxy.
+- Test execution:
+  - API Tests: Python requests directly to http://localhost:8080/demo endpoints; HTTP_PROXY forces traffic through ZAP proxy.
+  - UI BDD Tests: Python Behave + Selenium WebDriver (Chrome) to exercise UI; may be routed through ZAP proxy (see security docs).
+  - UI Tests (Java Selenified): Locally or via Selenium Grid if configured.
+  - Performance: JMeter runs against the running app; Tomcat observable via JMX (9999).
+- Reporting:
+  - Jenkins archives JUnit results from multiple test stages.
+  - H2O serves generated reports from Jenkins workspace on jenkinsbox (port 80) under /reports.
+  - ZAP HTML report pulled by Jenkins via proxy and stored at build/reports/zap/zap_report.html.
+- Monitoring:
+  - Tomcat configured with JMX remote (no auth/SSL for demo) on uitestbox, reachable for JConsole/JMC.
+
+Key business logic and algorithms (covered by BDD/tests)
+- Authentication
+  - Registration validates passwords (entropy and minimum length), rejects empty credentials, prevents duplicate usernames, records RegistrationResult (with status).
+  - Login verifies username/password match; negative cases include wrong case, shortened password, wrong username.
+- Library
+  - Books: add/delete/search (by title and by id), list all, list available (exclude checked-out).
+  - Borrowers: add/delete/search (by name and by id), list all; deleting borrowers removes related loans.
+  - Loans: creation validates borrower existence and availability of book; one book can be loaned to only one borrower at a time; deleting a book also deletes associated loans.
+- Mathematics/demonstrations
+  - Fibonacci and Ackermann functions computed; Ackermann returns BigInteger; both verified with BDD scenarios.
+  - Cartesian product utility (step def currently marked Pending).
+  - Alcohol expense allocation: computes total food vs alcohol portions including proportional tip and tax (example results given in feature file).
+
+Configuration and deployment details
+- VirtualBox networking (host-only)
+  - Host config:
+    - Host-only interface IP: 192.168.56.2; gateway/DNS: 192.168.56.1
+    - Hosts file mappings:
+      - 192.168.56.101 jenkinsbox
+      - 192.168.56.102 uitestbox
+  - jenkinsbox (guest)
+    - Hostname: jenkinsbox
+    - enp0s8 NAT: auto-connect ON
+    - enp0s17 Host-only static: 192.168.56.101/24 gw 192.168.56.1 DNS 192.168.56.1
+    - Services: Jenkins (8080), SonarQube (9000), H2O (80)
+    - Git bare repo: /home/cuser/demo with post-receive hook
+  - uitestbox (guest)
+    - Hostname: uitestbox
+    - enp0s8 NAT: auto-connect ON
+    - enp0s17 Host-only static: 192.168.56.102/24 gw 192.168.56.1 DNS 192.168.56.1
+    - Services: Tomcat9 (8080; optional SSL 8443), ZAP proxy (daemon)
+- Tomcat 9 (uitestbox)
+  - Install under /opt/tomcat with user tomcat; init script in /etc/init.d/tomcat9 (startup/shutdown via systemctl).
+  - Monitoring: /opt/tomcat/bin/setenv.sh enables JMX remote on port 9999; host set to uitestbox; SSL and auth disabled (demo).
+  - SSL optional: self-signed cert generated with openssl, converted to PKCS12 (training.p12) and configured in server.xml with keystoreFile ${user.home}/training.p12 and password.
+- Jenkins (jenkinsbox)
+  - Installed via yum repo; initial admin; suggested plugins; Sidebar Link plugin added.
+  - Pipeline configured from SCM (Git repo /home/cuser/demo), branch master, Jenkinsfile path jenkins/Jenkinsfile.
+- SonarQube (jenkinsbox)
+  - Systemd unit (sonar.service). ExecStart runs sonar-application-8.0.jar with minimal JVM memory settings (Xms/Xmx 32m).
+- H2O web server (jenkinsbox)
+  - /etc/h2o/h2o.conf with file.dir: /var/lib/jenkins/workspace/demo/build/reports/ exposed at /reports on port 80.
+- OWASP ZAP (uitestbox)
+  - Installed via yum; initial GUI config to change local proxy port (docs mention 8888).
+  - Systemd zap.service running /usr/share/owasp-zap/zap.sh -daemon -config api.disablekey=true.
+  - Jenkins pipeline interacts via HTTP proxy at localhost:9888 (see notes below).
+- Python/Selenium
+  - Python 3.7 built from source; pipenv installed; Chromedriver installed to /usr/local/sbin; Chrome installed via RPM.
+- Gradle
+  - Gradle wrapper 7.0 (gradle/wrapper/gradle-wrapper.properties).
+- SSL/key handling
+  - docs/ci_and_cd/ssl.txt shows generation of long-lived self-signed cert and trust install for local browser validation.
+
+Architectural patterns, frameworks, and tools
+- Patterns
+  - Monolithic web app with layered separation (business Utils and PersistenceLayer).
+  - Single persistence gateway (PersistenceLayer) mediating all DB access.
+  - Heavy use of automated testing (unit, integration, BDD), CI/CD, and feedback tools.
+- Frameworks/libraries
+  - Java, Tomcat, H2, FlywayDB, Gradle (7.0), JUnit, Cucumber-JVM, JaCoCo, PIT, OWASP DependencyCheck, SonarQube, JMeter, Selenium WebDriver (Python/Java), Behave (Python), Selenified (Java UI tests), H2O web server, Jenkins.
+- Testing directories (src/README.txt)
+  - main: app code
+  - test: unit tests
+  - integration_test: integration/database-oriented tests
+  - bdd_test: Cucumber-JVM features/stepdefs
+  - api_tests: Python API tests (pytest; junit_family=xunit2)
+  - ui_tests: Java UI tests (Selenified); Python UI tests in external behav/selenium harness run via Gradle
+  - selenified_tests: location for Selenified configs/tests
+
+Known ports/hosts (as implemented/expected)
+- jenkinsbox:80 (H2O reports), :8080 (Jenkins), :9000 (SonarQube)
+- uitestbox:8080 (Tomcat “demo”), :8443 (optional SSL), :9999 (JMX)
+- ZAP proxy port: inconsistent in docs; appears as:
+  - 8888 in uitestbox setup (Tools->Options->Local proxies)
+  - 9888 in security proxy doc and Jenkinsfile (HTTP_PROXY and curl --proxy localhost:9888)
+  - Action: confirm and standardize ZAP port across environments; Jenkinsfile assumes 9888.
+- Internal names:
+  - “jenkinsbox” -> 192.168.56.101
+  - “uitestbox” -> 192.168.56.102
+  - “zap” host in Jenkinsfile curl URL resolves via proxy and/or /etc/hosts; ensure resolvable or replace with localhost.
+
+Security posture (demo-only)
+- SELinux and firewalld disabled.
+- SSH allows empty passwords; StrictHostKeyChecking disabled.
+- ZAP API key disabled.
+- Tomcat JMX without SSL/auth.
+- Self-signed cert instructions for local SSL.
+- Important: These are intentionally insecure for educational/demo convenience and must be hardened for production.
+
+Microservice decomposition considerations (from this chunk)
+- Clear domain boundaries within monolith suggest candidate services:
+  - Authentication Service (registration, password quality, login)
+  - Library Service (books, borrowers, loans, availability)
+  - Math/Utility Service (non-business demo endpoints: math, ackermann, fibonacci; often good to isolate or discard in prod)
+  - Admin/Migration Service (Flyway reset endpoint — should be admin-only if retained)
+  - Reporting/QA Tooling (CI/CD artifacts served via H2O; could be kept external)
+- Data ownership likely splits:
+  - AuthDB: users, credentials, registration results
+  - LibraryDB: books, borrowers, loans with transactional constraints
+- Integration patterns to preserve:
+  - CI/CD pipeline orchestrations (Jenkins -> SonarQube, ZAP, JMeter)
+  - Security scanning in-the-loop via HTTP proxy for tests
+  - Single persistence gateway per service (akin to PersistenceLayer) and migration pipeline (Flyway) per DB
+- Externalized endpoints and contracts identified above can form the initial API contracts for service boundaries.
+
+Gaps/assumptions to validate (for decomposition)
+- Exact DB schema (Flyway migration scripts not included here).
+- Authentication storage/crypto for passwords (hashing/salting approach) not shown.
+- Full set of web endpoints (step defs imply additional UI endpoints; only subset is explicitly tested via Python).
+- Deployment target for WAR in VM-based path (Gradle tasks not shown here).
+- ZAP proxy port discrepancy (8888 vs 9888) must be reconciled.
+
+This summary consolidates component responsibilities, endpoints, data models, dependencies, communication, business logic, and deployment/config for accurate microservice analysis based on Chunk 2.
