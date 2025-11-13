@@ -1,0 +1,9 @@
+| Component Name | Language | Frameworks | Database | Communication | Patterns |
+|---|---|---|---|---|---|
+| Authentication (Web) | Java | Servlet API, JSP, SLF4J/Log4j2, Nbvcxz, Gretty (dev), Tomcat (runtime) | H2 (AUTH schema) via JDBC micro-ORM | HTTP POST (/register, /login); in-process calls to persistence | Layered (Servlets → Utils → Persistence), MVC (Servlet/JSP), DAO/Repository, Validation, Demo SHA-256 hashing |
+| Library (Web) | Java | Servlet API, JSP, SLF4J/Log4j2, Gretty (dev), Tomcat (runtime) | H2 (LIBRARY schema) via JDBC micro-ORM | HTTP GET/POST; AJAX from library.js; in-process calls to persistence | Layered, MVC, DAO/Repository, Template Method (JDBC helpers), Domain Model with result enums |
+| Mathematics (Web) | Java | Servlet API, JSP, SLF4J/Log4j2, BigInteger helpers | None | HTTP POST (/math, /fibonacci, /ackermann) | Strategy (algorithm choice), Layered, MVC, Tail recursion/iterative algorithms |
+| Persistence Layer (IPersistenceLayer) | Java | JDBC, H2 JdbcConnectionPool, Flyway | H2 (ADMINISTRATIVE, LIBRARY, AUTH) | In-process API; JDBC to DB | DAO, Micro-ORM, Template Method, Exception wrapping |
+| Web UI and Static Resources | HTML, CSS, JavaScript, Java (JSP) | JSP, RequestDispatcher, Gretty (dev), Tomcat (runtime) | None | Browser HTTP; AJAX (library.js, catalog.js) to REST-like endpoints | MVC (Servlets + JSP views), Progressive enhancement, AJAX |
+| Admin/DB Management | Java | Flyway, H2 Console servlet, Servlet API, SLF4J/Log4j2 | H2 | HTTP GET (/flyway); H2 Console at /console | Admin endpoint, Listener/Observer (ServletContextListener for startup migrations) |
+| Desktop Auto-Insurance (Swing) | Java | Swing, Java Sockets, SLF4J/Log4j2 | None | Local TCP server (port 8000) with simple command protocol | MVC (Swing), Command pattern (script commands), Rule-based processing |
