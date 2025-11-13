@@ -1,0 +1,674 @@
+=== summary_chunk_1.txt ===
+
+Architectural Summary (Part 1/2)
+
+Overview
+- System type: Monolithic Java web application (Servlets) plus a separate demo desktop Swing application. Designed as an educational showcase for CI/CD, testing, and quality practices.
+- Primary runtime: Apache Tomcat (local dev via Gradle/Gretty). Context path: /demo
+- Database: H2 (in-memory/file), versioned by Flyway
+- Testing/Tooling: JUnit/Mockito, Cucumber (BDD), Selenium (Python/Java), Selenified, JMeter, OWASP DependencyCheck, SonarQube, Pitest; CI orchestrated by Jenkins (Jenkinsfile provided)
+- Key domains:
+  1) Authentication (register/login)
+  2) Library (books, borrowers, lending)
+  3) Mathematics (ackermann, fibonacci, basic math)
+  4) Persistence (DB access abstraction; JDBC/H2/Flyway)
+  5) Desktop demo (Auto Insurance Swing app with automation socket)
+
+Components and Responsibilities
+1) Web Application (src/main/java/com/coveros/training)
+- authentication
+  - LoginServlet (/login): validates credentials; delegates to LoginUtils
+  - RegisterServlet (/register): registers new user; delegates to RegistrationUtils
+  - LoginUtils: business logic for verifying credentials via persistence.areCredentialsValid
+  - RegistrationUtils: business logic for registration; checks uniqueness; enforces password policy (length and entropy via nbvcxz); saves user and password via persistence
+  - Domain objects:
+    - User (name,id)
+    - PasswordResult (+ enums PasswordResultEnums)
+    - RegistrationResult (+ enums RegistrationStatusEnums)
+- library
+  - LibraryRegisterBookServlet (/registerbook): register book by title
+  - LibraryRegisterBorrowerServlet (/registerborrower): register borrower by name
+  - LibraryLendServlet (/lend): lend book to borrower (creates loan; checks availability and registration)
+  - LibraryBookListSearchServlet (/book): GET list/search books by id/title or all
+  - LibraryBookListAvailableServlet (/listavailable): GET list available books (not on loan)
+  - LibraryUtils: business logic for register, delete, lend, search, and listing; central orchestration of domain and persistence
+  - Domain objects:
+    - Book (id,title) with JSON-ish toOutputString
+    - Borrower (id,name) with JSON-ish toOutputString
+    - Loan (book, borrower, id, checkoutDate)
+    - LibraryActionResults enum (e.g., SUCCESS, ALREADY_REGISTERED_BOOK, BOOK_CHECKED_OUT, etc.)
+- mathematics
+  - AckServlet (/ackermann): POST ack_param_m, ack_param_n, ack_algorithm_choice (tail_recursive|regular) -> numeric result or error
+  - Ackermann (recursive BigInteger implementation)
+  - AckermannIterative (tail-recursive/iterative implementation)
+  - Fibonacci/Math servlets are present in the tree (FibServlet.java, MathServlet.java) though code not shown here; endpoints referenced by docs/tests: /math for addition
+- helpers
+  - ServletUtils: forward to JSPs (result.jsp, restfulresult.jsp), used by Servlets for rendering outputs
+  - StringUtils: makeNotNullable; escapeForJson (builds JSON-safe strings via log4j JsonUtils)
+  - CheckUtils: validation helpers; invariants; throws AssertionException or IllegalArgumentException
+  - AssertionException: used for invariant failures
+- persistence (interface; implementation present but code not in this part)
+  - IPersistenceLayer: contract for DB operations
+  - PersistenceLayer: implementation using JDBC/H2; Flyway migration; backups/restores; error handling (SqlRuntimeException). Tests exercise its full API and semantics.
+  - DbServlet: present in tree (code not shown) likely exposes DB-related endpoints (e.g., /flyway in API tests)
+  - Supporting types: SqlData, ParameterObject, EmptyDataSource, NotImplementedException, SqlRuntimeException
+- tomcat
+  - WebAppListener (app lifecycle listener; code not shown)
+
+2) Desktop Application (desktop_app)
+- AutoInsuranceUI (Swing JPanel + JFrame entry): UI with fields: previous claims dropdown, age text field, Crunch button; displays result label; starts a local socket automation server thread
+- AutoInsuranceProcessor: rules engine mapping previous claims count and age to an AutoInsuranceAction (premium increase, warning letter enum, cancellation); returns error response for out-of-range inputs
+- AutoInsuranceAction: immutable result (premiumIncreaseDollars, WarningLetterEnum, isPolicyCanceled, isError) with equals/hashCode/toString; factory methods createEmpty/createErrorResponse
+- WarningLetterEnum: NONE, LTR1, LTR2, LTR3
+- InvalidClaimsException: for unexpected UI dropdown values
+- AutoInsuranceScriptServer: simple plain-text socket protocol server on localhost:8000 to drive the Swing UI for automation scripts; parses commands; manipulates UI components (set/get/click); stops on "quit"
+- Test-side utilities:
+  - AutoInsuranceScriptClient: connects to localhost:8000; sends commands; returns response; QUIT constant
+  - DesktopTester: wrapper around ScriptClient providing typed methods setAge, setClaims, clickCalculate, getLabel, quit
+  - ExecutionDataClient: connects to a JaCoCo agent in tcpserver mode to dump coverage to a file (used in desktop test coverage)
+- Desktop automation protocol (line text commands over TCP port 8000):
+  - set label <TEXT>
+  - set age <AGE>
+  - set claims <NUMBER>
+  - get label | get age | get claims
+  - click calculate
+  - quit (stops server loop)
+
+3) Tests and BDD (selected highlights)
+- API tests (Python, requests): /demo/math, /demo/register, /demo/login, /demo/registerbook, /demo/registerborrower, /demo/lend; also calls /demo/flyway to reset DB (endpoint likely provided by DbServlet)
+- BDD step defs (Java) for Authentication, Library, Math, Expenses, CartesianProduct (the latter two are currently stubs for implementation)
+- Integration tests (Java) exercise PersistenceLayer with H2 file DB; provide DB sample backups (v2_* SQL files) to seed test states; verify CRUD, search, list, and invariant behaviors
+
+Web API Endpoints and Interfaces (current code and docs/tests)
+Base URL: http://localhost:8080/demo
+- POST /login
+  - Params: username, password
+  - Responses (forwarded to result.jsp): "access granted" | "access denied" | "no username provided" | "no password provided"
+  - Controller: LoginServlet -> LoginUtils.isUserRegistered -> persistence.areCredentialsValid
+- POST /register
+  - Params: username, password
+  - Responses: RegistrationResult.toPrettyString (includes success flag, status enum, message for bad password)
+  - Controller: RegisterServlet -> RegistrationUtils.processRegistration
+- POST /lend
+  - Params: book (title), borrower (name)
+  - Responses: LibraryActionResults enum string; sets date=now; returns via result.jsp
+  - Controller: LibraryLendServlet -> LibraryUtils.lendBook
+- POST /registerbook
+  - Params: book (title)
+  - Responses: LibraryActionResults (SUCCESS | ALREADY_REGISTERED_BOOK | NO_BOOK_TITLE_PROVIDED)
+  - Controller: LibraryRegisterBookServlet -> LibraryUtils.registerBook
+- POST /registerborrower
+  - Params: borrower (name)
+  - Responses: LibraryActionResults (SUCCESS | ALREADY_REGISTERED_BORROWER | NO_BORROWER_PROVIDED)
+  - Controller: LibraryRegisterBorrowerServlet -> LibraryUtils.registerBorrower
+- GET /book
+  - Params (optional): id or title (mutually exclusive)
+  - Behaviors:
+    - No params: list all books; returns "[" + comma-separated Book.toOutputString + "]" or "No books exist in the database"
+    - id only: search by id; returns single-element JSON-ish array or "No books found with an id of X" or "Error: could not parse the book id as an integer"
+    - title only: search by title; returns single-element JSON-ish array or "No books found with a title of X"
+    - Both id and title: "Error: please search by either title or id, not both"
+  - Controller: LibraryBookListSearchServlet
+- GET /listavailable
+  - Params: none
+  - Returns: "[" + comma-separated Book.toOutputString + "]" or "No books exist in the database"
+  - Controller: LibraryBookListAvailableServlet
+- POST /ackermann
+  - Params: ack_param_m (int), ack_param_n (int), ack_algorithm_choice ("tail_recursive" or else recursive)
+  - Returns: BigInteger result as text; or "Error: only accepts integers"
+  - Controller: AckServlet -> Ackermann or AckermannIterative
+- POST /math (referenced by docs/tests; MathServlet exists in tree)
+  - Params: item_a, item_b (int)
+  - Returns: sum or error messages such as "Error: only accepts integers", "addend too large", "sum too large"
+  - Controller: MathServlet (not shown in this chunk; inferred)
+- GET /flyway (in API tests)
+  - Purpose: reset DB (clean+flyway migrate). Likely implemented by DbServlet in persistence package (not in this chunk).
+
+Rendering
+- result.jsp: server-side page to show standard operation results; Receives attributes: result, return_page, plus echoed inputs
+- restfulresult.jsp: minimalist REST-like textual/JSON-ish responses for API endpoints; Receives attribute: result
+
+Database Schemas and Data Models
+- Engine: H2 (MODE=PostgreSQL in some tests; can be in-memory or file under ./build/db/training)
+- Schema managed by Flyway; initial migrations:
+  - V1__Create_person_table.sql
+  - V2__Rest_of_tables_for_auth_and_library.sql
+- Schemas/Tables:
+  - ADMINISTRATIVE.flyway_schema_history (version tracking)
+  - AUTH.USER
+    - ID INT (identity)
+    - NAME VARCHAR(100) NOT NULL
+    - PASSWORD_HASH VARCHAR(100) NULL
+  - LIBRARY.BOOK
+    - ID INT (identity)
+    - TITLE VARCHAR(100) NOT NULL
+  - LIBRARY.BORROWER
+    - ID INT (identity)
+    - NAME VARCHAR(100) NOT NULL
+  - LIBRARY.LOAN
+    - ID INT (identity)
+    - BOOK INT NOT NULL (FK to LIBRARY.BOOK.ID; ON DELETE CASCADE in later backup)
+    - BORROWER INT NOT NULL (FK to LIBRARY.BORROWER.ID; ON DELETE CASCADE in later backup)
+    - BORROW_DATE DATE NOT NULL
+- Integration test backup datasets (v2_*.sql) used to seed specific states:
+  - v2_empty_schema.sql
+  - v2_one_user.sql (AUTH.USER with alice)
+  - v2_one_book_one_borrower.sql (one book, one borrower)
+  - v2_one_loan.sql (one loan set)
+  - v2_three_books_three_borrowers.sql (a,b,c books; alice,bob,carol borrowers; FKs with ON DELETE CASCADE)
+
+Persistence Layer Contract (inferred from tests and usage)
+- Setup/Maintenance:
+  - cleanAndMigrateDatabase()
+  - runBackup(scriptName)
+  - runRestore(scriptName)
+- Auth:
+  - saveNewUser(name) -> id
+  - updateUserWithPassword(id, password) (applies hashing internally)
+  - searchForUserByName(name) -> Optional<User>
+  - areCredentialsValid(username, password) -> Optional<Boolean>
+- Library:
+  - saveNewBook(title) -> id
+  - saveNewBorrower(name) -> id
+  - updateBorrower(id, newName)
+  - getBorrowerName(id) -> Optional<String>
+  - searchBooksByTitle(title) -> Optional<Book>
+  - searchBooksById(id) -> Optional<Book>
+  - searchBorrowerDataByName(name) -> Optional<Borrower>
+  - searchBorrowersById(id) -> Optional<Borrower>
+  - createLoan(book, borrower, date) -> id
+  - searchForLoanByBook(book) -> Optional<Loan>
+  - searchForLoanByBorrower(borrower) -> Optional<List<Loan>>
+  - deleteBook(id)
+  - deleteBorrower(id)
+  - listAllBooks() -> Optional<List<Book>>
+  - listAvailableBooks() -> Optional<List<Book>>
+  - listAllBorrowers() -> Optional<List<Borrower>>
+- Internals/Errors:
+  - executeInsertOnPreparedStatement(...)
+  - executeUpdateTemplate(...): throws SqlRuntimeException on SQL failures
+
+Service Dependencies and Communication Patterns
+- Webapp uses synchronous HTTP to handle requests; Servlets invoke business-layer Utils; Utils depend on IPersistenceLayer (JDBC/H2)
+- No inter-service calls; monolith; no external message queues
+- Static rendering via JSPs for both web-driven and API-like responses
+- H2 DB accessed via JDBC connection pool (file-based or in-memory). Tests use: jdbc:h2:./build/db/training;AUTO_SERVER=TRUE;MODE=PostgreSQL
+- Authentication Password complexity uses external library Nbvcxz to assess entropy and time-to-crack estimates
+- CI pipeline stages run the app locally, set HTTP proxy to ZAP (localhost:9888) for API/UI test scanning; JMeter hits endpoints; Postman/SoapUI collections provided
+
+Key Business Logic and Algorithms
+- Authentication/Registration:
+  - RegistrationUtils.processRegistration(username,password):
+    - Validate non-empty
+    - Check uniqueness (not already registered)
+    - Password policy:
+      - length >= 10 and <= 100
+      - entropy check via nbvcxz (must meet minimum); returns PasswordResult with entropy, offline/online crack times, feedback
+    - Persist new user and assign password (hashing handled inside persistence)
+    - Return RegistrationResult (SUCCESSFULLY_REGISTERED or errors: ALREADY_REGISTERED, BAD_PASSWORD, EMPTY_*)
+  - LoginUtils.isUserRegistered(username,password): Validates non-null/non-empty; calls persistence.areCredentialsValid
+- Library:
+  - Registration of book/borrower checks for duplicates; creates new records
+  - Lending (LibraryUtils.lendBook):
+    - Validate book and borrower exist (by title/name lookups)
+    - Ensure book not already on loan (searchForLoanByBook)
+    - Create loan with borrowDate (LibraryLendServlet uses Date.now; BDD tests illustrate fixed dates)
+    - Returns status: SUCCESS, BOOK_NOT_REGISTERED, BORROWER_NOT_REGISTERED, BOOK_CHECKED_OUT
+  - Delete operations verify existence, then delete; with cascades LOAN removal occurs on deletion if FKs configured
+  - Listing and searching: by id/title/name; listAvailableBooks filters out those with active loans via DB queries
+- Mathematics:
+  - Ackermann recursive and iterative (tail recursion) implementations returning BigInteger
+  - Math endpoint (/math) performs integer addition with validation for non-numeric/overflow (inferred from tests)
+- Desktop Auto Insurance:
+  - Rule table based on claims and age:
+    - 0 claims: age 16–25 => +$50; 26–85 => +$25
+    - 1 claim: age 16–25 => +$100 + LTR1; 26–85 => +$50
+    - 2–4 claims: age 16–25 => +$400 + LTR2; 26–85 => +$200 + LTR3
+    - >=5 claims: policy canceled, $0 increase
+    - Outside ranges yields error response
+  - UI: Age field and previous claims dropdown; Crunch calculates and updates bottom label
+  - Automation server protocol enables headless UI testing via socket
+
+Configuration and Deployment Details
+- Build: Gradle wrapper; gradle.properties sets JVM args and worker limits
+- Running app: gradlew apprun (Gretty/Tomcat) -> http://localhost:8080/demo
+- Logging: log4j2 (src/main/resources/log4j2.xml); SLF4J used across code
+- DB Migrations: Flyway scripts under src/main/resources/db/migration (V1,V2). API tests reset via /demo/flyway endpoint
+- Webapp resources: src/main/webapp (index.html, library.html, endpointcatalog.html, result.jsp, restfulresult.jsp, assets)
+- Jenkins pipeline (jenkins/Jenkinsfile):
+  - Stages: Build (assemble WAR), Unit Tests (JUnit), DB Integration Tests, BDD Tests (Cucumber + reports), Static Analysis (SonarQube + quality gate), Deploy to Test (Gradle task deployToTestWindowsLocal; pipenv install; waitForHeartbeat; reset ZAP session), API Tests (Python pytest), UI BDD Tests (Behave + Cucumber report), UI Tests (Java/Selenified), Security: DependencyCheck, Performance: JMeter, Mutation: Pitest, Build Javadoc, Collect ZAP HTML report, Deploy to Prod (stub)
+  - Sets HTTP_PROXY to http://127.0.0.1:9888 for security scanning. Collects reports under build/reports.
+- Desktop app: standalone Gradle project (desktop_app/); run UI via gradlew startui; tests via gradlew test; socket server at 8000
+- External Tools integration:
+  - OWASP ZAP Proxy configured at port 9888 (pipeline clears session and fetches report)
+  - SonarQube server expected at http://localhost:9000 (local dev) or separate box (docs)
+  - H2 console and Tomcat monitoring detailed in docs (e.g., /demo/console; JMX config guidance)
+
+Architectural Patterns and Frameworks
+- Layered architecture within monolith:
+  - Presentation (Servlets + JSP)
+  - Business/Domain (Utils classes; immutable domain objects; enums for outcomes)
+  - Persistence (IPersistenceLayer; JDBC/H2; Optionals; Flyway for schema)
+- Design choices:
+  - Immutability and null avoidance (createEmpty sentinel objects with isEmpty() checks)
+  - Input validation and invariants (CheckUtils)
+  - Explicit domain enums for action results/status codes
+  - Logging for traceability of business decisions
+- Testing patterns:
+  - Unit tests per domain
+  - Integration tests for persistence using file-based H2 and fixture SQL
+  - BDD (Cucumber) for domain capabilities
+  - API/UI tests for end-to-end flows
+  - Security and performance test hooks via Gradle/Jenkins
+
+Potential Microservice Decomposition Candidates (based on clear bounded contexts and API boundaries)
+- Authentication Service
+  - Endpoints: /register, /login (and potential password policy endpoints)
+  - DB: AUTH.USER (own schema; hashed password updates)
+  - Business logic: RegistrationUtils, LoginUtils, PasswordResult/RegistrationResult models
+- Library Service
+  - Endpoints: /registerbook, /registerborrower, /lend, /book, /listavailable
+  - DB: LIBRARY.BOOK, LIBRARY.BORROWER, LIBRARY.LOAN (cascade policies)
+  - Business logic: LibraryUtils; domain models Book/Borrower/Loan; LibraryActionResults
+- Math Service
+  - Endpoints: /ackermann, /math, /fib (if present)
+  - Stateless computations; no DB
+- Support/DB Admin (optional operational microservice)
+  - Endpoint: /flyway (reset/migrate database)
+  - Functions: DB maintenance (clean/migrate), backup/restore
+- Desktop App remains a separate client utility (not a service)
+
+Data Contracts/Response Shapes
+- Book JSON-ish (manual string): {"Title": "<escaped title>", "Id": "<id>"}
+- Borrower JSON-ish: {"Name": "<escaped name>", "Id": "<id>"}
+- Lists return "[" + comma-separated items + "]" or a plain text error string (not strict JSON; mixed response types)
+- Register/Login return plain text (human-readable) via JSP (not JSON)
+- Ackermann returns numeric text; errors as plain text
+- Library actions return enum name as plain text via JSP
+
+Operational Considerations
+- Mixed content types: Some APIs return JSON-like strings via JSP but not strict JSON (e.g., error strings). For microservices, standardize responses and content-types (application/json).
+- Shared persistence layer: In microservices, split by bounded context with separate schemas/databases and service-owned data models; avoid shared persistence code and cross-service DB access.
+- Password handling: Persistence likely hashes password in updateUserWithPassword; maintain or move hashing into auth service boundary to avoid leakage.
+- H2 for demo; for production, migrate to a real RDBMS (Flyway-friendly), update JDBC URLs and pool configuration.
+- JSP rendering: For pure APIs, replace JSP forwards with direct JSON responses.
+
+Known External APIs/Libraries
+- nbvcxz (password entropy): me.gosimple.nbvcxz
+- SLF4J + log4j2
+- H2 JDBC, Flyway
+- JUnit, Mockito
+- Cucumber (io.cucumber)
+- Selenium (Python/Java), Selenified
+- JMeter
+- OWASP DependencyCheck
+- Pitest
+- SonarQube scanner
+
+Gaps/Assumptions (based on this chunk)
+- MathServlet, FibServlet, PersistenceLayer implementation, DbServlet, and some additional servlets are present but code not shown; endpoints inferred from docs/tests and class names.
+- /flyway endpoint exists to reset database (used by Python API tests).
+- Password hashing details are encapsulated in persistence; ensure the hashing algorithm and salt policy are clarified (in part 2).
+
+This summary captures the core components, endpoints, data models, dependencies, and behaviors necessary to identify microservice boundaries and plan decomposition.
+
+=== summary_chunk_2.txt ===
+
+Architectural summary (chunk 2 of 2)
+
+High-level modules and bounded contexts
+- Mathematics (package com.coveros.training.mathematics)
+  - Stateless computation utilities and HTTP endpoints for math-related functions.
+  - Endpoints: /math (addition), /fibonacci (Fibonacci sequence). The endpoint catalog also references /ackermann (implementation likely in chunk 1).
+- Persistence (package com.coveros.training.persistence)
+  - Database access abstraction (IPersistenceLayer) and an implementation (PersistenceLayer) with a lightweight “micro ORM”.
+  - Endpoint: /flyway for database maintenance (clean, migrate, clean+migrate).
+  - Database schema managed by Flyway; in-memory H2 is the configured database.
+- Tomcat bootstrap (package com.coveros.training.tomcat)
+  - WebAppListener to initialize the database schemas at application startup.
+- Web UI and resources (src/main/webapp)
+  - JSPs for result rendering, static HTML pages (library.html, endpointcatalog.html), and JavaScript for AJAX and interaction (catalog.js, library.js).
+  - H2 web console exposed under /console/* via web.xml.
+
+Key components, classes, and responsibilities
+
+Mathematics
+- Calculator
+  - add(int, int) and add(double, double) static methods: arithmetic addition.
+  - add(Pair<Integer,Integer>, Pair<Integer,Integer>): pairwise addition using Apache Commons Pair.
+  - toStringZeroToTen(int): integer 0–10 to English word mapping (“zero”..“ten”; returns “dunno” for out-of-range).
+  - calculateAndMore(int a, int b, iFoo foo, iBar bar) [teaching stubs]: calls foo.doComplexThing(a), bar.doOtherComplexThing(c), then returns a+b+c+d.
+  - calculateAndMorePart2(int a)/calculateAndMorePart3(int a) [teaching stubs/mocks]: use inner class Baz.doThirdPartyThing.
+  - iFoo/iBar interfaces and default inner classes Foo/Bar; inner class Baz returns constant 42 for teaching.
+- Fibonacci
+  - calculate(long n): naive recursive Fibonacci, returns long (O(φ^n) time).
+- FibonacciIterative
+  - fibAlgo1(long n): BigInteger, fast doubling method (O(log n)).
+  - fibAlgo2(int n): BigInteger, iterative linear algorithm (O(n)).
+- TailRecursive
+  - tailie: builds tail-recursive-esque computations using Java streams with a stop predicate (used by algorithms like Ackermann elsewhere).
+- FunctionalField<F extends Enum<?>>
+  - Functional interface to get typed fields from enum-based keys.
+
+HTTP endpoints (Mathematics)
+- MathServlet (POST /math)
+  - Request params: item_a (int), item_b (int).
+  - Behavior: sums two integers via Calculator.add and sets request attribute “result” to the integer; NumberFormatException ⇒ “result” = "Error: only accepts integers".
+  - Response forwarding: ServletUtils.forwardToRestfulResult(request, response), which routes to restfulresult.jsp (plain body with ${result}).
+  - Logging: SLF4J INFO.
+- FibServlet (POST /fibonacci)
+  - Request params:
+    - fib_param_n (int)
+    - fib_algorithm_choice: "default_recursive", "tail_recursive_1", "tail_recursive_2".
+  - Behavior:
+    - tail_recursive_1 ⇒ FibonacciIterative.fibAlgo1(n) (BigInteger)
+    - tail_recursive_2 ⇒ FibonacciIterative.fibAlgo2(n) (BigInteger)
+    - Otherwise default ⇒ Fibonacci.calculate(n) (long)
+  - Error handling: NumberFormatException ⇒ “result” = "Error: only accepts integers".
+  - Response forwarding: ServletUtils.forwardToRestfulResult.
+  - Logging: SLF4J INFO, “Fibonacci value is {}”.
+
+Persistence layer
+- IPersistenceLayer (database boundary)
+  - Library operations:
+    - saveNewBorrower(String borrowerName) → long id
+    - createLoan(Book book, Borrower borrower, Date borrowDate) → long id
+    - saveNewBook(String bookTitle) → long id
+    - updateBorrower(long id, String borrowerName)
+    - deleteBook(long id), deleteBorrower(long id)
+    - getBorrowerName(long id) → Optional<String>
+    - searchBorrowerDataByName(String borrowerName) → Optional<Borrower>
+    - searchBooksByTitle(String bookTitle) → Optional<Book>
+    - searchBooksById(long id) → Optional<Book>
+    - searchBorrowersById(long id) → Optional<Borrower>
+    - listAllBooks() → Optional<List<Book>>
+    - listAvailableBooks() → Optional<List<Book>>
+    - searchForLoanByBorrower(Borrower borrower) → Optional<List<Loan>>
+    - searchForLoanByBook(Book book) → Optional<Loan>
+  - Authentication operations:
+    - saveNewUser(String username) → long id
+    - updateUserWithPassword(long id, String password) [hashes password]
+    - searchForUserByName(String username) → Optional<User>
+    - areCredentialsValid(String username, String password) → Optional<Boolean> (true if match)
+  - Utility/db maintenance:
+    - runBackup(String backupFileName) [H2 SCRIPT TO]
+    - runRestore(String backupFileName) [DROP SCHEMA; RUNSCRIPT FROM file]
+    - cleanAndMigrateDatabase(), cleanDatabase(), migrateDatabase()
+    - isEmpty(): boolean (EmptyDataSource detection)
+- PersistenceLayer (implementation)
+  - DataSource: H2 in-memory (JdbcConnectionPool) jdbc:h2:mem:training;MODE=PostgreSQL
+  - Flyway configuration: schemas ADMINISTRATIVE, LIBRARY, AUTH bound to the single DataSource.
+  - SQL execution utilities (micro ORM):
+    - executeUpdateTemplate(description, sql, Object...params)
+    - executeInsertTemplate(description, sql, Object...params) → long generated id
+    - runQuery(SqlData<R>) → Optional<R>
+    - prepareStatementWithKeys returns Statement.RETURN_GENERATED_KEYS statements.
+    - throwingFunctionWrapper and createExtractor produce extraction lambdas mapping ResultSet to Optional<T>, centralizing error handling.
+    - Supported parameter types in SqlData.applyParametersToPreparedStatement: String, Integer, Long, Date.
+  - Authentication hashing:
+    - Password hashing: SHA-256 of UTF-8 password converted to hex string (bytesToHex).
+    - areCredentialsValid: SELECT id FROM auth.user WHERE name = ? AND password_hash = ?; presence ⇒ Optional.of(true), otherwise Optional.empty().
+  - “Empty” pattern:
+    - createEmpty(): returns PersistenceLayer with EmptyDataSource.
+    - isEmpty(): DataSource class equals EmptyDataSource.
+- SqlData<R> (micro ORM data holder)
+  - Fields: description, preparedStatement (string), params (List<ParameterObject<?>>), extractor (Function<ResultSet, Optional<R>>).
+  - Creates typed parameter objects via runtime class of each provided param.
+  - toString/logging summarizes description, params, and SQL.
+- ParameterObject<T>
+  - Wraps one param datum and its type class; includes createEmpty and equality/hashcode.
+- SqlRuntimeException
+  - Wraps SQL or general exceptions thrown inside ORM templates.
+- EmptyDataSource and NotImplementedException
+  - Null-object pattern for DataSource; each method throws NotImplementedException.
+- DbServlet (GET /flyway)
+  - Query param: action=clean|migrate|<other/default>
+  - Behavior:
+    - clean ⇒ pl.cleanDatabase(); result="cleaned"
+    - migrate ⇒ pl.migrateDatabase(); result="migrated"
+    - default ⇒ pl.cleanAndMigrateDatabase(); result="cleaned and migrated"
+  - Sets request attribute return_page="library.html"
+  - Response forwarding: ServletUtils.forwardToResult (non-REST JSP result page, result.jsp).
+
+Tomcat bootstrap and web.xml
+- WebAppListener (@WebListener)
+  - On contextInitialized: pl.cleanAndMigrateDatabase() to recreate DB schemas at startup.
+  - On contextDestroyed: no-op.
+- web.xml
+  - Maps H2 console: servlet org.h2.server.web.WebServlet under /console/*; webAllowOthers=true.
+  - Session tracking: COOKIE only.
+  - JSP config: UTF-8 page encoding.
+  - No security constraints configured.
+
+Database schema (Flyway migrations)
+- V1__Create_person_table.sql
+  - create table library.PERSON(id serial PRIMARY KEY, name VARCHAR(100) NOT NULL)
+- V2__Rest_of_tables_for_auth_and_library.sql
+  - drop table library.person
+  - create table library.BORROWER(id serial PRIMARY KEY, name VARCHAR(100) NOT NULL)
+  - create table library.BOOK(id serial PRIMARY KEY, title VARCHAR(100) NOT NULL)
+  - create table library.LOAN(
+      id serial PRIMARY KEY,
+      book int NOT NULL REFERENCES library.BOOK(id) ON DELETE CASCADE,
+      borrower int NOT NULL REFERENCES library.BORROWER(id) ON DELETE CASCADE,
+      borrow_date date NOT NULL
+    )
+  - create table auth.USER(
+      id serial PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      password_hash VARCHAR(100)
+    )
+- Notes:
+  - PersistenceLayer’s reading logic defensively handles possible null borrow_date by substituting Date.valueOf("0000-01-01") even though migration sets NOT NULL on borrow_date.
+  - Flyway configured for schemas ADMINISTRATIVE, LIBRARY, AUTH; migration scripts explicitly use lowercase library and auth schema names (H2 is case-insensitive by default).
+
+Domain/data models referenced
+- com.coveros.training.library.domainobjects.Book
+  - Fields (from usage): id (long), title (String)
+  - Methods referenced: createEmpty(), toOutputString for JSON, equals/hashcode (validated in tests).
+- com.coveros.training.library.domainobjects.Borrower
+  - Fields: id (long), name (String)
+  - Methods referenced: createEmpty(), toOutputString -> {"Name": "...", "Id": "..."}
+- com.coveros.training.library.domainobjects.Loan
+  - Fields: Book, Borrower, id (long), borrowDate (Date)
+  - Methods referenced: createEmpty()
+- com.coveros.training.authentication.domainobjects.User
+  - Fields: name (String), id (long)
+  - Methods referenced: createEmpty()
+- Many “createEmpty” methods implement a Null Object pattern to avoid nulls.
+
+UI, static resources, and API expectations
+- restfulresult.jsp: outputs only ${result} (plain body).
+- result.jsp: simple HTML wrapper around ${result}, with a Return link using request attribute return_page.
+- endpointcatalog.html (developer/test catalog)
+  - Forms hitting:
+    - POST /math (item_a, item_b)
+    - POST /fibonacci (fib_param_n, fib_algorithm_choice)
+    - POST /ackermann (ack_param_m, ack_param_n, ack_algorithm_choice)
+    - GET /book (id, title)
+    - GET /borrower (id, name)
+- library.html (Library UI)
+  - POST endpoints expected:
+    - /login, /register (authentication)
+    - /lend (book, borrower)
+    - /registerbook (book)
+    - /registerborrower (borrower)
+  - Database maintenance via /flyway buttons (GET).
+- catalog.js (AJAX helper)
+  - Submits forms via XMLHttpRequest; for GET converts FormData to query string; writes response text into a textarea with class responsearea.
+- library.js (UX helper for Library UI)
+  - talk(verb, path, data): XHR with application/x-www-form-urlencoded content type.
+  - Expects GET /listavailable to return JSON list of available books, and GET /borrower to return JSON list of borrowers; enhances UI:
+    - If 0 items ⇒ lock input;
+    - 1–9 items ⇒ replace input with a <select> dropdown;
+    - 10+ ⇒ add an autocomplete searchbox which filters results as user types.
+  - Adds click/keyup handlers, search box creation and teardown.
+- dbhelp.html: describes H2 connection URL: jdbc:h2:mem:training;MODE=PostgreSQL;DB_CLOSE_DELAY=-1 (note: DB_CLOSE_DELAY not set in code; here for console).
+- main.css: basic styling; library UI layout responsive.
+
+Service dependencies and communication patterns
+- Presentation → Business/Algorithm layer: Servlets invoke static utility classes directly (Calculator, Fibonacci/FibonacciIterative). Library-related servlets and utils exist but are in the other chunk; this chunk’s tests reference them.
+- Presentation → Persistence: DbServlet and WebAppListener call IPersistenceLayer methods; business-layer code (LibraryUtils, AuthenticationUtils in other chunk) call IPersistenceLayer as well.
+- Persistence → DB: JDBC calls against H2 in-memory; Flyway manages schema versions; SQL is embedded strings in PersistenceLayer (no external ORM).
+- No inter-service network calls inside the application; all calls are in-process. External communication is only:
+  - Browser → Servlets (HTTP),
+  - Servlets → H2 DB (JDBC),
+  - Development/test utilities (Selenified/Selenium/HtmlUnit/Behave) for E2E tests.
+
+Key business logic and algorithms
+- Math operations:
+  - Simple addition of ints/doubles and pairwise sums.
+  - Number-to-word mapping for 0..10.
+- Fibonacci:
+  - Naive recursion for small n (FibServlet “default recursive”).
+  - Fast doubling (O(log n)) for large n or “tail_recursive_1” (BigInteger).
+  - Iterative linear for “tail_recursive_2” (BigInteger).
+- Authentication (persistence side):
+  - SHA-256 hash of password stored as hex string; credentials validated via username and password_hash match.
+- Library persistence:
+  - Register books and borrowers; create loans; list/search books/borrowers; detect book availability via left join loan table (listAvailableBooks SQL).
+  - Loan lookups by borrower or by book; returns domain objects assembled from DB row data.
+
+Interfaces and data contracts
+
+HTTP APIs implemented here
+- POST /math
+  - Request: application/x-www-form-urlencoded
+    - item_a: integer
+    - item_b: integer
+  - Response: plain text body with numeric sum or "Error: only accepts integers".
+  - Example: 2+3 → 5
+- POST /fibonacci
+  - Request: application/x-www-form-urlencoded
+    - fib_param_n: integer
+    - fib_algorithm_choice: default_recursive | tail_recursive_1 | tail_recursive_2
+  - Response: plain text body with Fibonacci(n) as integer/BigInteger string; "Error: only accepts integers" on bad input.
+- GET /flyway
+  - Request: query parameter action = clean | migrate | (omit or other → clean+migrate)
+  - Response: navigates to result.jsp; result attribute set to “cleaned”, “migrated”, or “cleaned and migrated”.
+
+Interfaces used but implemented in other parts of the codebase
+- /book, /borrower, /listavailable, /lend, /register, /login, /registerbook, /registerborrower, /ackermann (referenced by HTML/JS/tests).
+  - Response formats indicated by tests:
+    - /borrower GET: returns JSON list like [{"Name":"alice","Id":"1"}]
+    - /listavailable GET: returns JSON list like [{"Title":"a book","Id":"1"}]
+    - /book GET: returns JSON list or error strings.
+    - /lend POST: returns result string like "SUCCESS" or error codes (e.g., NO_BORROWER_PROVIDED).
+    - /register, /login: return result strings indicating registration status or access granted/denied.
+
+Internal Java interfaces/classes used by other modules
+- IPersistenceLayer: Single entry point to DB for both Library and Authentication bounded contexts; provides CRUD and utility operations.
+- Domain objects (Book, Borrower, Loan, User): simple POJOs with equals/hashcode, “createEmpty”, and some JSON-string formatting helpers.
+
+Configuration and deployment details
+- Application server: Tomcat (expects javax.servlet API); web.xml sets H2 Console and session tracking to COOKIE.
+- Database: H2 in-memory with JDBC URL jdbc:h2:mem:training;MODE=PostgreSQL
+  - In PersistenceLayer constructor. For console usage dbhelp suggests adding DB_CLOSE_DELAY=-1 to keep DB alive across connections.
+  - Flyway migrations run at startup (WebAppListener) and via GET /flyway.
+- Logging: SLF4J + log4j2; log4j2.xml sets root logger to INFO; console appender pattern “%d %p %m%n”.
+- Static resources: JSPs (restfulresult.jsp/result.jsp), HTML pages, CSS (main.css, catalog.css), and JS (catalog.js, library.js).
+- Annotations used:
+  - @WebServlet(name=..., urlPatterns={...}, loadOnStartup = 1)
+  - @MultipartConfig for multipart/form-data support via FormData API.
+  - @WebListener for startup listener.
+
+Libraries, frameworks, and tooling
+- Java EE/Servlet API (javax.servlet.*)
+- SLF4J and log4j2 for logging
+- Flyway for DB migration
+- H2 (in-memory database), org.h2.jdbcx.JdbcConnectionPool
+- Apache Commons Lang3 (Pair, EqualsBuilder/HashCodeBuilder/ToStringBuilder)
+- JUnit 4, Mockito, TestNG, Selenified, Selenium/WebDriver, HtmlUnit for tests
+- UI tests across languages (Java, JS, Python, C#) demonstrating public API expectations
+
+Error handling and validation
+- PersistenceLayer methods validate inputs via com.coveros.training.helpers.CheckUtils (StringMustNotBeNullOrEmpty, IntParameterMustBePositive). Invalid inputs result in IllegalArgumentException.
+- ORM templates wrap SQLExceptions in SqlRuntimeException.
+- Servlets:
+  - MathServlet and FibServlet catch NumberFormatException for parameter parsing and set a human-readable error message string into result.
+  - DbServlet action fall-through defaults to cleanAndMigrate.
+
+Architectural patterns
+- Layered architecture
+  - Presentation (Servlets, JSP) → Business/Algorithm utilities → Persistence (micro ORM) → Database.
+- Null Object pattern
+  - EmptyDataSource, createEmpty() factory methods for domain and utility classes.
+- Template method/encapsulation for SQL operations
+  - SqlData and PersistenceLayer’s execute*Template methods centralize JDBC boilerplate and parameter binding.
+- Functional style for tail-recursive computation
+  - TailRecursive.tailie builds iterables with Stream.iterate and predicate-based termination.
+
+Service dependencies and communication
+- Intra-application: only in-process Java calls (Servlets → Utils → PersistenceLayer).
+- Database: single shared H2 in-memory database for all bounded contexts (Library, Authentication) under shared PersistenceLayer implementation.
+- External exposure: browser clients over HTTP; developers can use /console for H2, as enabled in web.xml.
+
+Observations relevant to microservice decomposition
+- Clear bounded contexts:
+  - Mathematics: stateless computational service; no DB dependency. Could be separated as a compute microservice with REST endpoints for /math, /fibonacci, /ackermann.
+  - Library: stateful domain (books, borrowers, loans). API endpoints include /book, /borrower, /lend, /listavailable, /registerbook, /registerborrower.
+  - Authentication: stateful domain (users, credentials). API endpoints include /register, /login; password hashing is encapsulated within PersistenceLayer in current design but logically belongs to Auth service.
+- Current coupling:
+  - Single PersistenceLayer shared by Library and Auth contexts; shared H2 DB and Flyway schema management.
+  - UI pages integrate multiple contexts in a single webapp (library.html contains auth and lending forms).
+  - ServletUtils/StringUtils/CheckUtils are cross-cutting utilities not shown here but used widely; factor into shared library if decomposed.
+- Data schema boundaries:
+  - Schemas LIBRARY.* (BOOK, BORROWER, LOAN), AUTH.USER. Clean separation at schema-level is already in place, favorable for service-per-database decomposition.
+- API payload formats:
+  - Responses are plain strings or JSON-encoded strings placed into “result” and rendered by JSP. For microservices, formalize JSON contracts and content types (application/json), remove JSP coupling.
+- Configuration:
+  - DataSource is programmatically defined (in-memory H2). For production microservices, configure via environment/DI and isolate DB per service.
+- Startup behavior:
+  - WebAppListener runs clean+migrate, resetting state. In microservices, such behavior should be controlled per service and disabled in production.
+
+Examples of SQL executed (PersistenceLayer)
+- Insert borrower: INSERT INTO library.borrower (name) VALUES (?);
+- Insert book: INSERT INTO library.book (title) VALUES (?);
+- Create loan: INSERT INTO library.loan (book, borrower, borrow_date) VALUES (?, ?, ?);
+- Update borrower: UPDATE library.borrower SET name = ? WHERE id = ?;
+- Delete book/borrower: DELETE FROM library.book/borrower WHERE id = ?;
+- Queries:
+  - Get borrower name by id: SELECT name FROM library.borrower WHERE id = ?;
+  - Borrower by name: SELECT id, name FROM library.borrower WHERE name = ?;
+  - Book by title: SELECT id FROM library.book WHERE title = ?;
+  - Book by id: SELECT id, title FROM library.book WHERE id = ?;
+  - All books: SELECT id, title FROM library.book;
+  - Available books: SELECT b.id, b.title FROM library.book b LEFT JOIN library.loan l ON b.id = l.book WHERE l.borrow_date IS NULL;
+  - All borrowers: SELECT id, name FROM library.borrower;
+  - Loans by borrower:
+    SELECT loan.id, loan.borrow_date, loan.book, book.title
+    FROM library.loan loan
+    JOIN library.book book ON book.id = loan.book
+    WHERE loan.borrower = ?;
+  - Loan by book:
+    SELECT loan.id, loan.borrow_date, loan.borrower, bor.name
+    FROM library.loan loan
+    JOIN library.borrower bor ON bor.id = loan.borrower
+    WHERE loan.book = ?;
+  - Auth:
+    INSERT INTO auth.user (name) VALUES (?);
+    SELECT id FROM auth.user WHERE name = ?;
+    SELECT id FROM auth.user WHERE name = ? AND password_hash = ?;
+    UPDATE auth.user SET password_hash = ? WHERE id = ?;
+
+Non-functional concerns
+- Logging: INFO level console logging configured.
+- Error handling: basic; no centralized exception mappers; DbServlet always forwards to result.jsp.
+- Security: no transport security (HTTP only), no auth on H2 console; login/register endpoints exist but not in this chunk; passwords hashed with SHA-256 only (no salt/iterations).
+- State: in-memory DB implies non-persistent state; startup listener wipes and migrates schemas.
+
+Testing support (for understanding API behavior)
+- Extensive unit and integration tests across JUnit, Mockito, Selenified, Selenium, HtmlUnit, Python Behave, JS Mocha, and C# NUnit.
+- Tests assert response strings, JSON formats (for book/borrower listings), and endpoint availability (/flyway, /library.html flows).
+
+Summary for decomposition
+- Candidate microservices:
+  - Math service (expose /math, /fibonacci, /ackermann; no DB).
+  - Library service (book/borrower CRUD, loans; LIBRARY schema database).
+  - Auth service (user registration/login; AUTH schema database).
+  - DB migration/admin service or admin endpoints co-located with each service (replace centralized /flyway).
+- Interface stabilization needed:
+  - Replace JSP forwarding with JSON responses (application/json) and explicit response schemas.
+  - Decouple ServletUtils/StringUtils/CheckUtils into shared libraries or per-service utilities.
+  - Externalize DataSource config and Flyway execution per service.
+- Data separation already partially present via schemas; persistence APIs are already well-factored behind IPersistenceLayer but currently shared.
