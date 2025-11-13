@@ -1,0 +1,13 @@
+| Component Name | Language | Frameworks | Database | Communication | Patterns |
+|---|---|---|---|---|---|
+| Authentication (Register/Login) | Java | Java Servlet API, JSP, SLF4J, Log4j2, nbvcxz | H2 (AUTH schema) via JDBC; Flyway migrations | HTTP form POST -> Servlets -> in-process Utils -> IPersistenceLayer -> JDBC | Layered (Controller-Service-Repository), MVC-lite, Null Object, Optional, Enum-based results, SHA-256 password hashing |
+| Library (Books/Borrowers/Loans) | Java | Java Servlet API, JSP, SLF4J, Log4j2 | H2 (LIBRARY schema) via JDBC; Flyway migrations | HTTP GET/POST -> Servlets -> Utils -> IPersistenceLayer -> JDBC | Layered, MVC-lite, DAO/micro-ORM, Null Object, DTOs, Enum-based outcomes |
+| Mathematics (Ackermann/Fibonacci/Math) | Java | Java Servlet API, JSP, SLF4J | None | HTTP POST -> Servlets -> in-process algorithms | Layered (controller + pure functions), Strategy (algorithm selection), Tail recursion/trampoline |
+| Expenses (Alcohol Allocation) | Java | — | None | In-process only | Value objects, Calculator (stubbed implementation) |
+| Cartesian Product | Java | — | None | In-process only | Functional utility (stubbed implementation) |
+| Persistence Layer | Java | JDBC, H2 Database, Flyway, SLF4J, Log4j2 | H2 (in-memory/file; ADMINISTRATIVE, AUTH, LIBRARY schemas) | In-process repository API (IPersistenceLayer) -> JDBC | DAO/Repository, Micro-ORM (SqlData, ParameterObject), Template Method, Optional, Null Object, Exception wrapping |
+| Database Admin (DbServlet + Migrations) | Java | Java Servlet API, Flyway, SLF4J, Log4j2 | H2 | HTTP GET (/flyway) -> persistence -> H2 | Controller delegating to service, Command via action param |
+| Tomcat Bootstrap (WebAppListener) | Java | Servlet API (@WebListener), SLF4J, Log4j2 | H2 (via persistence/Flyway) | ServletContext lifecycle callbacks -> calls persistence | Observer/Listener, Startup initialization |
+| Helpers (CheckUtils, StringUtils, ServletUtils) | Java | Apache Commons Lang, Log4j2 JsonUtils, SLF4J | None | In-process utility calls | Utility/Helper, Validation, Null Object, Forwarding helper |
+| Web UI (HTML/JSP/JS) | HTML, CSS, JavaScript, JSP | JSP, Vanilla JS/XHR | None | Forms/XHR to HTTP endpoints; JSP forwarding | Thin client/AJAX, Template view |
+| Desktop Auto Insurance Demo (Swing + Automation Socket) | Java | Swing, SLF4J, Log4j2 | None | Local TCP socket (custom text protocol on 8000); UI events | Rules engine/decision table, Command pattern (set/get/click), Immutable value objects with factory methods |

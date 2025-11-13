@@ -1,0 +1,14 @@
+| Component Name | Language | Frameworks | Database | Communication | Patterns |
+|---|---|---|---|---|---|
+| Demo Web Application (Servelts/JSP) | Java | Java Servlet API, JSP, SLF4J, Log4j2 | H2 (in-memory), Flyway for migrations | HTTP (REST endpoints: /math, /fibonacci, /ackermann, /book, /borrower, /lend, /login, /register), JDBC | Layered architecture (Servlets → Utils → Persistence), Value Objects (immutable DTOs), Null Object (createEmpty), Dependency Inversion (IPersistenceLayer), Startup Listener (WebAppListener) |
+| Persistence Layer (Micro ORM) | Java | JDBC, Flyway | H2 (in-memory for app; file-based via JdbcConnectionPool in tests) | JDBC, SQL scripts (RUNSCRIPT/SCRIPT) | Repository/DAO, Template Method (executeInsert/Update templates), Function wrappers for ResultSet extraction |
+| Desktop Auto Insurance App (Swing) | Java | Swing UI, SLF4J, Log4j2 | None | Local TCP socket server on 8000 for UI scripting; Event-driven UI | MVC-ish (UI/Processor/Action), Value Object (AutoInsuranceAction), Command-style text protocol, Observer (Swing listeners) |
+| API Tests | Python | pytest, requests | N/A | HTTP to web app (/demo/*) | Black-box API testing, AAA (Arrange-Act-Assert) |
+| BDD Tests | Java | Cucumber JVM (Gherkin), JUnit, Mockito | H2 (via PersistenceLayer) | In-process calls to business layer; DB via JDBC | BDD (Given-When-Then), Dependency Inversion (IPersistenceLayer for testability) |
+| Integration Tests | Java | JUnit, Mockito, H2 JDBC | H2 (file-based via JdbcConnectionPool), SQL backups | JDBC; SQL restore/backup scripts | Integration testing, Test Data Management (backup/restore) |
+| UI BDD Tests | Python | Behave, Selenium WebDriver, Hamcrest | N/A | WebDriver (ChromeDriver), HTTP to app; optional HTTP proxy (ZAP) | BDD (feature files), Page Object Model (lightweight in steps), End-to-end testing |
+| UI Tests (Java) | Java | Selenium WebDriver, WebDriverManager, HtmlUnit | N/A | WebDriver (Chrome/HtmlUnit), HTTP to app | End-to-end UI testing; some POM-style helpers; Headless testing (HtmlUnit) |
+| Selenified Tests | Java | Selenified, TestNG | N/A | WebDriver (hub optional), HTTP to app | UI test framework abstraction (Selenified), E2E testing |
+| UI Tests (JavaScript) | JavaScript | Mocha, selenium-webdriver | N/A | WebDriver (ChromeDriver), HTTP to app | E2E UI testing |
+| UI Tests (C#) | C# | NUnit, Selenium WebDriver (.NET) | N/A | WebDriver (ChromeDriver), HTTP to app | E2E UI testing |
+| CI/CD Pipeline | Groovy (Jenkinsfile), Gradle | Jenkins Pipeline, Gradle, SonarQube Scanner, OWASP DependencyCheck, JMeter | N/A | SCM triggers; local HTTP calls (ZAP, app), CLI tools | Pipeline-as-code, Quality gates, Staged testing (build → unit → integration → BDD → API → UI → security → perf) |

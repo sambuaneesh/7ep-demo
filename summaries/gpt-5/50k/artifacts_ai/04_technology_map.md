@@ -1,0 +1,14 @@
+| Component Name | Language | Frameworks | Database | Communication | Patterns |
+|---|---|---|---|---|---|
+| Authentication (Web + Business) | Java | Servlet API, JSP, SLF4J, Log4j2, nbvcxz | H2 (via PersistenceLayer: JDBC, Flyway) | HTTP (POST /login, /register); in-process calls to IPersistenceLayer | Layered (Controller/Service/Repository), MVC (Servlet→JSP), Null Object, Optional, Immutable DTOs |
+| Library (Web + Business) | Java | Servlet API, JSP, SLF4J, Log4j2 | H2 (via PersistenceLayer: JDBC, Flyway) | HTTP (POST/GET endpoints, JSON-like responses); in-process calls to IPersistenceLayer | Layered, MVC (Servlet→JSP), Null Object, Optional, Immutable domain model, Manual JSON serialization |
+| Mathematics (Web + Business) | Java | Servlet API, JSP, SLF4J, Log4j2 | None | HTTP (POST /math, /fibonacci, /ackermann) | Layered, MVC (Servlet→JSP), Strategy (algorithm selection), Tail recursion/trampolining, Functional utilities |
+| Expenses Calculator | Java | SLF4J, Log4j2 | None | In-process only | Value Object, Calculator; stub/placeholder implementation |
+| Cartesian Product Utility | Java | — | None | In-process only | Functional utility; stubbed implementation |
+| Persistence Layer (JDBC/Flyway/H2) | Java | JDBC, H2, Flyway, SLF4J, Log4j2 | H2 (schemas: AUTH, LIBRARY, ADMINISTRATIVE) | JDBC; H2 SCRIPT/RUNSCRIPT for backup/restore | Repository (IPersistenceLayer), Data Mapper, Micro-ORM, Template Method, Parameter Object, Optional, Exception translation |
+| Database Admin (DbServlet) | Java | Servlet API, JSP, SLF4J, Log4j2, Flyway (via persistence) | H2 | HTTP (GET /flyway); in-process calls to persistence | Layered, MVC (Servlet→JSP), Command-by-parameter |
+| Helpers/Utilities | Java | — | None | In-process only | Utility classes, Validation helpers, Null Object, Assertion exception |
+| Tomcat Integration (WebAppListener) | Java | Servlet API (@WebListener), SLF4J, Log4j2, Flyway (via persistence) | H2 | ServletContext lifecycle callbacks; in-process | Listener/Observer, Startup hook (DB clean+migrate) |
+| Web UI (Static pages + JSP) | HTML, CSS, JavaScript, JSP | Vanilla JS, JSP/EL, Tomcat static hosting | None | HTTP/XHR to servlet endpoints | Thin-client AJAX, MVC views, Legacy JSON-fragment rendering |
+| Desktop Auto Insurance Demo | Java | Swing, Java Sockets, SLF4J, Log4j2 (JaCoCo remote client optional) | None | Local UI events; TCP socket (port 8000) automation protocol | Immutable Value Object, Table-driven rules, Command protocol, MVC-ish (UI + processor) |
+| H2 Database Console | Java | H2 Web Console servlet | H2 | HTTP under /console; JDBC connection via URL | Embedded admin console (ops tooling) |
