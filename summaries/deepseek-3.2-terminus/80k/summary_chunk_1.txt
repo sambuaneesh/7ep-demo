@@ -1,0 +1,190 @@
+# Architectural Summary - Codebase Chunk 1
+
+## Overview
+This is a comprehensive demo application by Coveros showcasing software engineering best practices across multiple domains including authentication, mathematics, library management, and insurance processing. The codebase demonstrates modern development practices with extensive testing, CI/CD integration, and multiple deployment scenarios.
+
+## Core Components and Responsibilities
+
+### 1. Main Web Application (`src/main/java/com/coveros/training/`)
+
+#### Authentication Domain
+- **LoginServlet/RegisterServlet**: HTTP endpoints for user authentication
+- **LoginUtils/RegistrationUtils**: Business logic for authentication workflows
+- **Domain Objects**: User, PasswordResult, RegistrationResult
+
+#### Library Management Domain
+- **Library*Servlet classes**: CRUD operations for books, borrowers, and loans
+- **LibraryUtils**: Core business logic for library operations
+- **Domain Objects**: Book, Borrower, Loan, LibraryActionResults
+
+#### Mathematics Domain
+- **MathServlet**: Basic arithmetic operations
+- **FibServlet/AckServlet**: Specialized mathematical functions
+- **Algorithms**: Fibonacci (recursive/iterative), Ackermann function
+
+#### Persistence Layer
+- **PersistenceLayer**: Database abstraction implementing IPersistenceLayer
+- **DbServlet**: Database management endpoints
+
+#### Helper Utilities
+- **ServletUtils**: HTTP request/response handling
+- **StringUtils/CheckUtils**: Validation and string manipulation
+
+### 2. Desktop Application (`desktop_app/`)
+- **AutoInsuranceUI**: Swing-based desktop interface
+- **AutoInsuranceProcessor**: Business logic for insurance calculations
+- **AutoInsuranceScriptServer**: Socket server for UI automation
+
+### 3. Testing Infrastructure
+- **Unit Tests**: JUnit tests for all components
+- **Integration Tests**: Database persistence tests
+- **BDD Tests**: Cucumber feature tests across all domains
+- **API Tests**: Python-based REST API testing
+- **UI Tests**: Multi-language Selenium tests (Java, Python, C#, JavaScript)
+
+## API Endpoints and Interfaces
+
+### Authentication Endpoints
+- `POST /demo/login` - User authentication
+- `POST /demo/register` - User registration
+
+### Library Endpoints
+- `POST /demo/registerbook` - Register new book
+- `POST /demo/registerborrower` - Register new borrower  
+- `POST /demo/lend` - Lend book to borrower
+- `GET /demo/book` - Search/list books
+- `GET /demo/borrower` - Search/list borrowers
+- `GET /demo/listavailable` - List available books
+
+### Mathematics Endpoints
+- `POST /demo/math` - Basic arithmetic
+- `POST /demo/fibonacci` - Fibonacci calculation
+- `POST /demo/ackermann` - Ackermann function
+
+### System Endpoints
+- `GET /demo/flyway` - Database migration control
+
+## Database Schema and Data Models
+
+### Core Tables
+```sql
+-- Authentication
+USER (ID, NAME, PASSWORD_HASH)
+
+-- Library Management  
+BOOK (ID, TITLE)
+BORROWER (ID, NAME)
+LOAN (ID, BOOK, BORROWER, BORROW_DATE)
+
+-- System
+flyway_schema_history (version control)
+```
+
+### Domain Models
+- **User**: id, name, password handling
+- **Book**: id, title with JSON serialization
+- **Borrower**: id, name with JSON serialization  
+- **Loan**: id, book, borrower, checkoutDate relationships
+
+## Service Dependencies and Communication
+
+### Internal Dependencies
+- **Servlet → Business Logic → Persistence Layer** layered architecture
+- **H2 Database** with Flyway migrations
+- **Tomcat 9** servlet container
+
+### External Dependencies
+- **Gradle** build system with wrapper
+- **Java 11** runtime
+- **Python 3.7+** for API/UI testing
+- **Chrome/Chromedriver** for UI automation
+- **Jenkins** for CI/CD pipeline
+
+### Communication Patterns
+- **HTTP/REST** for web APIs
+- **JDBC** for database access
+- **Socket communication** for desktop automation
+- **JSON** for data serialization
+
+## Key Business Logic and Algorithms
+
+### Authentication System
+- Password strength validation using entropy calculation (Nbvcxz library)
+- User registration with duplicate prevention
+- Credential verification with secure storage
+
+### Library Management
+- Book/borrower registration with uniqueness constraints
+- Loan management with availability checking
+- Search functionality by ID and name
+
+### Mathematical Algorithms
+- **Fibonacci**: Recursive and iterative implementations
+- **Ackermann**: Complex recursive function with tail-recursive optimization
+- **Basic Arithmetic**: Integer addition with overflow protection
+
+### Insurance Processing
+- Premium calculation based on claims and age
+- Warning letter generation logic
+- Policy cancellation rules
+
+## Configuration and Deployment
+
+### Build Configuration
+- **Gradle** multi-project build
+- **Properties**: gradle.properties for project settings
+- **Wrapper**: gradlew for platform-independent builds
+
+### Deployment Options
+- **Local Development**: `./gradlew apprun` (embedded Tomcat)
+- **CI/CD Pipeline**: Jenkins with multi-stage testing
+- **Containerization**: Docker support documented
+- **Multi-Platform**: Windows/Linux/Mac support
+
+### Environment Configuration
+- **Database**: H2 (file-based and in-memory modes)
+- **Logging**: Log4j2 configuration
+- **Web Server**: Tomcat 9 with SSL configuration
+
+## Architectural Patterns and Frameworks
+
+### Core Patterns
+- **Layered Architecture**: Presentation → Business → Data layers
+- **Domain-Driven Design**: Rich domain models with behavior
+- **Immutable Objects**: Extensive use of immutable data structures
+- **Dependency Injection**: Constructor injection for testability
+
+### Frameworks and Libraries
+- **Web**: Java Servlets, JSP
+- **Testing**: JUnit, Mockito, Cucumber, Selenium
+- **Persistence**: H2 Database, Flyway migrations
+- **Build**: Gradle with extensive plugin ecosystem
+- **Security**: OWASP DependencyCheck, ZAP security scanning
+
+### Quality Practices
+- **TDD/BDD**: Comprehensive test coverage
+- **Mutation Testing**: Pitest integration
+- **Static Analysis**: SonarQube quality gates
+- **Performance Testing**: JMeter integration
+- **Security Scanning**: OWASP ZAP proxy integration
+
+## Microservice Decomposition Insights
+
+### Potential Service Boundaries
+1. **Authentication Service**: User management and auth
+2. **Library Service**: Book/borrower/loan management  
+3. **Mathematics Service**: Computational functions
+4. **Insurance Service**: Premium calculations
+5. **Reporting Service**: Test results and analytics
+
+### Data Consistency Considerations
+- Library loans have cross-domain constraints
+- User authentication spans multiple functional areas
+- Test reporting aggregates data from all domains
+
+### Integration Patterns
+- REST APIs already well-defined
+- Database could be split by domain
+- Event-driven architecture potential for loan notifications
+
+This architecture demonstrates mature microservice readiness with clear domain boundaries, well-defined APIs, and comprehensive testing infrastructure that would support decomposition into focused services.

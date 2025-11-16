@@ -1,0 +1,205 @@
+# Architectural Summary - Codebase Chunk 3
+
+## Overview
+This chunk contains comprehensive test suites covering authentication, library management, mathematical functions, persistence, and UI testing. The tests reveal architectural patterns, business logic, and integration points.
+
+## Component Architecture
+
+### 1. Authentication Domain
+
+#### Core Components:
+- **LoginServlet**: HTTP endpoint for user authentication
+  - Handles POST requests with username/password
+  - Returns: "access granted", "access denied", "no username provided", "no password provided"
+  - Uses LoginUtils for credential validation
+
+- **LoginUtils**: Business logic for authentication
+  - Validates credentials via persistence layer
+  - Method: `isUserRegistered(username, password)`
+
+- **RegisterServlet**: HTTP endpoint for user registration
+  - Handles POST requests with username/password
+  - Returns RegistrationResult with status and message
+
+- **RegistrationUtils**: Business logic for user registration
+  - Validates password strength and user existence
+  - Methods: `processRegistration(username, password)`, `isUserInDatabase(username)`
+  - Password validation includes entropy calculation and strength checks
+
+#### Domain Objects:
+- **User**: `{id: int, name: String}`
+- **RegistrationResult**: `{success: boolean, status: RegistrationStatusEnums, message: String}`
+- **PasswordResult**: `{status: PasswordResultEnums, entropy: double, timeToCrackOffline: String, timeToCrackOnline: String, message: String}`
+
+#### Status Enums:
+- RegistrationStatusEnums: SUCCESSFULLY_REGISTERED, EMPTY_USERNAME, BAD_PASSWORD, ALREADY_REGISTERED
+- PasswordResultEnums: SUCCESS, TOO_SHORT, EMPTY_PASSWORD
+
+### 2. Library Management Domain
+
+#### Core Components:
+- **LibraryUtils**: Central business logic for library operations
+  - Methods: `lendBook()`, `registerBook()`, `registerBorrower()`, `searchForBookByTitle()`, `searchForBorrowerByName()`, `listAvailableBooks()`, `deleteBook()`, `deleteBorrower()`
+
+- **Servlet Endpoints**:
+  - LibraryBookListAvailableServlet: GET endpoint for available books
+  - LibraryBookListSearchServlet: GET endpoint for book search (by id/title)
+  - LibraryBorrowerListSearchServlet: GET endpoint for borrower search (by id/name)
+  - LibraryLendServlet: POST endpoint for lending books
+  - LibraryRegisterBookServlet: POST endpoint for book registration
+  - LibraryRegisterBorrowerServlet: POST endpoint for borrower registration
+
+#### Domain Objects:
+- **Book**: `{id: int, title: String}`
+- **Borrower**: `{id: int, name: String}`
+- **Loan**: `{book: Book, borrower: Borrower, id: int, borrowDate: Date}`
+- **LibraryActionResults**: Enum with SUCCESS, BORROWER_NOT_REGISTERED, BOOK_NOT_REGISTERED, BOOK_CHECKED_OUT
+
+#### Business Logic:
+- Lending requires both book and borrower to be registered
+- Books must be available (not currently loaned)
+- Input validation for empty strings
+- JSON output formatting for list endpoints
+
+### 3. Mathematics Domain
+
+#### Core Components:
+- **Ackermann Function**: Multiple implementations
+  - Regular recursive: `Ackermann.calculate(m, n)`
+  - Iterative: `AckermannIterative.calculate(m, n)`
+  - Handles large numbers with BigInteger
+
+- **Fibonacci Function**: Multiple implementations
+  - Regular recursive: `Fibonacci.calculate(n)`
+  - Iterative algorithms: `FibonacciIterative.fibAlgo1(n)`, `FibonacciIterative.fibAlgo2(n)`
+
+- **Servlet Endpoints**:
+  - AckServlet: POST with parameters `ack_param_m`, `ack_param_n`, `ack_algorithm_choice`
+  - FibServlet: POST with parameters `fib_param_n`, `fib_algorithm_choice`
+  - MathServlet: POST for basic arithmetic
+
+### 4. Persistence Layer
+
+#### Core Components:
+- **IPersistenceLayer**: Interface defining data access operations
+- **PersistenceLayer**: Implementation (inferred from method calls)
+- **SqlData**: SQL query and parameter management
+- **ParameterObject**: Typed parameter wrapper
+- **DbServlet**: Database management endpoint
+
+#### Key Methods:
+- `areCredentialsValid(username, password)`
+- `searchForUserByName(username)`
+- `searchBooksByTitle(title)`, `searchBooksById(id)`
+- `searchBorrowerDataByName(name)`
+- `createLoan(book, borrower, date)`
+- `cleanDatabase()`, `migrateDatabase()`
+
+#### Database Schema (Inferred):
+```sql
+Users: (id, username, password_hash)
+Books: (id, title) 
+Borrowers: (id, name)
+Loans: (id, book_id, borrower_id, borrow_date)
+```
+
+### 5. Helper Components
+
+#### Utility Classes:
+- **ServletUtils**: Common servlet operations, JSP paths
+- **StringUtils**: JSON escaping, null handling
+- **CheckUtils**: Parameter validation
+- **DateUtils**: Date calculations
+
+## Service Dependencies & Communication
+
+### Internal Dependencies:
+```
+Authentication Servlets → LoginUtils/RegistrationUtils → IPersistenceLayer
+Library Servlets → LibraryUtils → IPersistenceLayer  
+Mathematics Servlets → Algorithm implementations
+All Servlets → Helper utilities
+```
+
+### External Integration:
+- Database via JDBC/IPersistenceLayer
+- Web UI through JSP templates (RESULT_JSP, RESTFUL_RESULT_JSP)
+
+## Key Business Logic & Algorithms
+
+### Authentication:
+- Password strength validation with entropy calculation
+- User registration workflow with duplicate checking
+- Credential validation against persisted data
+
+### Library Management:
+- Book lending eligibility checks
+- Availability tracking
+- Input validation and error handling
+
+### Mathematical:
+- Ackermann function with overflow handling
+- Fibonacci with multiple algorithm implementations
+- Big integer arithmetic for large numbers
+
+## Configuration & Deployment
+
+### Framework Usage:
+- **JUnit 4** for testing
+- **Mockito** for mocking dependencies
+- **Servlet API** for web endpoints
+- **SLF4J** for logging
+
+### Test Patterns:
+- Unit tests with mocked persistence layer
+- Parameterized tests for mathematical functions
+- Servlet tests with mocked request/response objects
+- Multi-language UI tests (Java, Python, C#, JavaScript)
+
+### Build & Dependencies:
+- Gradle build system (Java UI tests)
+- Mocha (JavaScript), Pytest (Python), NUnit (C#) for UI tests
+- Selenium WebDriver for browser automation
+- ChromeDriver for browser control
+
+## UI Testing Architecture
+
+### Multi-Language Support:
+- **Java**: Selenium WebDriver, HtmlUnit
+- **Python**: Behave BDD, Selenium, Page Object Model
+- **C#**: NUnit, Selenium
+- **JavaScript**: Mocha, Selenium
+
+### Test Scenarios Covered:
+- User registration and login flows
+- Book lending workflow
+- Mathematical calculations
+- Form validation and error handling
+
+### Configuration Features:
+- Proxy support for network interception
+- Cross-browser testing capabilities
+- Database reset before scenarios
+- BDD feature files with Gherkin syntax
+
+## Architectural Patterns
+
+### Layered Architecture:
+- Presentation Layer (Servlets)
+- Business Logic Layer (Utils classes)
+- Data Access Layer (Persistence)
+- Domain Model (Value objects)
+
+### Testing Strategy:
+- Unit tests with isolation via mocking
+- Integration tests with real dependencies
+- UI tests with multiple technology stacks
+- BDD for business-readable scenarios
+
+### Data Flow:
+```
+HTTP Request → Servlet → Business Logic → Persistence → Database
+HTTP Response ← JSP ← Business Objects ← Database Results
+```
+
+This architecture supports microservice decomposition with clear boundaries between authentication, library management, and mathematical services, each with their own data models and business logic.

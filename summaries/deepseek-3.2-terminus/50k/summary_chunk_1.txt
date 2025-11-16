@@ -1,0 +1,226 @@
+Based on my analysis of Codebase Chunk 1, here is a comprehensive architectural summary for microservice decomposition analysis:
+
+## SYSTEM OVERVIEW
+
+**Project Name**: Demo (7ep-demo)
+**Type**: Multi-module educational web application demonstrating software engineering best practices
+**Primary Technology Stack**: Java, Gradle, Tomcat, H2 Database
+**Architecture Pattern**: Monolithic web application with server-side rendering
+
+## CORE COMPONENTS & RESPONSIBILITIES
+
+### 1. Web Application Modules
+
+#### Authentication Module (`com.coveros.training.authentication`)
+- **LoginServlet**: Handles user authentication requests
+- **RegisterServlet**: Manages user registration
+- **LoginUtils**: Core authentication business logic
+- **RegistrationUtils**: User registration validation and processing
+- **Domain Objects**: User, PasswordResult, RegistrationResult
+
+#### Library Management Module (`com.coveros.training.library`)
+- **LibraryRegisterBookServlet**: Book registration endpoint
+- **LibraryRegisterBorrowerServlet**: Borrower registration endpoint  
+- **LibraryLendServlet**: Book lending operations
+- **LibraryBookListAvailableServlet**: Lists available books
+- **LibraryBookListSearchServlet**: Book search functionality
+- **LibraryUtils**: Core library business logic
+- **Domain Objects**: Book, Borrower, Loan, LibraryActionResults
+
+#### Mathematics Module (`com.coveros.training.mathematics`)
+- **MathServlet**: Basic arithmetic operations
+- **FibServlet**: Fibonacci sequence calculations
+- **AckServlet**: Ackermann function computation
+- **Calculator**: Addition operations with validation
+- **Fibonacci**: Fibonacci algorithms (recursive/iterative)
+- **Ackermann**: Ackermann function implementations
+
+#### Expenses Module (`com.coveros.training.expenses`)
+- **AlcoholCalculator**: Calculates alcohol-related expenses
+- **AlcoholResult**: Expense calculation results
+- **DinnerPrices**: Dinner pricing data structure
+
+#### Cartesian Product Module (`com.coveros.training.cartesianproduct`)
+- **CartesianProduct**: Computes Cartesian products of sets
+
+### 2. Infrastructure Components
+
+#### Persistence Layer (`com.coveros.training.persistence`)
+- **PersistenceLayer**: Database abstraction layer
+- **IPersistenceLayer**: Persistence interface
+- **DbServlet**: Database operations endpoint
+- **ParameterObject**: SQL parameter handling
+- **SqlData**: SQL execution wrapper
+
+#### Helper Utilities (`com.coveros.training.helpers`)
+- **StringUtils**: String manipulation utilities
+- **CheckUtils**: Validation utilities
+- **ServletUtils**: Servlet helper functions
+
+### 3. Desktop Application (`desktop_app`)
+- **AutoInsuranceUI**: Swing-based desktop UI
+- **AutoInsuranceProcessor**: Auto insurance premium calculation logic
+- **AutoInsuranceScriptServer**: Socket server for UI automation
+- **AutoInsuranceAction**: Insurance action result object
+- **WarningLetterEnum**: Insurance warning types
+
+## API ENDPOINTS & INTERFACES
+
+### Web Endpoints (Servlet-based):
+```
+POST /demo/math           - Basic arithmetic
+POST /demo/fib            - Fibonacci calculation  
+POST /demo/ackermann      - Ackermann function
+POST /demo/register       - User registration
+POST /demo/login          - User authentication
+POST /demo/registerbook   - Book registration
+POST /demo/registerborrower - Borrower registration
+POST /demo/lend           - Book lending
+GET  /demo/flyway         - Database migration trigger
+GET  /demo/db             - Database operations
+```
+
+### Desktop Automation Interface:
+- **Socket Server**: Port 8000
+- **Protocol**: Text-based command/response
+- **Commands**: `set age/claims/label`, `get age/claims/label`, `click calculate`, `quit`
+
+## DATABASE SCHEMAS & DATA MODELS
+
+### Database Technology: H2 Database with Flyway Migration
+
+### Schema Migrations:
+- **V1**: Creates person table for authentication
+- **V2**: Adds tables for authentication and library systems
+
+### Data Models:
+
+#### Authentication Domain:
+```sql
+Users: {id, username, password_hash}
+```
+
+#### Library Domain:
+```sql
+Books: {id, title}
+Borrowers: {id, name} 
+Loans: {id, book_id, borrower_id, checkout_date, return_date}
+```
+
+### Domain Objects:
+- **User**: Authentication user entity
+- **Book**: Library book with title and ID
+- **Borrower**: Library patron entity  
+- **Loan**: Book lending transaction record
+- **AutoInsuranceAction**: Insurance calculation result
+
+## SERVICE DEPENDENCIES & COMMUNICATION
+
+### Internal Dependencies:
+- All business modules depend on PersistenceLayer for data access
+- Servlets depend on corresponding Utils classes for business logic
+- Web application uses server-side rendering with JSP
+
+### External Dependencies:
+- **H2 Database**: Embedded relational database
+- **Tomcat**: Servlet container
+- **Flyway**: Database migration tool
+- **Log4j2**: Logging framework
+
+### Communication Patterns:
+- **Synchronous HTTP**: Web client to servlet communication
+- **Direct Method Calls**: Between business logic components
+- **Socket Communication**: Desktop automation interface
+- **JDBC**: Database communication
+
+## KEY BUSINESS LOGIC & ALGORITHMS
+
+### Authentication Logic:
+- Password strength validation
+- User registration workflow
+- Login credential verification
+
+### Library Management:
+- Book/borrower registration with duplicate prevention
+- Loan management with availability checking
+- Search functionality for books and borrowers
+
+### Mathematical Algorithms:
+- **Fibonacci**: Recursive and iterative implementations
+- **Ackermann**: Complex recursive function demonstration
+- **Input Validation**: Integer bounds checking
+
+### Auto Insurance Business Rules:
+- Premium calculation based on claims and age
+- Warning letter determination
+- Policy cancellation conditions
+```java
+// Example: Young drivers with 1 claim get $100 increase + LTR1 warning
+if (claims == 1 && age >= 16 && age <= 25) {
+    return new AutoInsuranceAction(100, WarningLetterEnum.LTR1, false, false);
+}
+```
+
+## CONFIGURATION & DEPLOYMENT
+
+### Build System:
+- **Gradle** with wrapper scripts
+- Multi-module project structure
+- Property configuration in `gradle.properties`
+
+### Deployment Configuration:
+- **Embedded Tomcat** via Gretty plugin
+- **Hot-swap** development capability
+- **H2 Console** for database inspection
+
+### Environment Configuration:
+- Database URL: `jdbc:h2:./build/db/training` (file-based) or `jdbc:h2:mem:training` (in-memory)
+- Web server port: 8080
+- Desktop automation port: 8000
+
+## ARCHITECTURAL PATTERNS & FRAMEWORKS
+
+### Primary Patterns:
+- **Layered Architecture**: Presentation → Business → Data layers
+- **Servlet-based MVC**: Servlets as controllers, JSP for views, domain objects as models
+- **Data Access Object**: PersistenceLayer abstraction
+
+### Frameworks & Libraries:
+- **Web**: Java Servlets, JSP
+- **Persistence**: JDBC, H2 Database, Flyway
+- **Testing**: JUnit, Mockito, Cucumber (BDD), Selenium
+- **Build**: Gradle
+- **Logging**: Log4j2
+- **Utilities**: Apache Commons Lang
+
+### Testing Strategy:
+- **Unit Tests**: JUnit with Mockito
+- **Integration Tests**: Database integration testing
+- **BDD Tests**: Cucumber with feature files
+- **API Tests**: Python-based HTTP testing
+- **UI Tests**: Selenium in multiple languages (Java, Python, JavaScript, C#)
+- **Performance Tests**: JMeter integration
+- **Security Tests**: OWASP ZAP integration
+
+## MICROSERVICE DECOMPOSITION OPPORTUNITIES
+
+### Potential Service Boundaries:
+
+1. **Authentication Service** - User management and authentication
+2. **Library Service** - Book and borrower management with lending
+3. **Mathematics Service** - Computational functions
+4. **Insurance Service** - Auto insurance calculations
+5. **Reporting Service** - Test results and analytics
+
+### Data Domain Isolation:
+- Authentication data (users)
+- Library data (books, borrowers, loans)
+- Insurance calculation data (separate business domain)
+
+### Interface Considerations:
+- RESTful APIs for web services
+- Message queues for async operations
+- Socket-based protocols for real-time communication
+- Database per service pattern for data isolation
+
+This architecture demonstrates a well-structured monolithic application that could be decomposed into domain-based microservices, with clear separation of concerns and well-defined API boundaries already present in the servlet layer.

@@ -1,0 +1,222 @@
+# Architectural Summary for Microservice Decomposition Analysis
+
+## 1. System Overview
+This codebase represents a comprehensive library management system with authentication, mathematical utilities, and restaurant expense calculation capabilities. The application follows a layered architecture with clear separation between web, business logic, and persistence layers.
+
+## 2. Core Components and Responsibilities
+
+### 2.1 Authentication Domain
+**Components:**
+- `LoginServlet` - Handles user authentication via POST /login
+- `RegisterServlet` - Manages user registration via POST /register
+- `LoginUtils` - Validates user credentials against database
+- `RegistrationUtils` - Processes new user registrations with password validation
+
+**Key Business Logic:**
+- Password strength validation using Nbvcxz entropy analysis
+- SHA-256 password hashing
+- Username uniqueness validation
+- Credential verification
+
+### 2.2 Library Management Domain
+**Components:**
+- `LibraryUtils` - Core library business logic
+- `LibraryRegisterBookServlet` - POST /registerbook
+- `LibraryRegisterBorrowerServlet` - POST /registerborrower  
+- `LibraryLendServlet` - POST /lend
+- `LibraryBookListSearchServlet` - GET /book
+- `LibraryBorrowerListSearchServlet` - GET /borrower
+- `LibraryBookListAvailableServlet` - GET /listavailable
+
+**Key Business Logic:**
+- Book availability checking
+- Loan validation and creation
+- Borrower registration validation
+- Book registration with duplicate prevention
+
+### 2.3 Mathematics Domain
+**Components:**
+- `MathServlet` - POST /math (basic addition)
+- `FibServlet` - POST /fibonacci (multiple algorithm implementations)
+- `AckServlet` - POST /ackermann (multiple algorithm implementations)
+- `Calculator` - Basic arithmetic operations
+- `Fibonacci` / `FibonacciIterative` - Mathematical sequence calculations
+- `Ackermann` / `AckermannIterative` - Complex recursive function calculations
+
+**Algorithms:**
+- Recursive Fibonacci
+- Iterative Fibonacci (O(log(n)) and linear)
+- Recursive Ackermann
+- Tail-recursive Ackermann
+
+### 2.4 Persistence Layer
+**Components:**
+- `PersistenceLayer` - Implements IPersistenceLayer interface
+- `DbServlet` - GET /flyway (database management)
+- `SqlData` - Micro-ORM implementation
+- `ParameterObject` - SQL parameter handling
+
+**Key Features:**
+- Database-agnostic interface
+- Connection pooling via H2 JdbcConnectionPool
+- Flyway database migration integration
+- Micro-ORM pattern with prepared statement handling
+
+### 2.5 Helper Components
+**Components:**
+- `ServletUtils` - Request forwarding and response handling
+- `StringUtils` - String manipulation and JSON escaping
+- `CheckUtils` - Validation and assertion helpers
+- `WebAppListener` - Application lifecycle management
+
+## 3. API Endpoints and Interfaces
+
+### 3.1 Authentication Endpoints
+```
+POST /login - User authentication
+POST /register - User registration
+```
+
+### 3.2 Library Endpoints
+```
+POST /registerbook - Register new book
+POST /registerborrower - Register new borrower  
+POST /lend - Lend book to borrower
+GET /book - Search/list books (by id, title, or all)
+GET /borrower - Search/list borrowers (by id, name, or all)
+GET /listavailable - List available books
+```
+
+### 3.3 Mathematics Endpoints
+```
+POST /math - Add two numbers
+POST /fibonacci - Calculate Fibonacci sequence
+POST /ackermann - Calculate Ackermann function
+```
+
+### 3.4 Database Management
+```
+GET /flyway - Database migration/clean operations
+GET /console/* - H2 database console
+```
+
+## 4. Database Schema and Data Models
+
+### 4.1 Database Structure
+**Schemas:**
+- `ADMINISTRATIVE` - Flyway migration history
+- `LIBRARY` - Core library data
+- `AUTH` - Authentication data
+
+### 4.2 Core Tables
+```sql
+LIBRARY.BORROWER (id SERIAL PRIMARY KEY, name VARCHAR(100))
+LIBRARY.BOOK (id SERIAL PRIMARY KEY, title VARCHAR(100))  
+LIBRARY.LOAN (id SERIAL PRIMARY KEY, book INT, borrower INT, borrow_date DATE)
+AUTH.USER (id SERIAL PRIMARY KEY, name VARCHAR(100), password_hash VARCHAR(100))
+```
+
+### 4.3 Domain Objects
+- `Book` - (id, title)
+- `Borrower` - (id, name) 
+- `Loan` - (id, book, borrower, checkoutDate)
+- `User` - (id, name, password_hash)
+- `RegistrationResult` - (wasSuccessfullyRegistered, status, message)
+- `PasswordResult` - (status, entropy, timeToCrack, message)
+
+## 5. Service Dependencies and Communication Patterns
+
+### 5.1 Internal Dependencies
+```
+Web Layer (Servlets) → Business Layer (Utils) → Persistence Layer → Database
+```
+
+### 5.2 Communication Patterns
+- **Synchronous HTTP** for all external communications
+- **JDBC** for database access
+- **In-memory method calls** between layers
+- **RESTful patterns** for API endpoints
+
+### 5.3 External Dependencies
+- **H2 Database** - Embedded/File-based database
+- **Flyway** - Database migration tool
+- **Nbvcxz** - Password entropy analysis
+- **Apache Commons Lang** - Utility functions
+- **SLF4J/Log4j2** - Logging framework
+
+## 6. Key Business Logic and Algorithms
+
+### 6.1 Authentication Logic
+- Password entropy validation (minimum 10 characters, maximum 100)
+- SHA-256 password hashing
+- Credential verification with timing attack prevention considerations
+
+### 6.2 Library Management Logic
+- Book availability validation before lending
+- Borrower registration validation
+- Loan creation with date tracking
+- Cascading deletes for loans when books/borrowers are deleted
+
+### 6.3 Mathematical Algorithms
+- **Fibonacci**: Multiple implementations with performance optimizations
+- **Ackermann**: Classic recursive and optimized iterative versions
+- **Cartesian Product**: Set combination calculations (incomplete implementation)
+
+## 7. Configuration and Deployment Details
+
+### 7.1 Application Configuration
+- **Web Container**: Tomcat with Servlet 2.4
+- **Database**: H2 (in-memory or file-based with AUTO_SERVER=true)
+- **Build Tool**: Maven/Gradle structure evident
+- **Logging**: Log4j2 with console appender
+
+### 7.2 Database Configuration
+```properties
+jdbc:h2:./build/db/training;AUTO_SERVER=TRUE;MODE=PostgreSQL
+jdbc:h2:mem:training;MODE=PostgreSQL (for tests)
+```
+
+### 7.3 Deployment Characteristics
+- **Embedded Database**: Suitable for development/testing
+- **File-based Persistence**: Production-ready with file database
+- **Web Application**: WAR deployment to Tomcat
+- **Database Console**: H2 web console available at /console
+
+## 8. Architectural Patterns and Frameworks
+
+### 8.1 Patterns Used
+- **Layered Architecture**: Presentation → Business → Persistence
+- **Micro-ORM**: Custom lightweight ORM in PersistenceLayer
+- **Domain-Driven Design**: Clear domain objects and boundaries
+- **Dependency Injection**: Constructor-based dependency management
+- **Template Method**: SQL execution templates
+
+### 8.2 Frameworks and Libraries
+- **Servlet API** - Web request handling
+- **H2 Database** - Embedded SQL database
+- **Flyway** - Database migration management
+- **JUnit/TestNG** - Testing frameworks
+- **Cucumber** - BDD testing
+- **Mockito** - Mocking framework
+
+## 9. Microservice Decomposition Opportunities
+
+### 9.1 Potential Service Boundaries
+1. **Authentication Service** - User management and credential validation
+2. **Library Service** - Book/borrower management and lending operations
+3. **Mathematics Service** - Computational algorithms and utilities
+4. **Persistence Service** - Database abstraction and data access
+
+### 9.2 Integration Points
+- Shared database schema would need restructuring
+- Service-to-service authentication required
+- API gateway needed for frontend consolidation
+- Shared domain objects would require duplication or shared library
+
+### 9.3 Data Consistency Considerations
+- Loan creation requires coordinated book/borrower validation
+- User registration involves password validation and storage
+- Book deletion cascades to loan records
+- Cross-service transactions would be complex
+
+This architecture shows clear domain boundaries that align well with microservice decomposition, particularly separating authentication, library management, and mathematical utilities into distinct services.

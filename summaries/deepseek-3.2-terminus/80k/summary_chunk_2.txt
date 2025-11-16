@@ -1,0 +1,277 @@
+# Architectural Summary for Microservice Decomposition Analysis
+
+## 1. Component Overview
+
+### Core Business Domains Identified:
+
+1. **Mathematics Service** - Mathematical calculations and algorithms
+2. **Library Management Service** - Book lending and borrower management
+3. **Authentication Service** - User registration and login
+4. **Persistence Service** - Database operations and migrations
+5. **Web UI Service** - Frontend interfaces and static content
+
+## 2. Component Details and Responsibilities
+
+### 2.1 Mathematics Domain
+
+**Core Components:**
+- `Calculator` - Basic arithmetic operations and number conversions
+- `Fibonacci` - Recursive Fibonacci sequence calculation
+- `FibonacciIterative` - Iterative Fibonacci algorithms with BigInteger support
+- `Ackermann` - Ackermann function implementation (from chunk 1)
+- `TailRecursive` - Functional programming utilities for tail recursion
+
+**Key Responsibilities:**
+- Mathematical calculations (addition, Fibonacci, Ackermann)
+- Algorithm optimization (O(log n) Fibonacci)
+- Large number handling (BigInteger)
+
+### 2.2 Library Management Domain
+
+**Core Components:**
+- `LibraryUtils` - Business logic for library operations
+- Domain Objects: `Book`, `Borrower`, `Loan`, `LibraryActionResults`
+
+**Key Responsibilities:**
+- Book registration and management
+- Borrower registration and management
+- Book lending/returning operations
+- Inventory management (available books)
+
+### 2.3 Authentication Domain
+
+**Core Components:**
+- `LoginUtils` - User authentication logic
+- `RegistrationUtils` - User registration with password validation
+- Domain Objects: `User`, `RegistrationResult`, `PasswordResult`
+
+**Key Responsibilities:**
+- User registration with password strength validation
+- Credential verification
+- Password hashing (SHA-256)
+
+### 2.4 Persistence Domain
+
+**Core Components:**
+- `PersistenceLayer` - Main data access layer
+- `IPersistenceLayer` - Persistence interface
+- `SqlData` - SQL query management with parameter binding
+- `ParameterObject` - Type-safe SQL parameters
+
+**Key Responsibilities:**
+- Database CRUD operations for all domains
+- Connection pooling and management
+- Database migrations (Flyway)
+- Micro-ORM functionality
+- Backup/restore operations
+
+## 3. API Endpoints and Interfaces
+
+### RESTful Endpoints:
+
+**Mathematics APIs:**
+- `POST /math` - Add two numbers
+- `POST /fibonacci` - Calculate Fibonacci numbers (3 algorithms)
+- `POST /ackermann` - Calculate Ackermann function
+
+**Library APIs:**
+- `POST /lend` - Lend book to borrower
+- `POST /registerbook` - Register new book
+- `POST /registerborrower` - Register new borrower
+- `GET /book` - Search/list books
+- `GET /borrower` - Search/list borrowers
+- `GET /listavailable` - List available books
+
+**Authentication APIs:**
+- `POST /login` - User authentication
+- `POST /register` - User registration
+
+**Database Management APIs:**
+- `GET /flyway` - Database migration operations
+
+### Service Interfaces:
+
+```java
+// Persistence Contract
+public interface IPersistenceLayer {
+    // Library operations
+    long saveNewBorrower(String borrowerName);
+    long createLoan(Book book, Borrower borrower, Date borrowDate);
+    long saveNewBook(String bookTitle);
+    
+    // Authentication operations  
+    long saveNewUser(String username);
+    Optional<Boolean> areCredentialsValid(String username, String password);
+    
+    // Utility operations
+    void cleanAndMigrateDatabase();
+    void runBackup(String backupFileName);
+}
+```
+
+## 4. Database Schema and Data Models
+
+### Database Structure:
+- **H2 Database** (in-memory, PostgreSQL mode)
+- **Three Schemas**: ADMINISTRATIVE, LIBRARY, AUTH
+
+### Core Tables:
+
+**Library Schema:**
+```sql
+BORROWER (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL)
+BOOK (id SERIAL PRIMARY KEY, title VARCHAR(100) NOT NULL) 
+LOAN (id SERIAL PRIMARY KEY, book INT, borrower INT, borrow_date DATE)
+```
+
+**Auth Schema:**
+```sql
+USER (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, password_hash VARCHAR(100))
+```
+
+### Domain Objects:
+
+```java
+// Library Domain
+public class Book { long id; String title; }
+public class Borrower { long id; String name; }  
+public class Loan { Book book; Borrower borrower; long id; Date borrowDate; }
+
+// Authentication Domain
+public class User { String name; long id; }
+public class RegistrationResult { boolean success; RegistrationStatusEnums status; }
+```
+
+## 5. Service Dependencies and Communication Patterns
+
+### Internal Dependencies:
+- **All Services** → PersistenceLayer (database access)
+- **Web Servlets** → Business Logic Classes (Utils)
+- **Business Logic** → Domain Objects
+
+### Communication Patterns:
+- **Synchronous HTTP** (REST API calls)
+- **Direct Method Calls** (within JVM)
+- **Database-driven** (shared persistence)
+
+### External Dependencies:
+- **H2 Database** (embedded)
+- **Flyway** (database migrations)
+- **Apache Commons Lang** (utilities)
+- **SLF4J/Log4j2** (logging)
+
+## 6. Key Business Logic and Algorithms
+
+### Authentication Logic:
+```java
+// Password strength validation
+public static PasswordResult isPasswordGood(String password) {
+    // Checks: length, entropy, common patterns
+    // Returns: strength assessment with crack time estimates
+}
+
+// Credential validation  
+public Optional<Boolean> areCredentialsValid(String username, String password) {
+    String hashedPassword = createHashedValueFromPassword(password);
+    // Database query with hashed comparison
+}
+```
+
+### Library Business Rules:
+- Books can only be loaned to registered borrowers
+- One book can only be loaned to one borrower at a time
+- Books must be registered before lending
+- Borrowers must be registered before borrowing
+
+### Mathematical Algorithms:
+- **Fibonacci**: Recursive (naive), Iterative O(n), Matrix O(log n)
+- **Ackermann**: Recursive and tail-recursive implementations
+- **BigInteger** handling for large numbers
+
+## 7. Configuration and Deployment Details
+
+### Server Configuration:
+- **Tomcat 8+** with Servlet 3.1
+- **WebAppListener** for application lifecycle management
+- **Database initialization** on startup
+
+### Database Configuration:
+```java
+// H2 in-memory database
+jdbc:h2:mem:training;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+
+// Flyway migration
+Flyway.configure()
+    .schemas("ADMINISTRATIVE", "LIBRARY", "AUTH")
+    .dataSource(this.dataSource)
+    .load();
+```
+
+### Logging Configuration:
+- **Log4j2** with console appender
+- INFO level logging
+- Pattern: `%d %p %m%n`
+
+### Build and Dependencies:
+- **Maven** project structure
+- **Java 8+** compatibility
+- **JUnit 4** for testing
+- **Mockito** for mocking
+
+## 8. Architectural Patterns and Frameworks
+
+### Patterns Used:
+1. **Layered Architecture** (Presentation → Business → Data)
+2. **DAO Pattern** (PersistenceLayer)
+3. **MVC Pattern** (Servlets as controllers, JSP as view)
+4. **Factory Pattern** (empty object creation)
+5. **Functional Programming** (Streams, lambdas in TailRecursive)
+
+### Frameworks:
+- **Servlet API** (web layer)
+- **Flyway** (database migrations)
+- **H2 Database** (storage)
+- **Apache Commons** (utilities)
+
+### Testing Strategy:
+- **Unit Tests** (JUnit + Mockito)
+- **Integration Tests** (Selenium/WebDriver)
+- **BDD Tests** (Behave - Python)
+- **Multi-language UI Tests** (Java, Python, JavaScript, C#)
+
+## 9. Microservice Decomposition Recommendations
+
+### Potential Service Boundaries:
+
+1. **Mathematics Microservice**
+   - Endpoints: `/math`, `/fibonacci`, `/ackermann`
+   - Stateless, algorithm-focused
+   - Minimal dependencies
+
+2. **Library Management Microservice**  
+   - Endpoints: `/lend`, `/registerbook`, `/borrower`, `/book`
+   - Manages book/borrower lifecycle
+   - Owns library domain models
+
+3. **Authentication Microservice**
+   - Endpoints: `/login`, `/register`
+   - Password hashing and validation
+   - User management
+
+4. **Persistence Microservice**
+   - Database operations abstraction
+   - Could evolve into separate services per domain
+
+5. **UI Gateway Service**
+   - Static content serving
+   - API routing and aggregation
+
+### Data Ownership:
+- **Library Service**: Books, Borrowers, Loans
+- **Auth Service**: Users, Credentials
+- **Math Service**: Stateless, no persistent data
+
+### Inter-service Communication:
+- REST APIs between services
+- Shared database (initially)
+- Event-driven patterns for loan/return notifications
