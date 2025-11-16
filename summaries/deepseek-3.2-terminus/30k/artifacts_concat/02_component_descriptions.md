@@ -1,0 +1,16 @@
+```markdown
+| Component Name | Responsibility | Interfaces (key endpoints or methods) | Depends On | Technologies |
+|---------------|----------------|--------------------------------------|------------|-------------|
+| AutoInsuranceUI | Desktop UI for insurance premium calculations, input validation, socket server for automation | Custom TCP socket protocol (port 8000): set age/claims, get label/age/claims, click calculate, quit | AutoInsuranceProcessor, Swing framework | Java Swing, custom TCP protocol |
+| AutoInsuranceProcessor | Core business logic for insurance premium calculations with age brackets and claim tiers | calculatePremium(int age, int claims) → AutoInsuranceAction | Domain objects | Java, rule-based business logic |
+| Authentication Services | User registration, login, password validation, session management | POST /demo/register, POST /demo/login | PersistenceLayer, Password validation utils | Java Servlets, JSP, Nbvcxz password entropy, SHA-256 hashing |
+| Library Management Services | Book/borrower registration, lending operations, inventory management | POST /demo/registerbook, POST /demo/registerborrower, POST /demo/lend, GET /demo/book, GET /demo/borrower, GET /demo/listavailable | PersistenceLayer, LibraryUtils | Java Servlets, JSP, RESTful APIs |
+| Mathematics Services | Computational operations (basic math, Fibonacci, Ackermann functions) | POST /demo/math, POST /demo/fibonacci, POST /demo/ackermann | Calculator, Fibonacci/Ackermann algorithms | Java Servlets, recursive/iterative algorithms, functional patterns |
+| PersistenceLayer | Database abstraction layer, SQL operations, connection management | IPersistenceLayer interface: user/book/borrower/loan CRUD operations, cleanDatabase(), migrateDatabase() | H2 Database, Flyway | H2 Database, Flyway migrations, JDBC, Micro-ORM pattern |
+| WebAppListener | Application initialization, database migration on startup | Servlet context lifecycle methods | PersistenceLayer, Flyway | Servlet API, Flyway migrations |
+| Frontend Components | Web UI rendering, form handling, client-side functionality | HTML pages (index.html, library.html), CSS, JavaScript (library.js, catalog.js) | Backend servlets | HTML5, CSS3, JavaScript, AJAX |
+| DbServlet | Database management and migration control | GET /demo/flyway?action={clean\|migrate} | PersistenceLayer, Flyway | Java Servlets, Flyway |
+| CI/CD Infrastructure | Continuous integration, quality gates, test orchestration | Jenkins pipelines, SonarQube analysis, test report serving | Git repositories, application servers | Jenkins, SonarQube, H2O web server, OWASP tools |
+| Testing Framework | Multi-language UI testing, BDD, API testing | Selenium WebDriver, Behave (Python), Cucumber (Java), Mocha (JS), NUnit (C#) | Application endpoints, ChromeDriver | Selenium, BDD frameworks, cross-browser testing |
+| Desktop Automation Server | TCP server for UI automation testing | Custom socket protocol on port 8000 | AutoInsuranceUI | Java Sockets, custom protocol |
+```

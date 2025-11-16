@@ -1,0 +1,661 @@
+=== summary_chunk_1.txt ===
+
+Based on my analysis of Codebase Chunk 1, here is a comprehensive architectural summary for microservice decomposition analysis:
+
+## SYSTEM OVERVIEW
+
+**Project Name**: Demo (7ep-demo)
+**Type**: Multi-module educational web application demonstrating software engineering best practices
+**Primary Technology Stack**: Java, Gradle, Tomcat, H2 Database
+**Architecture Pattern**: Monolithic web application with server-side rendering
+
+## CORE COMPONENTS & RESPONSIBILITIES
+
+### 1. Web Application Modules
+
+#### Authentication Module (`com.coveros.training.authentication`)
+- **LoginServlet**: Handles user authentication requests
+- **RegisterServlet**: Manages user registration
+- **LoginUtils**: Core authentication business logic
+- **RegistrationUtils**: User registration validation and processing
+- **Domain Objects**: User, PasswordResult, RegistrationResult
+
+#### Library Management Module (`com.coveros.training.library`)
+- **LibraryRegisterBookServlet**: Book registration endpoint
+- **LibraryRegisterBorrowerServlet**: Borrower registration endpoint  
+- **LibraryLendServlet**: Book lending operations
+- **LibraryBookListAvailableServlet**: Lists available books
+- **LibraryBookListSearchServlet**: Book search functionality
+- **LibraryUtils**: Core library business logic
+- **Domain Objects**: Book, Borrower, Loan, LibraryActionResults
+
+#### Mathematics Module (`com.coveros.training.mathematics`)
+- **MathServlet**: Basic arithmetic operations
+- **FibServlet**: Fibonacci sequence calculations
+- **AckServlet**: Ackermann function computation
+- **Calculator**: Addition operations with validation
+- **Fibonacci**: Fibonacci algorithms (recursive/iterative)
+- **Ackermann**: Ackermann function implementations
+
+#### Expenses Module (`com.coveros.training.expenses`)
+- **AlcoholCalculator**: Calculates alcohol-related expenses
+- **AlcoholResult**: Expense calculation results
+- **DinnerPrices**: Dinner pricing data structure
+
+#### Cartesian Product Module (`com.coveros.training.cartesianproduct`)
+- **CartesianProduct**: Computes Cartesian products of sets
+
+### 2. Infrastructure Components
+
+#### Persistence Layer (`com.coveros.training.persistence`)
+- **PersistenceLayer**: Database abstraction layer
+- **IPersistenceLayer**: Persistence interface
+- **DbServlet**: Database operations endpoint
+- **ParameterObject**: SQL parameter handling
+- **SqlData**: SQL execution wrapper
+
+#### Helper Utilities (`com.coveros.training.helpers`)
+- **StringUtils**: String manipulation utilities
+- **CheckUtils**: Validation utilities
+- **ServletUtils**: Servlet helper functions
+
+### 3. Desktop Application (`desktop_app`)
+- **AutoInsuranceUI**: Swing-based desktop UI
+- **AutoInsuranceProcessor**: Auto insurance premium calculation logic
+- **AutoInsuranceScriptServer**: Socket server for UI automation
+- **AutoInsuranceAction**: Insurance action result object
+- **WarningLetterEnum**: Insurance warning types
+
+## API ENDPOINTS & INTERFACES
+
+### Web Endpoints (Servlet-based):
+```
+POST /demo/math           - Basic arithmetic
+POST /demo/fib            - Fibonacci calculation  
+POST /demo/ackermann      - Ackermann function
+POST /demo/register       - User registration
+POST /demo/login          - User authentication
+POST /demo/registerbook   - Book registration
+POST /demo/registerborrower - Borrower registration
+POST /demo/lend           - Book lending
+GET  /demo/flyway         - Database migration trigger
+GET  /demo/db             - Database operations
+```
+
+### Desktop Automation Interface:
+- **Socket Server**: Port 8000
+- **Protocol**: Text-based command/response
+- **Commands**: `set age/claims/label`, `get age/claims/label`, `click calculate`, `quit`
+
+## DATABASE SCHEMAS & DATA MODELS
+
+### Database Technology: H2 Database with Flyway Migration
+
+### Schema Migrations:
+- **V1**: Creates person table for authentication
+- **V2**: Adds tables for authentication and library systems
+
+### Data Models:
+
+#### Authentication Domain:
+```sql
+Users: {id, username, password_hash}
+```
+
+#### Library Domain:
+```sql
+Books: {id, title}
+Borrowers: {id, name} 
+Loans: {id, book_id, borrower_id, checkout_date, return_date}
+```
+
+### Domain Objects:
+- **User**: Authentication user entity
+- **Book**: Library book with title and ID
+- **Borrower**: Library patron entity  
+- **Loan**: Book lending transaction record
+- **AutoInsuranceAction**: Insurance calculation result
+
+## SERVICE DEPENDENCIES & COMMUNICATION
+
+### Internal Dependencies:
+- All business modules depend on PersistenceLayer for data access
+- Servlets depend on corresponding Utils classes for business logic
+- Web application uses server-side rendering with JSP
+
+### External Dependencies:
+- **H2 Database**: Embedded relational database
+- **Tomcat**: Servlet container
+- **Flyway**: Database migration tool
+- **Log4j2**: Logging framework
+
+### Communication Patterns:
+- **Synchronous HTTP**: Web client to servlet communication
+- **Direct Method Calls**: Between business logic components
+- **Socket Communication**: Desktop automation interface
+- **JDBC**: Database communication
+
+## KEY BUSINESS LOGIC & ALGORITHMS
+
+### Authentication Logic:
+- Password strength validation
+- User registration workflow
+- Login credential verification
+
+### Library Management:
+- Book/borrower registration with duplicate prevention
+- Loan management with availability checking
+- Search functionality for books and borrowers
+
+### Mathematical Algorithms:
+- **Fibonacci**: Recursive and iterative implementations
+- **Ackermann**: Complex recursive function demonstration
+- **Input Validation**: Integer bounds checking
+
+### Auto Insurance Business Rules:
+- Premium calculation based on claims and age
+- Warning letter determination
+- Policy cancellation conditions
+```java
+// Example: Young drivers with 1 claim get $100 increase + LTR1 warning
+if (claims == 1 && age >= 16 && age <= 25) {
+    return new AutoInsuranceAction(100, WarningLetterEnum.LTR1, false, false);
+}
+```
+
+## CONFIGURATION & DEPLOYMENT
+
+### Build System:
+- **Gradle** with wrapper scripts
+- Multi-module project structure
+- Property configuration in `gradle.properties`
+
+### Deployment Configuration:
+- **Embedded Tomcat** via Gretty plugin
+- **Hot-swap** development capability
+- **H2 Console** for database inspection
+
+### Environment Configuration:
+- Database URL: `jdbc:h2:./build/db/training` (file-based) or `jdbc:h2:mem:training` (in-memory)
+- Web server port: 8080
+- Desktop automation port: 8000
+
+## ARCHITECTURAL PATTERNS & FRAMEWORKS
+
+### Primary Patterns:
+- **Layered Architecture**: Presentation → Business → Data layers
+- **Servlet-based MVC**: Servlets as controllers, JSP for views, domain objects as models
+- **Data Access Object**: PersistenceLayer abstraction
+
+### Frameworks & Libraries:
+- **Web**: Java Servlets, JSP
+- **Persistence**: JDBC, H2 Database, Flyway
+- **Testing**: JUnit, Mockito, Cucumber (BDD), Selenium
+- **Build**: Gradle
+- **Logging**: Log4j2
+- **Utilities**: Apache Commons Lang
+
+### Testing Strategy:
+- **Unit Tests**: JUnit with Mockito
+- **Integration Tests**: Database integration testing
+- **BDD Tests**: Cucumber with feature files
+- **API Tests**: Python-based HTTP testing
+- **UI Tests**: Selenium in multiple languages (Java, Python, JavaScript, C#)
+- **Performance Tests**: JMeter integration
+- **Security Tests**: OWASP ZAP integration
+
+## MICROSERVICE DECOMPOSITION OPPORTUNITIES
+
+### Potential Service Boundaries:
+
+1. **Authentication Service** - User management and authentication
+2. **Library Service** - Book and borrower management with lending
+3. **Mathematics Service** - Computational functions
+4. **Insurance Service** - Auto insurance calculations
+5. **Reporting Service** - Test results and analytics
+
+### Data Domain Isolation:
+- Authentication data (users)
+- Library data (books, borrowers, loans)
+- Insurance calculation data (separate business domain)
+
+### Interface Considerations:
+- RESTful APIs for web services
+- Message queues for async operations
+- Socket-based protocols for real-time communication
+- Database per service pattern for data isolation
+
+This architecture demonstrates a well-structured monolithic application that could be decomposed into domain-based microservices, with clear separation of concerns and well-defined API boundaries already present in the servlet layer.
+
+=== summary_chunk_2.txt ===
+
+# Architectural Summary for Microservice Decomposition Analysis
+
+## 1. System Overview
+This codebase represents a comprehensive library management system with authentication, mathematical utilities, and restaurant expense calculation capabilities. The application follows a layered architecture with clear separation between web, business logic, and persistence layers.
+
+## 2. Core Components and Responsibilities
+
+### 2.1 Authentication Domain
+**Components:**
+- `LoginServlet` - Handles user authentication via POST /login
+- `RegisterServlet` - Manages user registration via POST /register
+- `LoginUtils` - Validates user credentials against database
+- `RegistrationUtils` - Processes new user registrations with password validation
+
+**Key Business Logic:**
+- Password strength validation using Nbvcxz entropy analysis
+- SHA-256 password hashing
+- Username uniqueness validation
+- Credential verification
+
+### 2.2 Library Management Domain
+**Components:**
+- `LibraryUtils` - Core library business logic
+- `LibraryRegisterBookServlet` - POST /registerbook
+- `LibraryRegisterBorrowerServlet` - POST /registerborrower  
+- `LibraryLendServlet` - POST /lend
+- `LibraryBookListSearchServlet` - GET /book
+- `LibraryBorrowerListSearchServlet` - GET /borrower
+- `LibraryBookListAvailableServlet` - GET /listavailable
+
+**Key Business Logic:**
+- Book availability checking
+- Loan validation and creation
+- Borrower registration validation
+- Book registration with duplicate prevention
+
+### 2.3 Mathematics Domain
+**Components:**
+- `MathServlet` - POST /math (basic addition)
+- `FibServlet` - POST /fibonacci (multiple algorithm implementations)
+- `AckServlet` - POST /ackermann (multiple algorithm implementations)
+- `Calculator` - Basic arithmetic operations
+- `Fibonacci` / `FibonacciIterative` - Mathematical sequence calculations
+- `Ackermann` / `AckermannIterative` - Complex recursive function calculations
+
+**Algorithms:**
+- Recursive Fibonacci
+- Iterative Fibonacci (O(log(n)) and linear)
+- Recursive Ackermann
+- Tail-recursive Ackermann
+
+### 2.4 Persistence Layer
+**Components:**
+- `PersistenceLayer` - Implements IPersistenceLayer interface
+- `DbServlet` - GET /flyway (database management)
+- `SqlData` - Micro-ORM implementation
+- `ParameterObject` - SQL parameter handling
+
+**Key Features:**
+- Database-agnostic interface
+- Connection pooling via H2 JdbcConnectionPool
+- Flyway database migration integration
+- Micro-ORM pattern with prepared statement handling
+
+### 2.5 Helper Components
+**Components:**
+- `ServletUtils` - Request forwarding and response handling
+- `StringUtils` - String manipulation and JSON escaping
+- `CheckUtils` - Validation and assertion helpers
+- `WebAppListener` - Application lifecycle management
+
+## 3. API Endpoints and Interfaces
+
+### 3.1 Authentication Endpoints
+```
+POST /login - User authentication
+POST /register - User registration
+```
+
+### 3.2 Library Endpoints
+```
+POST /registerbook - Register new book
+POST /registerborrower - Register new borrower  
+POST /lend - Lend book to borrower
+GET /book - Search/list books (by id, title, or all)
+GET /borrower - Search/list borrowers (by id, name, or all)
+GET /listavailable - List available books
+```
+
+### 3.3 Mathematics Endpoints
+```
+POST /math - Add two numbers
+POST /fibonacci - Calculate Fibonacci sequence
+POST /ackermann - Calculate Ackermann function
+```
+
+### 3.4 Database Management
+```
+GET /flyway - Database migration/clean operations
+GET /console/* - H2 database console
+```
+
+## 4. Database Schema and Data Models
+
+### 4.1 Database Structure
+**Schemas:**
+- `ADMINISTRATIVE` - Flyway migration history
+- `LIBRARY` - Core library data
+- `AUTH` - Authentication data
+
+### 4.2 Core Tables
+```sql
+LIBRARY.BORROWER (id SERIAL PRIMARY KEY, name VARCHAR(100))
+LIBRARY.BOOK (id SERIAL PRIMARY KEY, title VARCHAR(100))  
+LIBRARY.LOAN (id SERIAL PRIMARY KEY, book INT, borrower INT, borrow_date DATE)
+AUTH.USER (id SERIAL PRIMARY KEY, name VARCHAR(100), password_hash VARCHAR(100))
+```
+
+### 4.3 Domain Objects
+- `Book` - (id, title)
+- `Borrower` - (id, name) 
+- `Loan` - (id, book, borrower, checkoutDate)
+- `User` - (id, name, password_hash)
+- `RegistrationResult` - (wasSuccessfullyRegistered, status, message)
+- `PasswordResult` - (status, entropy, timeToCrack, message)
+
+## 5. Service Dependencies and Communication Patterns
+
+### 5.1 Internal Dependencies
+```
+Web Layer (Servlets) → Business Layer (Utils) → Persistence Layer → Database
+```
+
+### 5.2 Communication Patterns
+- **Synchronous HTTP** for all external communications
+- **JDBC** for database access
+- **In-memory method calls** between layers
+- **RESTful patterns** for API endpoints
+
+### 5.3 External Dependencies
+- **H2 Database** - Embedded/File-based database
+- **Flyway** - Database migration tool
+- **Nbvcxz** - Password entropy analysis
+- **Apache Commons Lang** - Utility functions
+- **SLF4J/Log4j2** - Logging framework
+
+## 6. Key Business Logic and Algorithms
+
+### 6.1 Authentication Logic
+- Password entropy validation (minimum 10 characters, maximum 100)
+- SHA-256 password hashing
+- Credential verification with timing attack prevention considerations
+
+### 6.2 Library Management Logic
+- Book availability validation before lending
+- Borrower registration validation
+- Loan creation with date tracking
+- Cascading deletes for loans when books/borrowers are deleted
+
+### 6.3 Mathematical Algorithms
+- **Fibonacci**: Multiple implementations with performance optimizations
+- **Ackermann**: Classic recursive and optimized iterative versions
+- **Cartesian Product**: Set combination calculations (incomplete implementation)
+
+## 7. Configuration and Deployment Details
+
+### 7.1 Application Configuration
+- **Web Container**: Tomcat with Servlet 2.4
+- **Database**: H2 (in-memory or file-based with AUTO_SERVER=true)
+- **Build Tool**: Maven/Gradle structure evident
+- **Logging**: Log4j2 with console appender
+
+### 7.2 Database Configuration
+```properties
+jdbc:h2:./build/db/training;AUTO_SERVER=TRUE;MODE=PostgreSQL
+jdbc:h2:mem:training;MODE=PostgreSQL (for tests)
+```
+
+### 7.3 Deployment Characteristics
+- **Embedded Database**: Suitable for development/testing
+- **File-based Persistence**: Production-ready with file database
+- **Web Application**: WAR deployment to Tomcat
+- **Database Console**: H2 web console available at /console
+
+## 8. Architectural Patterns and Frameworks
+
+### 8.1 Patterns Used
+- **Layered Architecture**: Presentation → Business → Persistence
+- **Micro-ORM**: Custom lightweight ORM in PersistenceLayer
+- **Domain-Driven Design**: Clear domain objects and boundaries
+- **Dependency Injection**: Constructor-based dependency management
+- **Template Method**: SQL execution templates
+
+### 8.2 Frameworks and Libraries
+- **Servlet API** - Web request handling
+- **H2 Database** - Embedded SQL database
+- **Flyway** - Database migration management
+- **JUnit/TestNG** - Testing frameworks
+- **Cucumber** - BDD testing
+- **Mockito** - Mocking framework
+
+## 9. Microservice Decomposition Opportunities
+
+### 9.1 Potential Service Boundaries
+1. **Authentication Service** - User management and credential validation
+2. **Library Service** - Book/borrower management and lending operations
+3. **Mathematics Service** - Computational algorithms and utilities
+4. **Persistence Service** - Database abstraction and data access
+
+### 9.2 Integration Points
+- Shared database schema would need restructuring
+- Service-to-service authentication required
+- API gateway needed for frontend consolidation
+- Shared domain objects would require duplication or shared library
+
+### 9.3 Data Consistency Considerations
+- Loan creation requires coordinated book/borrower validation
+- User registration involves password validation and storage
+- Book deletion cascades to loan records
+- Cross-service transactions would be complex
+
+This architecture shows clear domain boundaries that align well with microservice decomposition, particularly separating authentication, library management, and mathematical utilities into distinct services.
+
+=== summary_chunk_3.txt ===
+
+# Architectural Summary - Codebase Chunk 3
+
+## Overview
+This chunk contains comprehensive test suites covering authentication, library management, mathematical functions, persistence, and UI testing. The tests reveal architectural patterns, business logic, and integration points.
+
+## Component Architecture
+
+### 1. Authentication Domain
+
+#### Core Components:
+- **LoginServlet**: HTTP endpoint for user authentication
+  - Handles POST requests with username/password
+  - Returns: "access granted", "access denied", "no username provided", "no password provided"
+  - Uses LoginUtils for credential validation
+
+- **LoginUtils**: Business logic for authentication
+  - Validates credentials via persistence layer
+  - Method: `isUserRegistered(username, password)`
+
+- **RegisterServlet**: HTTP endpoint for user registration
+  - Handles POST requests with username/password
+  - Returns RegistrationResult with status and message
+
+- **RegistrationUtils**: Business logic for user registration
+  - Validates password strength and user existence
+  - Methods: `processRegistration(username, password)`, `isUserInDatabase(username)`
+  - Password validation includes entropy calculation and strength checks
+
+#### Domain Objects:
+- **User**: `{id: int, name: String}`
+- **RegistrationResult**: `{success: boolean, status: RegistrationStatusEnums, message: String}`
+- **PasswordResult**: `{status: PasswordResultEnums, entropy: double, timeToCrackOffline: String, timeToCrackOnline: String, message: String}`
+
+#### Status Enums:
+- RegistrationStatusEnums: SUCCESSFULLY_REGISTERED, EMPTY_USERNAME, BAD_PASSWORD, ALREADY_REGISTERED
+- PasswordResultEnums: SUCCESS, TOO_SHORT, EMPTY_PASSWORD
+
+### 2. Library Management Domain
+
+#### Core Components:
+- **LibraryUtils**: Central business logic for library operations
+  - Methods: `lendBook()`, `registerBook()`, `registerBorrower()`, `searchForBookByTitle()`, `searchForBorrowerByName()`, `listAvailableBooks()`, `deleteBook()`, `deleteBorrower()`
+
+- **Servlet Endpoints**:
+  - LibraryBookListAvailableServlet: GET endpoint for available books
+  - LibraryBookListSearchServlet: GET endpoint for book search (by id/title)
+  - LibraryBorrowerListSearchServlet: GET endpoint for borrower search (by id/name)
+  - LibraryLendServlet: POST endpoint for lending books
+  - LibraryRegisterBookServlet: POST endpoint for book registration
+  - LibraryRegisterBorrowerServlet: POST endpoint for borrower registration
+
+#### Domain Objects:
+- **Book**: `{id: int, title: String}`
+- **Borrower**: `{id: int, name: String}`
+- **Loan**: `{book: Book, borrower: Borrower, id: int, borrowDate: Date}`
+- **LibraryActionResults**: Enum with SUCCESS, BORROWER_NOT_REGISTERED, BOOK_NOT_REGISTERED, BOOK_CHECKED_OUT
+
+#### Business Logic:
+- Lending requires both book and borrower to be registered
+- Books must be available (not currently loaned)
+- Input validation for empty strings
+- JSON output formatting for list endpoints
+
+### 3. Mathematics Domain
+
+#### Core Components:
+- **Ackermann Function**: Multiple implementations
+  - Regular recursive: `Ackermann.calculate(m, n)`
+  - Iterative: `AckermannIterative.calculate(m, n)`
+  - Handles large numbers with BigInteger
+
+- **Fibonacci Function**: Multiple implementations
+  - Regular recursive: `Fibonacci.calculate(n)`
+  - Iterative algorithms: `FibonacciIterative.fibAlgo1(n)`, `FibonacciIterative.fibAlgo2(n)`
+
+- **Servlet Endpoints**:
+  - AckServlet: POST with parameters `ack_param_m`, `ack_param_n`, `ack_algorithm_choice`
+  - FibServlet: POST with parameters `fib_param_n`, `fib_algorithm_choice`
+  - MathServlet: POST for basic arithmetic
+
+### 4. Persistence Layer
+
+#### Core Components:
+- **IPersistenceLayer**: Interface defining data access operations
+- **PersistenceLayer**: Implementation (inferred from method calls)
+- **SqlData**: SQL query and parameter management
+- **ParameterObject**: Typed parameter wrapper
+- **DbServlet**: Database management endpoint
+
+#### Key Methods:
+- `areCredentialsValid(username, password)`
+- `searchForUserByName(username)`
+- `searchBooksByTitle(title)`, `searchBooksById(id)`
+- `searchBorrowerDataByName(name)`
+- `createLoan(book, borrower, date)`
+- `cleanDatabase()`, `migrateDatabase()`
+
+#### Database Schema (Inferred):
+```sql
+Users: (id, username, password_hash)
+Books: (id, title) 
+Borrowers: (id, name)
+Loans: (id, book_id, borrower_id, borrow_date)
+```
+
+### 5. Helper Components
+
+#### Utility Classes:
+- **ServletUtils**: Common servlet operations, JSP paths
+- **StringUtils**: JSON escaping, null handling
+- **CheckUtils**: Parameter validation
+- **DateUtils**: Date calculations
+
+## Service Dependencies & Communication
+
+### Internal Dependencies:
+```
+Authentication Servlets → LoginUtils/RegistrationUtils → IPersistenceLayer
+Library Servlets → LibraryUtils → IPersistenceLayer  
+Mathematics Servlets → Algorithm implementations
+All Servlets → Helper utilities
+```
+
+### External Integration:
+- Database via JDBC/IPersistenceLayer
+- Web UI through JSP templates (RESULT_JSP, RESTFUL_RESULT_JSP)
+
+## Key Business Logic & Algorithms
+
+### Authentication:
+- Password strength validation with entropy calculation
+- User registration workflow with duplicate checking
+- Credential validation against persisted data
+
+### Library Management:
+- Book lending eligibility checks
+- Availability tracking
+- Input validation and error handling
+
+### Mathematical:
+- Ackermann function with overflow handling
+- Fibonacci with multiple algorithm implementations
+- Big integer arithmetic for large numbers
+
+## Configuration & Deployment
+
+### Framework Usage:
+- **JUnit 4** for testing
+- **Mockito** for mocking dependencies
+- **Servlet API** for web endpoints
+- **SLF4J** for logging
+
+### Test Patterns:
+- Unit tests with mocked persistence layer
+- Parameterized tests for mathematical functions
+- Servlet tests with mocked request/response objects
+- Multi-language UI tests (Java, Python, C#, JavaScript)
+
+### Build & Dependencies:
+- Gradle build system (Java UI tests)
+- Mocha (JavaScript), Pytest (Python), NUnit (C#) for UI tests
+- Selenium WebDriver for browser automation
+- ChromeDriver for browser control
+
+## UI Testing Architecture
+
+### Multi-Language Support:
+- **Java**: Selenium WebDriver, HtmlUnit
+- **Python**: Behave BDD, Selenium, Page Object Model
+- **C#**: NUnit, Selenium
+- **JavaScript**: Mocha, Selenium
+
+### Test Scenarios Covered:
+- User registration and login flows
+- Book lending workflow
+- Mathematical calculations
+- Form validation and error handling
+
+### Configuration Features:
+- Proxy support for network interception
+- Cross-browser testing capabilities
+- Database reset before scenarios
+- BDD feature files with Gherkin syntax
+
+## Architectural Patterns
+
+### Layered Architecture:
+- Presentation Layer (Servlets)
+- Business Logic Layer (Utils classes)
+- Data Access Layer (Persistence)
+- Domain Model (Value objects)
+
+### Testing Strategy:
+- Unit tests with isolation via mocking
+- Integration tests with real dependencies
+- UI tests with multiple technology stacks
+- BDD for business-readable scenarios
+
+### Data Flow:
+```
+HTTP Request → Servlet → Business Logic → Persistence → Database
+HTTP Response ← JSP ← Business Objects ← Database Results
+```
+
+This architecture supports microservice decomposition with clear boundaries between authentication, library management, and mathematical services, each with their own data models and business logic.
