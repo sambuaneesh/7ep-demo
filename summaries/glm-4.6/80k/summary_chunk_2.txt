@@ -1,0 +1,201 @@
+
+## Architectural Summary
+
+### **Component Overview**
+
+#### Core Components
+- **Mathematical Services**
+  - `Calculator`: Utility class for basic arithmetic operations
+  - `Fibonacci`: Recursive Fibonacci calculation
+  - `FibonacciIterative`: Optimized Fibonacci implementations (O(log n) and O(n))
+  - `FunctionalField`: Generic functional interface for enum-based field access
+  - `TailRecursive`: Generic tail recursion utility
+
+- **Library Management**
+  - `LibraryUtils`: Core business logic for book/borrower operations
+  - `LibraryLendServlet`: Book lending endpoint
+  - `LibraryRegisterBookServlet`: Book registration endpoint
+  - `LibraryRegisterBorrowerServlet`: Borrower registration endpoint
+  - `LibraryBookListSearchServlet`: Book search/listing endpoint
+  - `LibraryBookListAvailableServlet`: Available books endpoint
+  - `LibraryBorrowerListSearchServlet`: Borrower search/listing endpoint
+
+- **Authentication**
+  - `LoginServlet`: User authentication endpoint
+  - `RegisterServlet`: User registration endpoint
+  - `LoginUtils`: Authentication business logic
+  - `RegistrationUtils`: Registration business logic with password validation
+
+- **Persistence Layer**
+  - `PersistenceLayer`: Main database interaction class
+  - `IPersistenceLayer`: Interface defining persistence contracts
+  - `SqlData`: Micro-ORM for SQL operations
+  - `ParameterObject`: Type-safe parameter container
+  - `EmptyDataSource`: Null object for DataSource
+  - `DbServlet`: Database management endpoint
+
+### **API Endpoints**
+
+#### Mathematical APIs
+- `POST /math`: Add two integers
+  - Parameters: item_a, item_b
+  - Returns: sum result
+- `POST /fibonacci`: Calculate Fibonacci number
+  - Parameters: fib_param_n, fib_algorithm_choice
+  - Returns: nth Fibonacci number
+
+#### Library APIs
+- `POST /lend`: Lend a book to borrower
+  - Parameters: book, borrower
+  - Returns: success/failure status
+- `POST /registerbook`: Register new book
+  - Parameters: book title
+  - Returns: registration status
+- `POST /registerborrower`: Register new borrower
+  - Parameters: borrower name
+  - Returns: registration status
+- `GET /book`: Search/list books
+  - Parameters: id (optional), title (optional)
+  - Returns: Book list or search results
+- `GET /listavailable`: List available books
+- `GET /borrower`: Search/list borrowers
+  - Parameters: id (optional), name (optional)
+
+#### Authentication APIs
+- `POST /login`: Authenticate user
+  - Parameters: username, password
+  - Returns: access granted/denied
+- `POST /register`: Register new user
+  - Parameters: username, password
+  - Returns: registration status with validation
+
+#### Database Management API
+- `GET /flyway`: Database operations
+  - Parameters: action (clean/migrate)
+  - Returns: operation status
+
+### **Database Schema**
+
+#### Tables
+- `library.book`: id (serial PK), title (varchar NOT NULL)
+- `library.borrower`: id (serial PK), name (varchar NOT NULL)
+- `library.loan`: id (serial PK), book (FK to library.book), borrower (FK to library.borrower), borrow_date (date NOT NULL)
+- `auth.user`: id (serial PK), name (varchar NOT NULL), password_hash (varchar)
+
+#### Relationships
+- One-to-many: Book → Loans (a book can have multiple loans over time)
+- One-to-many: Borrower → Loans (a borrower can have multiple active loans)
+- One-to-many: User → (no direct relationship in schema)
+
+### **Service Dependencies**
+
+#### Internal Dependencies
+```
+Servlets → Utils → PersistenceLayer → Database
+```
+- Servlets handle HTTP requests and delegate to utilities
+- Utils contain business logic and validation
+- PersistenceLayer handles all database operations
+
+#### Specific Dependencies
+- `MathServlet` → `Calculator`
+- `FibServlet` → `Fibonacci`/`FibonacciIterative`
+- `LibraryLendServlet` → `LibraryUtils` → `IPersistenceLayer`
+- `LoginServlet` → `LoginUtils` → `IPersistenceLayer`
+- `RegisterServlet` → `RegistrationUtils` → `IPersistenceLayer`
+
+### **Key Business Logic**
+
+#### Fibonacci Algorithms
+1. **Recursive**: Simple exponential time implementation
+2. **Iterative1**: Matrix exponentiation O(log n)
+3. **Iterative2**: Dynamic programming O(n)
+
+#### Library Operations
+- Book registration with duplicate checking
+- Borrower registration with duplicate checking
+- Book lending with availability validation
+- Search by ID/title/name with flexible matching
+
+#### Authentication
+- Password strength validation with entropy calculation
+- User credential validation with SHA-256 hashing
+- Registration with existing user checking
+
+#### Database Management
+- Flyway-based schema migration
+- Full database cleanup and reset
+- Backup/restore functionality
+
+### **Configuration Details**
+
+#### Database Configuration
+- **Type**: H2 in-memory with PostgreSQL compatibility
+- **URL**: `jdbc:h2:mem:training;MODE=PostgreSQL`
+- **Migration**: Flyway scripts in `src/main/resources/db/migration`
+- **Connection Pool**: JdbcConnectionPool
+
+#### Servlet Configuration
+- **Annotations**: @WebServlet and @WebListener
+- **web.xml**: Servlet mappings, H2 console configuration
+- **Load-on-Startup**: All servlets initialize on deployment
+
+#### Logging
+- **Framework**: Log4j2
+- **Configuration**: `src/main/resources/log4j2.xml`
+- **Output**: Console with pattern layout
+
+### **Architectural Patterns**
+
+1. **MVC Pattern**
+   - Controllers: Servlets
+   - Models: Domain objects
+   - Views: JSP/HTML pages
+
+2. **Data Access Object (DAO)**
+   - `PersistenceLayer` implements DAO pattern
+   - `IPersistenceLayer` defines contract
+
+3. **Front Controller Pattern**
+   - Servlets act as front controllers for endpoints
+
+4. **Dependency Injection**
+   - Constructor injection in `Calculator`
+   - Static utility injection in servlets
+
+5. **Micro ORM**
+   - `SqlData` and `ParameterObject` provide lightweight ORM
+
+6. **Null Object Pattern**
+   - `EmptyDataSource` and empty domain objects
+
+7. **Template Method Pattern**
+   - `PersistenceLayer` uses templates for CRUD operations
+
+### **Deployment Architecture**
+
+#### Web Server
+- **Container**: Apache Tomcat
+- **Deployment**: WAR file structure
+- **Context Configuration**: web.xml
+
+#### Frontend
+- **Static Resources**: HTML, CSS, JavaScript
+- **AJAX Communication**: XMLHttpRequest in catalog.js
+- **Dynamic UI**: Autocomplete and dropdown components
+
+#### Testing
+- **Unit Tests**: JUnit with Mockito
+- **UI Tests**: Selenium (Java, Python, JavaScript, C#)
+- **Integration Tests**: BDD with Behave (Python)
+
+### **Key Technical Considerations**
+
+1. **Thread Safety**: Servlets are not thread-safe - shared resources use synchronized blocks
+2. **Session Management**: Cookie-based tracking only
+3. **Security**: SHA-256 password hashing, SQL injection protection via prepared statements
+4. **Performance**: Multiple Fibonacci algorithms for performance comparison
+5. **Extensibility**: Interface-based design allows for easy mocking and testing
+6. **Error Handling**: Custom exceptions with clear error messages
+
+This architecture demonstrates a well-structured monolith with clear separation of concerns, making it suitable for decomposition into focused microservices based on domain boundaries (Mathematics, Library, Authentication, and Persistence services).

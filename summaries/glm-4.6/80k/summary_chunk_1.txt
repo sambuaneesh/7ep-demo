@@ -1,0 +1,307 @@
+
+# Comprehensive Architectural Summary
+
+This document provides a detailed analysis of the 7ep-demo codebase (Part 1 of 2) for microservice decomposition planning.
+
+## 1. Overall Architecture
+
+### Technology Stack
+- **Language**: Java 11
+- **Web Framework**: Servlet-based (Tomcat 9)
+- **Build Tool**: Gradle 7.0 with wrapper scripts
+- **Database**: H2 (in-memory and file-based modes)
+- **Database Migration**: FlywayDB
+- **Testing**: JUnit 5, Mockito, Cucumber (BDD), Selenium (UI), Behave (Python BDD), JMeter (Performance)
+- **Static Analysis**: SonarQube
+- **Security**: OWASP DependencyCheck
+- **CI/CD**: Jenkins
+- **Logging**: Log4j2
+- **Desktop UI**: Swing
+
+### Architectural Patterns
+- **Layered Architecture**: Clear separation between presentation (servlets), business logic (*Utils classes), and persistence
+- **Domain-Driven Design**: Packages organized by business domain (authentication, library, mathematics, etc.)
+- **Immutability**: Domain objects designed as immutable value objects
+- **Null Avoidance**: Systematic use of empty objects instead of null values
+
+## 2. Web Layer (Servlets/API Endpoints)
+
+### Authentication APIs
+- **RegisterServlet** (`/register`)
+  - Handles user registration
+  - Parameters: username, password
+  - Returns registration status and validation messages
+  - Dependencies: RegistrationUtils, ServletUtils
+
+- **LoginServlet** (`/login`)
+  - Handles user authentication
+  - Parameters: username, password
+  - Returns access granted/denied status
+  - Dependencies: LoginUtils, ServletUtils
+
+### Library APIs
+- **LibraryRegisterBookServlet** (`/registerbook`)
+  - Registers new books in the system
+  - Parameters: book (title)
+  - Returns: SUCCESS/ALREADY_REGISTERED_BOOK
+
+- **LibraryRegisterBorrowerServlet** (`/registerborrower`)
+  - Registers new borrowers
+  - Parameters: borrower (name)
+  - Returns: SUCCESS/ALREADY_REGISTERED_BORROWER
+
+- **LibraryLendServlet** (`/lend`)
+  - Processes book loans
+  - Parameters: book, borrower
+  - Returns: SUCCESS/BOOK_CHECKED_OUT/BOOK_NOT_REGISTERED/BORROWER_NOT_REGISTERED
+
+- **LibraryBookListSearchServlet** (`/book`)
+  - Lists all books or searches by id/title
+  - Parameters: id (optional), title (optional)
+  - Returns: JSON array of books
+
+- **LibraryBookListAvailableServlet** (`/listavailable`)
+  - Lists only available books
+  - Returns: JSON array of available books
+
+- **LibraryBorrowerListSearchServlet** (`/borrower`)
+  - Lists all borrowers or searches by id/name
+  - Parameters: id (optional), name (optional)
+  - Returns: JSON array of borrowers
+
+### Mathematics APIs
+- **MathServlet** (`/math`)
+  - Adds two integers
+  - Parameters: item_a, item_b
+  - Returns: sum or error message
+  - Validates integer inputs, checks for overflow
+
+- **FibServlet** (`/fibonacci`)
+  - Calculates Fibonacci numbers
+  - Parameters: nth (integer)
+  - Returns: nth Fibonacci number
+
+- **AckServlet** (`/ackermann`)
+  - Calculates Ackermann function
+  - Parameters: ack_param_m, ack_param_n, algorithm (regular/tail_recursive)
+  - Returns: Ackermann result
+
+### Administrative APIs
+- **DbServlet** (`/flyway`)
+  - Triggers database migration/backup
+  - Returns: Migration status
+
+## 3. Business Logic Layer
+
+### Authentication Business Logic
+- **RegistrationUtils**
+  - User registration workflow
+  - Password strength validation using Nbvcxz entropy calculation
+  - Duplicate user checking
+  - Password hashing and storage
+  - Dependencies: IPersistenceLayer, Nbvcxz library
+
+- **LoginUtils**
+  - Credential validation against stored hashes
+  - Session management indicators
+  - Dependencies: IPersistenceLayer
+
+### Library Business Logic
+- **LibraryUtils**
+  - Book and borrower management
+  - Loan processing with availability checks
+  - Search functionality (by id, title, name)
+  - Dependencies: IPersistenceLayer
+
+### Mathematics Business Logic
+- **Calculator**
+  - Safe integer addition with overflow checks
+  - Maximum value: 2,147,483,647 (32-bit signed)
+
+- **Fibonacci**
+  - Fibonacci sequence calculation
+  - Iterative implementation
+
+- **Ackermann**
+  - Recursive Ackermann function implementation
+- **AckermannIterative**
+  - Tail-recursive optimization using functional interfaces
+
+### Other Business Logic
+- **AutoInsuranceProcessor** (Desktop App)
+  - Premium calculation based on claims and age
+  - Warning letter determination logic
+  - Policy cancellation rules
+
+- **CartesianProduct**
+  - Utility for generating test case combinations
+
+- **AlcoholCalculator**
+  - Restaurant bill splitting (food vs alcohol portions)
+
+## 4. Data Persistence Layer
+
+### Core Persistence
+- **PersistenceLayer** (implements IPersistenceLayer)
+  - H2 database operations
+  - Connection pooling via JdbcConnectionPool
+  - CRUD operations for all entities
+  - Transaction management
+  - File-based and in-memory modes
+
+### Database Schema
+#### Tables
+- **AUTH.USER**
+  - Columns: ID (BIGINT), NAME (VARCHAR), PASSWORD_HASH (VARCHAR)
+
+- **LIBRARY.BOOK**
+  - Columns: ID (BIGINT), TITLE (VARCHAR)
+
+- **LIBRARY.BORROWER**
+  - Columns: ID (BIGINT), NAME (VARCHAR)
+
+- **LIBRARY.LOAN**
+  - Columns: ID (BIGINT), BOOK (BIGINT FK), BORROWER (BIGINT FK), BORROW_DATE (DATE)
+
+- **ADMINISTRATIVE.FLYWAY_SCHEMA_HISTORY**
+  - Flyway migration tracking table
+
+#### Database Migration Scripts
+- **V1__Create_person_table.sql**
+- **V2__Rest_of_tables_for_auth_and_library.sql**
+
+### Data Sources
+- **EmptyDataSource**
+  - Null implementation for testing
+- **H2 in-memory mode**: `jdbc:h2:mem:training`
+- **H2 file mode**: `jdbc:h2:./build/db/training`
+
+## 5. Domain Objects
+
+### Authentication Domain
+- **User**
+  - Fields: id (long), name (String)
+  - Immutable with equals/hashCode/toString
+
+- **RegistrationResult**
+  - Fields: wasSuccessfullyRegistered (boolean), status (enum), message (String)
+
+- **PasswordResult**
+  - Fields: status (enum), entropy (Double), timeToCrackOffline/online (String)
+
+### Library Domain
+- **Book**
+  - Fields: id (long), title (String)
+  - JSON output formatting
+
+- **Borrower**
+  - Fields: id (long), name (String)
+  - JSON output formatting
+
+- **Loan**
+  - Fields: id (long), book (Book), borrower (Borrower), checkoutDate (Date)
+
+- **LibraryActionResults**
+  - Enum for operation outcomes (SUCCESS, ALREADY_REGISTERED_BOOK, etc.)
+
+### Mathematics Domain
+- Results encapsulated in return values from servlet calculations
+
+### Other Domain
+- **AutoInsuranceAction**
+  - Fields: premiumIncreaseDollars (int), warningLetterEnum (enum), isPolicyCanceled (boolean), isError (boolean)
+
+- **WarningLetterEnum**
+  - Values: NONE, LTR1, LTR2, LTR3
+
+## 6. Testing Infrastructure
+
+### Unit Tests
+- **Location**: `src/test/java/`
+- **Framework**: JUnit 5 with Mockito
+- **Coverage Tool**: JaCoCo
+- **Test Categories**:
+  - Standard unit tests for all business logic
+  - Parameterized tests for boundary conditions
+  - Exception handling tests
+
+### Integration Tests
+- **Location**: `src/integration_test/`
+- **Database**: File-based H2 with sample data
+- **Test Data**: SQL files for different states (empty, one book, etc.)
+- **Focus**: Persistence layer operations
+
+### BDD Tests
+- **Java BDD**: Cucumber
+  - Features: `src/bdd_test/resources/`
+  - Step definitions: `src/bdd_test/java/`
+  - Domains: Authentication, Library, Mathematics
+
+- **Python BDD**: Behave
+  - Location: `src/ui_tests/behave/`
+  - Selenium-based UI automation
+
+### API Tests
+- **Python**: `src/api_tests/test_api.py`
+  - Framework: pytest
+  - Tests all REST endpoints
+
+### UI Tests
+- **Java**: Selenium with Selenified
+- **Python**: Selenium with Behave
+- **Desktop**: AutoInsurance UI tests with socket automation
+
+### Performance Tests
+- **Tool**: JMeter
+- **Scripts**: `docs/performance_testing/*.jmx`
+
+## 7. Configuration & Deployment
+
+### Build Configuration
+- **Gradle Properties**:
+  - Project metadata (name, version, description)
+  - JVM settings: `-Xmx1g`, max workers = 1
+  - Chromedriver path configuration
+
+### Tomcat Configuration
+- **web.xml**: Standard servlet deployment descriptor
+- **Context Listener**: `WebAppListener` for startup initialization
+- **JMX Monitoring**: Port 9999 enabled via setenv
+
+### Database Configuration
+- **Connection Pool**: H2 JdbcConnectionPool
+- **Modes**: In-memory for tests, file for persistence
+- **Console**: Web-based H2 console at `/console`
+
+### CI/CD Pipeline
+- **Jenkinsfile**:
+  - Stages: Build → Unit Tests → DB Tests → BDD → Static Analysis → Deploy → API Tests → UI Tests → Security → Performance
+  - SonarQube quality gate
+  - OWASP DependencyCheck
+  - Parallel test execution
+
+## 8. External Integrations
+
+### Security
+- **Password Validation**: Nbvcxz library for entropy calculation
+- **Dependency Scanning**: OWASP DependencyCheck
+- **Proxy for Testing**: OWASP ZAP on port 8888
+
+### Documentation
+- **Javadoc**: Generated via Gradle task
+- **API Catalog**: Endpoint documentation at `/endpointcatalog.html`
+
+### Desktop Automation
+- **Socket Server**: AutoInsuranceScriptServer (port 8000)
+- **Script Client**: AutoInsuranceScriptClient for UI automation
+
+## Key Architectural Considerations for Microservices
+
+1. **Clear Bounded Contexts**: Each domain (auth, library, math) could be a separate service
+2. **Database per Service**: Current H2 database could be split per domain
+3. **API Versioning**: Servlet-based APIs would need versioning strategy
+4. **Stateless Design**: Math APIs are good examples; Auth APIs maintain state
+5. **Transaction Boundaries**: Library operations have clear transaction boundaries
+6. **Testing Strategy**: Comprehensive test infrastructure supports microservice testing approach
+
+This architecture provides a solid foundation for decomposition into focused microservices with clear separation of concerns and well-defined boundaries.

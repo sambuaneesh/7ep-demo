@@ -1,0 +1,116 @@
+
+## Architectural Summary - Codebase Part 5
+
+### **Domain Objects & Core Entities**
+| Component | Responsibilities | Key Features |
+|-----------|------------------|--------------|
+| `Book` | Library book entity | ID, title fields; `createEmpty()`; JSON serialization via `toString()` |
+| `Borrower` | Library user entity | ID, name fields; `createEmpty()`; JSON output via `toOutputString()` |
+| `Loan` | Book lending record | Book/Borrower association, loan date; `createEmpty()` |
+
+---
+
+### **Mathematical Computation Services**
+| Component | Algorithms | APIs |
+|-----------|------------|------|
+| `Ackermann` | Recursive/iterative Ackermann function | `AckServlet` (HTTP POST) |
+| `Fibonacci` | Recursive/iterative Fibonacci | `FibServlet` (HTTP POST) |
+| `Calculator` | Basic arithmetic | `MathServlet` (HTTP POST) |
+| **Test Coverage** | Parameterized tests for edge cases | - Algorithm selection via request params<br>- JUnit parameterized suites |
+
+---
+
+### **Persistence Layer**
+| Component | Functionality | Test Details |
+|-----------|----------------|--------------|
+| `IPersistenceLayer` | Database operations abstraction | - `DbServlet` exposes `clean()`, `migrate()` via HTTP GET |
+| `SqlData` | SQL query construction | - Type-safe parameter binding<br>- Prepared statement handling |
+| `ParameterObject` | Generic parameter container | - Type-validated parameters<br>- Empty state detection |
+| `EmptyDataSource` | Null object pattern stub | - Throws `NotImplementedException` for all methods |
+
+---
+
+### **Web Layer & APIs**
+| Servlet | Endpoints | Request/Response |
+|---------|-----------|------------------|
+| `AckServlet` | `/demo` (POST) | Params: `ack_param_m/n`, `ack_algorithm_choice` |
+| `FibServlet` | `/demo` (POST) | Params: `fib_param_n`, `fib_algorithm_choice` |
+| `MathServlet` | `/demo` (POST) | Params: `item_a`, `item_b` |
+| `DbServlet` | `/demo` (GET) | Param: `action` (clean/migrate) |
+| **Response Handling** | Forward to `RESTFUL_RESULT_JSP` | - Error logging via SLF4J<br>- Result display on UI |
+
+---
+
+### **UI Testing Infrastructure**
+#### **Multi-Language Selenium Tests**
+| Language | Test Scenarios | Framework |
+|----------|----------------|-----------|
+| Java | Book lending, login, UI interactions | JUnit + WebDriver |
+| C# | End-to-end lending workflow | NUnit |
+| JavaScript | Core UI flows | Mocha + Selenium |
+| Python | Dropdown/autocomplete logic | Pytest |
+| **Key Tests** | - Book/borrower registration<br>- Quote handling in data<br>- Dynamic UI elements (dropdown/autocomplete) | Page Object Model pattern |
+
+#### **BDD Tests (Behave/Python)**
+| Feature | Scenarios | Coverage |
+|---------|-----------|----------|
+| Authentication | User registration/login | UI workflow validation |
+| Librarian UI | Book checkout process | `@given/@when/@then` steps |
+| **Environment** | - Chrome WebDriver<br>- Database reset via `/demo/flyway` | Browser automation config in `environment.py` |
+
+---
+
+### **Deployment & Configuration**
+| Component | Details |
+|-----------|----------|
+| `WebAppListener` | - Context init triggers `cleanAndMigrateDatabase()`<br>- Tomcat lifecycle integration |
+| Database Initialization | Flyway migration via HTTP call to `/demo/flyway` |
+| UI Test Execution | - Cross-language test runners<br>- Chrome WebDriver dependency<br>- Local server requirement (`localhost:8080`) |
+
+---
+
+### **Architectural Patterns**
+1. **Servlet-Based API Layer**  
+   - Stateless HTTP endpoints for business logic
+   - Request routing via parameters (`algorithm_choice`)
+
+2. **Domain-Driven Design**  
+   - Clear entity boundaries (Book/Borrower/Loan)
+   - Domain logic separation in `mathematics` package
+
+3. **Persistence Abstraction**  
+   - Interface-based data access (`IPersistenceLayer`)
+   - SQL builder pattern (`SqlData`)
+
+4. **Multi-Tier Testing**  
+   - Unit tests: JUnit/EqualsVerifier for domain objects
+   - UI tests: Selenium/Behave across languages
+   - Integration tests: Servlet mocking with Mockito
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Candidate Services**  
+   - **Library Service**: Manages books, borrowers, loans  
+   - **Math Service**: Provides calculation algorithms  
+   - **Auth Service**: Handles user registration/login  
+   - **Database Migration Service**: Flyway management  
+
+2. **Decompression Points**  
+   - Servlet endpoints → RESTful microservice APIs  
+   - Domain objects → Shared libraries between services  
+   - UI tests → Contract testing across service boundaries  
+
+3. **Data Flow**  
+   ```mermaid
+   Client → UI → Servlet → Service → Persistence
+              ↓
+        Selenium/Behave Tests
+   ```
+
+4. **Key Considerations**  
+   - Stateless servlets enable easy containerization  
+   - Algorithm selection (recursive/iterative) suitable for feature flags  
+   - UI test suite validates service integration end-to-end  
+
+This summary preserves critical architectural details for analyzing service boundaries, API contracts, and deployment topology in a microservices migration.

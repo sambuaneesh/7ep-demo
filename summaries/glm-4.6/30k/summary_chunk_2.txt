@@ -1,0 +1,135 @@
+
+### Architectural Summary for Microservice Decomposition Analysis
+
+---
+
+#### **Core Application Components**
+1. **Java Web Application**
+   - **Framework**: Server-side rendering with Tomcat 9
+   - **Database**: H2 (file-based and in-memory modes)
+     - File location: `build/db/training.mv.db` (unit tests)
+     - Migrations managed via FlywayDB
+   - **Business Logic**: Domain-separated packages (e.g., `com.coveros.training.library`, `authentication`)
+   - **API Endpoints**: Java Servlets with `@WebServlet(urlPatterns = {"/path"})` annotations
+     - Examples: `/math`, `/register`, `/lend`, `/flyway` (DB reset)
+
+2. **Persistence Layer**
+   - Centralized access via `PersistenceLayer.java`
+   - Supports transactions, CRUD operations, and schema migrations
+   - H2-specific optimizations for PostgreSQL compatibility
+
+---
+
+#### **CI/CD Pipeline (Jenkins)**
+- **Orchestrator**: Jenkins (port 8080 on `jenkinsbox`)
+- **Pipeline Stages** (`Jenkinsfile`):
+  1. **Build**: Gradle WAR assembly
+  2. **Testing**:
+     - Unit tests (`test`)
+     - DB integration tests (`integrate`)
+     - BDD tests (`generateCucumberReports`)
+     - API tests (`runApiTests`)
+     - UI tests (`runBehaveTests`, Selenium)
+  3. **Static Analysis**: SonarQube (`sonarqube`, quality gates)
+  4. **Security**: OWASP Dependency Check
+  5. **Performance**: JMeter (50-user simulation)
+  6. **Deployment**: Token prod-deploy step
+- **Triggers**: Git post-receive hooks to `http://jenkinsbox:8080/demo`
+
+---
+
+#### **Testing Architecture**
+1. **Test Types & Locations**:
+   - **Unit Tests**: `src/test/java`
+   - **Integration Tests**: `src/integration_test/java`
+   - **BDD Tests**: `src/bdd_test/` (Cucumber + Java)
+   - **API Tests**: `src/api_tests/test_api.py` (Python/pytest)
+   - **UI Tests**: `src/ui_tests/` (Selenium/Behave)
+   - **Performance Tests**: JMeter (`demo.jmx`)
+
+2. **Test Environments**:
+   - **Jenkinsbox** (IP: `192.168.56.101`):
+     - CI/CD, Git repo, SonarQube (port 9000)
+     - H2O web server (port 80) serving reports
+   - **UITestbox** (IP: `192.168.56.102`):
+     - Tomcat (port 8080), Chrome, Chromedriver
+     - OWASP ZAP (port 8888 proxy)
+     - Selenium Grid support
+
+---
+
+#### **Security & Monitoring**
+1. **Security Scanning**:
+   - **OWASP ZAP**: Proxy for UI/API tests (reports at `/reports/zap_report.html`)
+   - **Dependency Analysis**: OWASP Dependency Check
+2. **Monitoring**:
+   - **JMX**: Tomcat monitored via JConsole (port 9999)
+   - **Logs**: Centralized in `/var/log/` (e.g., H2O, Jenkins)
+
+---
+
+#### **Service Communication**
+- **Internal API Calls**: HTTP POST/GET (e.g., `requests.post("%s/demo/math" % URL, data={...})`)
+- **VM Networking**:
+  - Host-only adapter: Inter-VM communication (e.g., Jenkins → UITestbox)
+  - NAT: External internet access
+- **SSH**: Passwordless between VMs (`PermitEmptyPasswords yes`)
+
+---
+
+#### **Deployment Infrastructure**
+1. **Virtual Machines**:
+   - **Jenkinsbox**: CentOS 7 (Jenkins, SonarQube, Git, H2O)
+   - **UITestbox**: CentOS 7 + KDE (Tomcat, Chrome, ZAP)
+2. **Configurations**:
+   - **Firewall/SELinux**: Disabled for ease of use
+   - **Hosts File**: Resolves `jenkinsbox`/`uitestbox` to IPs
+3. **SSL/TLS**: 
+   - Self-signed certs for Tomcat (port 8443)
+   - Generated via OpenSSL (`training.crt`, `.key`, `.p12`)
+
+---
+
+#### **Data Models & Key Business Logic**
+1. **Library Domain**:
+   - **Entities**: `Book`, `Borrower`, `Loan`
+   - **Actions**: Lend/borrow books, manage inventory
+2. **Authentication**:
+   - Password entropy validation (`RegistrationUtils.isPasswordGood()`)
+   - User registration/login via `RegistrationUtils`, `LoginUtils`
+3. **Math Services**:
+   - Ackermann function, Fibonacci, arithmetic operations
+4. **Alcohol Expense Calculator**:
+   - Splits restaurant bills (food vs. alcohol portions)
+
+---
+
+#### **Architectural Patterns & Best Practices**
+1. **Design Principles**:
+   - **Immutability**: Immutable data structures (e.g., `Book`, `Borrower`)
+   - **Null Avoidance**: Domain objects validate state
+   - **Domain-Driven Design**: Packages separated by business domain
+2. **Testing Strategy**:
+   - TDD/BDD collaboration (Gherkin scenarios)
+   - Mutation testing (`pitest`) for test quality validation
+3. **CI/CD Integration**:
+   - Git triggers Jenkins builds
+   - SonarQube enforces quality gates
+   - Automated security/performance testing
+
+---
+
+### Microservice Decomposition Insights
+1. **Candidate Services**:
+   - **Auth Service**: User registration/login (isolated credentials).
+   - **Library Service**: Book/borrower/loan management.
+   - **Math Service**: Pure computations (Ackermann, Fibonacci).
+   - **CI/CD Service**: Jenkins orchestration + monitoring.
+   - **Security Service**: OWASP integration.
+2. **Data Separation**:
+   - H2 DB schemas can be split per domain (auth, library, math).
+3. **Deployment Boundaries**:
+   - `uitestbox` isolates UI/security testing tools.
+   - `jenkinsbox` centralizes build/deployment tooling.
+
+This summary preserves all critical details for microservice analysis, highlighting clear service boundaries, data dependencies, and communication patterns.

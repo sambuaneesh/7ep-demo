@@ -1,0 +1,157 @@
+
+## Architectural Summary: Codebase Chunk 3
+
+### **Core Components and Responsibilities**
+
+#### **1. Authentication Module**
+- **`LoginServlet`**: HTTP endpoint (`/login`) for user authentication
+- **`RegisterServlet`**: HTTP endpoint (`/register`) for user registration
+- **`LoginUtils`**: Business logic for credential validation
+- **`RegistrationUtils`**: User registration logic with password complexity checks (Nbvcxz library)
+- **Domain Objects**:
+  - `User`: User data model (name, id)
+  - `RegistrationResult`: Registration outcome status
+  - `PasswordResult`: Password security metrics (entropy, crack time)
+
+#### **2. Library Management Module**
+- **Servlets**:
+  - `LibraryBookListAvailableServlet`: List available books (`/listavailable`)
+  - `LibraryBookListSearchServlet`: Book CRUD/search (`/book`)
+  - `LibraryBorrowerListSearchServlet`: Borrower CRUD/search (`/borrower`)
+  - `LibraryLendServlet`: Book lending (`/lend`)
+  - `LibraryRegisterBookServlet`: Book registration (`/registerbook`)
+  - `LibraryRegisterBorrowerServlet`: Borrower registration (`/registerborrower`)
+- **`LibraryUtils`**: Core business logic for library operations
+- **Domain Objects**:
+  - `Book`: Book data model (title, id)
+  - `Borrower`: Borrower data model (name, id)
+  - `Loan`: Loan data model (book, borrower, date, id)
+  - `LibraryActionResults`: Operation outcome enums
+
+#### **3. Persistence Layer**
+- **`IPersistenceLayer`**: Interface for all database operations
+- **`PersistenceLayer`**: Implementation (referenced, not shown)
+- **`DbServlet`**: Database management (`/flyway`) with clean/migrate actions
+- **`EmptyDataSource`**: Null object pattern for testing
+- **Schema**:
+  - Tables: `BOOK`, `BORROWER`, `LOAN`, `USER`, `flyway_schema_history`
+  - Relationships: `LOAN` references `BOOK` and `BORROWER`
+  - Schema managed by Flyway migrations
+
+#### **4. Utilities**
+- **`ServletUtils`**: Request forwarding to JSPs (`result.jsp`, `restfulresult.jsp`)
+- **`StringUtils`**: JSON escaping, null safety
+- **`CheckUtils`**: Input validation (null/empty checks, invariants)
+
+---
+
+### **API Endpoints and Interfaces**
+| **Path**          | **Method** | **Purpose**                     | **Module**       |
+|--------------------|------------|---------------------------------|------------------|
+| `/login`          | POST       | User authentication             | Authentication   |
+| `/register`       | POST       | User registration               | Authentication   |
+| `/book`           | GET        | Book CRUD/search                | Library          |
+| `/borrower`       | GET        | Borrower CRUD/search            | Library          |
+| `/lend`           | POST       | Lend a book                     | Library          |
+| `/registerbook`   | POST       | Register new book               | Library          |
+| `/registerborrower`| POST      | Register new borrower           | Library          |
+| `/listavailable`  | GET        | List available books            | Library          |
+| `/flyway`         | GET        | Database management             | Persistence      |
+
+---
+
+### **Database Schema and Data Models**
+- **Schemas**:
+  - `ADMINISTRATIVE`: Flyway migrations
+  - `LIBRARY`: Books (`BOOK`), borrowers (`BORROWER`), loans (`LOAN`)
+  - `AUTH`: Users (`USER`)
+- **Key Relationships**:
+  - `LOAN.BOOK` → `BOOK.ID` (FK)
+  - `LOAN.BORROWER` → `BORROWER.ID` (FK)
+- **Domain Models**:
+  - **Book**: `{id, title}`
+  - **Borrower**: `{id, name}`
+  - **Loan**: `{id, book, borrower, borrow_date}`
+  - **User**: `{id, name, password_hash}`
+
+---
+
+### **Service Dependencies and Communication Patterns**
+- **Dependencies**:
+  - Library utils → Persistence layer
+  - Authentication utils → Persistence layer
+  - Servlets → Business logic utils
+- **Communication**:
+  - Synchronous HTTP requests (servlet-based)
+  - Direct method calls between layers (no async/messaging)
+  - Database-centric (H2 in tests, PostgreSQL implied)
+
+---
+
+### **Key Business Logic**
+1. **Authentication**:
+   - Password strength validation (entropy, crack time)
+   - Credential hashing (BCrypt implied)
+2. **Library Operations**:
+   - Book lending (check for existing loans)
+   - Entity registration (books/borrowers)
+   - Availability queries (exclude loaned books)
+3. **Persistence**:
+   - Flyway migrations for schema evolution
+   - Backup/restore via SQL scripts
+
+---
+
+### **Configuration and Deployment Details**
+- **Database**:
+  - H2 for testing (`./build/db/training`)
+  - Connection pooling (`JdbcConnectionPool`)
+  - Flyway for migrations
+- **Servlets**:
+  - Tomcat deployment (`@WebServlet`)
+  - Load-on-startup priority (`loadOnStartup=1`)
+- **Test Data**:
+  - SQL backups in `/resources/db_sample_files/`
+  - Versioned schemas (`v2_*.sql`)
+
+---
+
+### **Architectural Patterns and Frameworks**
+- **Layered Architecture**:
+  - Servlets (Web) → Utils (Business) → Persistence (Data)
+- **Domain-Driven Design**:
+  - Immutable domain objects with validation
+  - Explicit business logic in utils
+- **Dependency Injection**:
+  - Constructor injection in utils (`LoginUtils`, `LibraryUtils`)
+- **Testing Patterns**:
+  - Database backups for test state restoration
+  - Mock objects for exception testing
+- **Frameworks**:
+  - Servlet API (HTTP handling)
+  - Flyway (schema migrations)
+  - H2 (in-memory database)
+  - Nbvcxz (password security)
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Authentication Service**:
+   - Scope: User registration, login, password policies
+   - Endpoints: `/login`, `/register`
+   - DB: `AUTH.USER` table
+2. **Library Service**:
+   - Scope: Book/borrower CRUD, lending, availability
+   - Endpoints: `/book`, `/borrower`, `/lend`, `/listavailable`
+   - DB: `LIBRARY.*` tables
+3. **Shared Persistence**:
+   - Abstracted via `IPersistenceLayer`
+   - Could be a shared microservice or library
+4. **Common Utilities**:
+   - `ServletUtils`, `StringUtils`, `CheckUtils` as shared library
+   - Domain models in separate package
+
+**Key Considerations**:
+- Tight coupling between library operations and persistence
+- Database schema changes require coordination
+- Password policies (Nbvcxz) should be centralized in auth service

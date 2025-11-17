@@ -1,0 +1,152 @@
+
+### Comprehensive Architectural Summary
+
+#### **Core Application Architecture**
+- **Framework**: Java-based monolithic web application using **Java Servlets** with **Gradle** as build system
+- **Runtime**: Apache Tomcat server (configured in `web.xml`)
+- **Frontend**: Static HTML/CSS/JS files in `src/main/webapp` with server-side rendering via JSP (`result.jsp`)
+- **Database**: H2 in-memory database with Flyway migrations (`src/main/resources/db/migration/`)
+
+---
+
+### **Key Business Domains & Components**
+
+#### 1. **Authentication System**
+- **Servlets**: 
+  - `LoginServlet.java` (handles user login)
+  - `RegisterServlet.java` (handles user registration)
+- **Domain Objects**:
+  - `User.java` (user entity)
+  - `RegistrationResult.java` & `PasswordResult.java` (operation outcomes)
+- **Utilities**: 
+  - `LoginUtils.java` & `RegistrationUtils.java` (validation/password hashing)
+- **Security**: Custom password validation with result enums (`PasswordResultEnums`)
+
+#### 2. **Library Management System**
+- **Servlets**:
+  - `LibraryRegisterBookServlet.java` & `LibraryRegisterBorrowerServlet.java`
+  - `LibraryLendServlet.java` (book lending)
+  - Search/listing servlets for books/borrowers
+- **Domain Objects**:
+  - `Book.java`, `Borrower.java`, `Loan.java`
+  - `LibraryActionResults.java` (operation status)
+- **Business Logic**: `LibraryUtils.java` (validates lending rules)
+
+#### 3. **Mathematics Service**
+- **Servlets**: 
+  - `MathServlet.java` (basic calculations)
+  - `FibServlet.java` (Fibonacci numbers)
+  - `AckServlet.java` (Ackermann function)
+- **Core Logic**:
+  - `Calculator.java`, `Fibonacci.java`, `Ackermann.java`
+  - Iterative implementations for performance
+- **Error Handling**: Rejects non-integer inputs/large numbers
+
+#### 4. **Expense Calculation**
+- **Logic**: `AlcoholCalculator.java` (estimates alcohol costs)
+- **Domain**: `AlcoholResult.java`, `DinnerPrices.java`
+
+#### 5. **Desktop Application (Auto Insurance)**
+- **UI**: Swing-based (`AutoInsuranceUI.java`)
+- **Business Logic**: `AutoInsuranceProcessor.java` (premium calculations)
+- **Automation**: `AutoInsuranceScriptServer.java` (socket-based test control on port 8000)
+- **Domain**: 
+  - `AutoInsuranceAction.java` (premium outcome)
+  - `WarningLetterEnum.java` (warning levels)
+
+---
+
+### **Data Persistence Layer**
+- **Interface**: `IPersistenceLayer.java`
+- **Implementation**: `PersistenceLayer.java` (uses `SqlData.java` for query execution)
+- **Database Schema**:
+  - Tables: `person`, `book`, `borrower`, `loan`
+  - Migrations: `V1__Create_person_table.sql`, `V2__Rest_of_tables_for_auth_and_library.sql`
+- **Connection**: H2 database at `jdbc:h2:./build/db/training`
+
+---
+
+### **Testing Architecture**
+#### **Test Types & Tools**
+| **Test Type**       | **Location**              | **Framework/Tool**      |
+|---------------------|---------------------------|-------------------------|
+| Unit Tests          | `src/test/java/`          | JUnit 5, Mockito        |
+| Integration Tests   | `src/integration_test/`   | H2 test DB             |
+| BDD Tests           | `src/bdd_test/`           | Cucumber (Java), Behave (Python) |
+| UI Tests            | `src/ui_tests/`           | Selenium, Selenified    |
+| API Tests           | `src/api_tests/`          | Python/pytest          |
+| Desktop Tests       | `desktop_app/src/test/`   | Custom socket client    |
+
+#### **Testing Infrastructure**
+- **Coverage**: JaCoCo reports (`build/reports/jacoco/`)
+- **Mutation Testing**: Pitest (`gradlew pitest`)
+- **Performance**: JMeter (docs mention integration)
+- **Security**: OWASP Dependency Check (`gradlew dependencyCheckAnalyze`)
+
+---
+
+### **API Interfaces**
+| **Endpoint**               | **Method** | **Purpose**                     | **Servlet**              |
+|----------------------------|------------|---------------------------------|--------------------------|
+| `/demo/math`               | POST       | Integer addition                 | `MathServlet.java`       |
+| `/demo/register`           | POST       | User registration               | `RegisterServlet.java`   |
+| `/demo/login`              | POST       | User authentication             | `LoginServlet.java`      |
+| `/demo/registerbook`       | POST       | Add book to library             | `LibraryRegisterBookServlet.java` |
+| `/demo/lend`               | POST       | Lend book to borrower           | `LibraryLendServlet.java` |
+
+---
+
+### **Configuration & Deployment**
+- **Build**: Gradle 7.0 (wrapper scripts `gradlew`)
+- **CI/CD**: Jenkins pipeline (`jenkins/Jenkinsfile`)
+  - Stages: Build → Test → SonarQube → Deploy
+- **Databases**: H2 (dev/test), configurable for external DBs
+- **Logging**: Log4j2 (`log4j2.xml`)
+- **Hot Swap**: Gretty plugin for development
+- **Static Analysis**: SonarQube (quality gate), Checker Framework (type safety)
+
+---
+
+### **Architectural Patterns & Frameworks**
+- **Layered Architecture**: Servlets → Business Logic → Persistence
+- **Dependency Injection**: Manual via constructors (e.g., `PersistenceLayer`)
+- **Database Migration**: Flyway versioned scripts
+- **Testing Pyramid**: Unit → Integration → E2E
+- **Frontend**: SPA patterns (`library.js`, `catalog.js`)
+
+---
+
+### **Key Dependencies**
+```groovy
+// Core (from build.gradle)
+implementation 'org.apache.commons:commons-lang3'
+implementation 'javax.servlet:javax.servlet-api'
+testImplementation 'org.mockito:mockito-core'
+testImplementation 'org.junit.jupiter:junit-jupiter'
+```
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Bounded Contexts**:
+   - Authentication (users/passwords)
+   - Library (books/borrowers/loans)
+   - Math (calculations)
+   - Expense tracking
+2. **Shared Components**:
+   - Persistence layer (could become a shared service)
+   - Utilities (`StringUtils.java`, `CheckUtils.java`)
+3. **Decoupling Opportunities**:
+   - Extract servlets → REST APIs (Spring Boot)
+   - Separate frontend (React/Vue)
+   - Database per service
+
+---
+
+### **Critical Artifacts for Decomposition**
+- **Database Schema**: `src/integration_test/resources/db_sample_files/`
+- **API Contracts**: SoapUI/Postman configs in `docs/api_testing/`
+- **Business Rules**: 
+  - Insurance premiums (`AutoInsuranceProcessor.java`)
+  - Library lending logic (`LibraryUtils.java`)
+- **Security**: Authentication flow (`LoginServlet.java`)

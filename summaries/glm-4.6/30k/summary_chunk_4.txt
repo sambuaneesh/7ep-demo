@@ -1,0 +1,157 @@
+
+## Architectural Summary: Part 4 - Persistence Layer and Web Components
+
+### **Core Components & Responsibilities**
+1. **Persistence Layer (`PersistenceLayer.java`)**
+   - Centralized data access implementing `IPersistenceLayer`
+   - Database management via H2 in-memory DB (PostgreSQL mode)
+   - Micro-ORM implementation for CRUD operations
+   - Flyway integration for schema migrations
+   - Transaction handling (implicit via JDBC auto-commit)
+
+2. **Database Migration (`WebAppListener.java`)**
+   - Executes schema migration at app startup
+   - Manages DB lifecycle (clean/migrate via Flyway)
+
+3. **Web Infrastructure**
+   - **Servlets**: `LoginServlet`, `RegisterServlet`, library/book/borrower management endpoints
+   - **Static Resources**: HTML/CSS/JS for library UI (`library.html`, `library.js`)
+   - **Tomcat Integration**: Context initialization for DB setup
+
+---
+
+### **API Endpoints**
+| **Module** | **Endpoint** | **Method** | **Function** |
+|------------|--------------|------------|--------------|
+| **Auth** | `/login` | POST | User authentication |
+| | `/register` | POST | User registration |
+| **Library** | `/book` | GET/POST | Book search/create |
+| | `/borrower` | GET/POST | Borrower management |
+| | `/lend` | POST | Loan book to borrower |
+| | `/flyway` | POST | DB migration control |
+| **Admin** | `/console` | GET | H2 DB console access |
+
+---
+
+### **Database Schema**
+#### **LIBRARY Schema**
+```sql
+CREATE TABLE BOOK (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE BORROWER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE LOAN (
+  id SERIAL PRIMARY KEY,
+  book INT REFERENCES BOOK(id),
+  borrower INT REFERENCES BORROWER(id),
+  borrow_date DATE NOT NULL
+);
+```
+
+#### **AUTH Schema**
+```sql
+CREATE TABLE USER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(100)
+);
+```
+
+---
+
+### **Data Models & Domain Objects**
+| **Domain** | **Core Objects** | **Key Fields** |
+|------------|------------------|----------------|
+| **Library** | `Book` | id, title |
+| | `Borrower` | id, name |
+| | `Loan` | id, book, borrower, borrow_date |
+| **Auth** | `User` | id, name, passwordHash |
+| **Result Types** | `LibraryActionResults`, `RegistrationResult` | status, messages |
+
+---
+
+### **Service Dependencies**
+```mermaid
+graph LR
+  A[Web Layer] --> B[Business Logic]
+  B --> C[Persistence Layer]
+  C --> D[H2 Database]
+  E[Flyway] --> C
+  F[Tomcat] --> A
+```
+
+---
+
+### **Key Business Logic**
+1. **Authentication Flow**
+   - SHA-256 password hashing
+   - Credential validation via `areCredentialsValid()`
+2. **Library Operations**
+   - Book lending (with conflict checks)
+   - Borrower/book registration
+   - Loan tracking by book/borrower
+3. **Migration Process**
+   - Clean/migrate schema on startup
+   - Backup/restore capabilities
+
+---
+
+### **Architectural Patterns**
+1. **Micro-ORM**
+   - Custom SQL execution framework (`SqlData`, `ParameterObject`)
+   - Type-safe parameter binding
+   - Result extraction via functional interfaces
+2. **MVC Architecture**
+   - Servlets as Controllers
+   - Domain objects as Models
+   - JSPs/HTML as Views
+3. **Dependency Injection**
+   - Constructor injection for `IPersistenceLayer`
+   - Static utilities for cross-cutting concerns (`CheckUtils`, `StringUtils`)
+
+---
+
+### **Configuration & Deployment**
+- **Database**: H2 in-memory (`jdbc:h2:mem:training`)
+- **Server**: Apache Tomcat (embedded via Maven)
+- **Migration**: Flyway with versioned SQL scripts (`V1__`, `V2__`)
+- **Logging**: Log4j2 (console output at INFO level)
+- **Build**: Maven-based project structure
+
+---
+
+### **Critical Considerations for Microservice Decomposition**
+1. **Domain Boundaries**
+   - Clear separation between **Library** (books/borrowers/loans) and **Auth** (users)
+   - Potential services:
+     - *Book Service*: Catalog management
+     - *Lending Service*: Loan lifecycle
+     - *User Service*: Authentication/registration
+2. **Database Splitting**
+   - Separate schemas per domain already exist
+   -需refactor shared connection pool logic
+3. **API Refactoring**
+   - Current servlets tightly coupled to persistence
+   -需implement RESTful APIs with DTOs
+4. **State Management**
+   - Migrate from in-memory H2 to persistent storage per service
+5. **Frontend Decoupling**
+   - `library.js` needs API gateway integration
+   - Consider moving to SPA architecture
+
+---
+
+### **Technology Stack**
+- **Core**: Java 11+, Servlet API, JDBC
+- **Persistence**: H2 Database, Flyway
+- **Web**: Tomcat, JSP, Vanilla JavaScript
+- **Testing**: JUnit, Mockito, Selenified (E2E)
+- **Security**: SHA-256 password hashing
+
+This architecture demonstrates a well-structured monolith with clear domain boundaries, making it suitable for decomposition into discrete microservices. The persistence layer's micro-ORM is a key abstraction that can be replaced with service-specific data access patterns during migration.

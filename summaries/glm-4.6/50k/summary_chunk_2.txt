@@ -1,0 +1,180 @@
+
+## Comprehensive Architectural Summary (Codebase Chunk 2/3)
+
+### 1. **Core Component Overview**
+
+#### **Authentication Service**
+- **Responsibilities**: User registration, login, password validation
+- **Key Classes**:
+  - `RegisterServlet`: Handles POST `/register` endpoint
+  - `LoginServlet`: Handles POST `/login` endpoint
+  - `RegistrationUtils`: Business logic for user registration (password entropy validation via Nbvcxz)
+  - `LoginUtils`: Credential validation
+- **Domain Objects**: `User`, `RegistrationResult`, `PasswordResult`
+- **Features**: Password strength checks, duplicate username prevention
+
+#### **Library Management Service**
+- **Responsibilities**: Book/borrower CRUD, loan management
+- **Key Classes**:
+  - `LibraryRegisterBookServlet`: POST `/registerbook`
+  - `LibraryRegisterBorrowerServlet`: POST `/registerborrower`
+  - `LibraryLendServlet`: POST `/lend`
+  - `LibraryBookListSearchServlet`: GET `/book`
+  - `LibraryBorrowerListSearchServlet`: GET `/borrower`
+  - `LibraryBookListAvailableServlet`: GET `/listavailable`
+  - `LibraryUtils`: Core business logic
+- **Domain Objects**: `Book`, `Borrower`, `Loan`, `LibraryActionResults`
+- **Features**: Book lending/borrowing, availability tracking
+
+#### **Mathematical Service**
+- **Responsibilities**: Mathematical calculations (addition, Fibonacci, Ackermann)
+- **Key Classes**:
+  - `MathServlet`: POST `/math`
+  - `FibServlet`: POST `/fibonacci`
+  - `AckServlet`: POST `/ackermann`
+  - `Calculator`: Basic arithmetic utilities
+  - `Fibonacci`/`FibonacciIterative`: Recursive/iterative Fibonacci
+  - `Ackermann`/`AckermannIterative`: Recursive/iterative Ackermann
+- **Features**: Algorithm selection (recursive vs. tail-recursive)
+
+#### **Persistence Layer**
+- **Responsibilities**: Database abstraction, transaction management
+- **Key Classes**:
+  - `PersistenceLayer`: Implements `IPersistenceLayer`
+  - `SqlData`: Micro-ORM for query execution
+  - `ParameterObject`: Type-safe SQL parameters
+- **Features**: Connection pooling (H2), Flyway migrations, backup/restore
+
+#### **Web Infrastructure**
+- **Responsibilities**: HTTP request handling, view rendering
+- **Key Classes**:
+  - `ServletUtils`: Request forwarding utilities
+  - `WebAppListener`: Startup/shutdown hooks
+  - JSPs (`result.jsp`, `restfulresult.jsp`): Response rendering
+- **Frontend**: HTML/CSS/JS for library UI
+
+---
+
+### 2. **Database Schema (via Flyway Migrations)**
+```sql
+-- Authentication Schema (AUTH)
+USER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(100)
+)
+
+-- Library Schema (LIBRARY)
+BOOK (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(100) NOT NULL
+)
+
+BORROWER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+)
+
+LOAN (
+  id SERIAL PRIMARY KEY,
+  book INT REFERENCES BOOK(id) ON DELETE CASCADE,
+  borrower INT REFERENCES BORROWER(id) ON DELETE CASCADE,
+  borrow_date DATE NOT NULL
+)
+```
+
+---
+
+### 3. **API Endpoints**
+| **Endpoint** | **Method** | **Responsibility** | **Input** | **Output** |
+|--------------|------------|-------------------|-----------|------------|
+| `/register` | POST | User registration | username, password | `RegistrationResult` |
+| `/login` | POST | User authentication | username, password | "access granted/denied" |
+| `/registerbook` | POST | Add book | title | `LibraryActionResults` |
+| `/registerborrower` | POST | Add borrower | name | `LibraryActionResults` |
+| `/lend` | POST | Lend book | book, borrower, date | `LibraryActionResults` |
+| `/book` | GET | List/search books | id/title | Book list/JSON |
+| `/borrower` | GET | List/search borrowers | id/name | Borrower list/JSON |
+| `/listavailable` | GET | Available books | - | Available books JSON |
+| `/math` | POST | Addition | item_a, item_b | Integer sum |
+| `/fibonacci` | POST | Fibonacci | fib_param_n, algorithm | Long/BigInteger |
+| `/ackermann` | POST | Ackermann | ack_param_m, ack_param_n, algorithm | BigInteger |
+
+---
+
+### 4. **Service Dependencies**
+- **All services** → `PersistenceLayer` (database access)
+- **Authentication** → Nbvcxz (password entropy)
+- **Math services** → No external deps (pure algorithms)
+- **Library** → `PersistenceLayer` (CRUD + loan logic)
+- **Web layer** → Business utils (LibraryUtils, LoginUtils, etc.)
+
+---
+
+### 5. **Key Business Logic**
+- **Password Validation**:
+  - Min 10 chars, max 100 chars
+  - Entropy check via `Nbvcxz.estimate()`
+  - Time-to-crack calculations
+- **Book Lending**:
+  - Validate book/borrower existence
+  - Check availability via `searchForLoanByBook()`
+  - Create `Loan` record with date
+- **Math Algorithms**:
+  - Recursive vs. tail-recursive implementations
+  - BigInteger for large numbers (Ackermann)
+- **Pagination/Search**:
+  - Book/borrower listing with "available" filtering
+  - Search by ID (exact) or title/name (contains)
+
+---
+
+### 6. **Configuration & Deployment**
+- **Database**: H2 in-memory (for tests), file-based (`./build/db/training`)
+- **Server**: Apache Tomcat (via servlets)
+- **Migrations**: Flyway-managed (versions V1, V2)
+- **Logging**: Log4j2 (INFO level, console output)
+- **Frontend**: Plain HTML/CSS/JS (no frameworks)
+- **Testing**: Cucumber (BDD), JUnit (unit/integration), Selenified (UI)
+
+---
+
+### 7. **Architectural Patterns**
+- **Layered Architecture**: 
+  - Presentation (Servlets/JSP)
+  - Business (Utils)
+  - Persistence (PersistenceLayer)
+- **Domain-Driven Design**: 
+  - Explicit domain objects (`Book`, `User`, etc.)
+  - Value objects (`LibraryActionResults`)
+- **Micro-ORM**: Custom `SqlData` for query parameterization
+- **Service Locator**: Static utils (`RegistrationUtils`, `LibraryUtils`)
+- **Dependency Injection**: Limited (constructor injection in PersistenceLayer)
+
+---
+
+### 8. **Critical Coupling Points**
+1. **Shared Persistence**:
+   - All services use `PersistenceLayer`
+   - Tight schema coupling (e.g., LOAN references BOOK/BORROWER)
+2. **Monolithic Web Layer**:
+   - All endpoints in same servlet context
+   - Shared `ServletUtils` for response handling
+3. **Authentication Cross-Cutting**:
+   - User table tied to library operations (e.g., librarian actions)
+
+### 9. **Potential Service Boundaries**
+| **Service** | **Domain** | **Database** |
+|--------------|------------|--------------|
+| Auth Service | Users, passwords | AUTH.USER |
+| Catalog Service | Books, borrowers | LIBRARY.BOOK, LIBRARY.BORROWER |
+| Lending Service | Loans, availability | LIBRARY.LOAN |
+| Math Service | Algorithms | (None - stateless) |
+| API Gateway | HTTP routing | (None - facade) |
+
+### 10. **Decomposition Considerations**
+- **Data Ownership**: Each microservice should own its DB schema
+- **Eventual Consistency**: Loan service needs to sync Book/Borrower status
+- **Auth Boundaries**: Library actions require auth token validation
+- **Stateless Math**: Pure compute service (no DB needed)
+- **API Contract**: OpenAPI specs for inter-service calls

@@ -1,0 +1,164 @@
+
+## Architectural Summary: Coveros Demo Application (Part 1)
+
+### High-Level Architecture
+- **Technology Stack**: Java 11, Tomcat 9, H2 Database, Flyway (DB migrations), Gradle build system
+- **Deployment**: WAR file deployment to Tomcat with CI/CD via Jenkins
+- **Architecture Pattern**: Monolithic web application with clear domain separation, designed for educational purposes to demonstrate software quality practices
+
+### Core Components & Domains
+
+#### 1. **Authentication Service**
+- **Responsibilities**: User registration, login validation, password policy enforcement
+- **Key Classes**:
+  - `LoginServlet` & `RegisterServlet`: HTTP endpoints for authentication
+  - `RegistrationUtils`: Password validation, user registration logic
+  - `LoginUtils`: Authentication verification
+  - `User` domain object: Immutable user representation
+  - `RegistrationResult` & `PasswordResult`: Result objects with status enums
+- **APIs**:
+  - `POST /login`: User authentication
+  - `POST /register`: New user registration
+- **Business Logic**:
+  - Password entropy validation (12+ chars, complexity requirements)
+  - Duplicate username detection
+  - Session management via servlet context
+
+#### 2. **Library Service**
+- **Responsibilities**: Book/borrower management, loan tracking, catalog operations
+- **Key Classes**:
+  - `LibraryRegisterBookServlet` & `LibraryRegisterBorrowerServlet`: Registration endpoints
+  - `LibraryLendServlet`: Book checkout logic
+  - `LibraryBookListAvailableServlet` & `LibraryBookListSearchServlet`: Book catalog
+  - `LibraryUtils`: Core business logic
+  - Domain objects: `Book`, `Borrower`, `Loan` (all immutable)
+- **APIs**:
+  - `POST /registerbook`: Book registration
+  - `POST /registerborrower`: Borrower registration
+  - `POST /lend`: Book checkout
+  - `GET /library/book/list`: Book catalog
+- **Business Logic**:
+  - Book availability checking before loan
+  - Loan date tracking (SQL Date)
+  - Search by title/ID for books/borrowers
+
+#### 3. **Mathematics Service**
+- **Responsibilities**: Mathematical computations (addition, Fibonacci, Ackermann)
+- **Key Classes**:
+  - `MathServlet`, `FibServlet`, `AckServlet`: HTTP endpoints
+  - `Calculator`: Core math operations
+  - `Fibonacci` & `Ackermann`: Algorithm implementations
+- **APIs**:
+  - `POST /math`: Integer addition (input validation)
+  - `POST /fibonacci`: Fibonacci sequence
+  - `POST /ackermann`: Ackermann function
+- **Algorithms**:
+  - Recursive and iterative implementations
+  - Input boundary validation (32-bit integer limits)
+
+#### 4. **Persistence Layer**
+- **Responsibilities**: Database abstraction, transaction management
+- **Key Classes**:
+  - `PersistenceLayer`: Implements `IPersistenceLayer`
+  - `ParameterObject`: SQL parameter binding
+  - `SqlData`: Result set processing
+- **Database**: H2 (in-memory for tests, file-based in prod)
+- **Migrations**:
+  - `V1__Create_person_table.sql`
+  - `V2__Rest_of_tables_for_auth_and_library.sql`
+
+#### 5. **Desktop Application Module**
+- **Responsibilities**: Auto insurance premium calculation, UI automation
+- **Key Classes**:
+  - `AutoInsuranceUI`: Swing-based UI
+  - `AutoInsuranceProcessor`: Premium calculation logic
+  - `AutoInsuranceScriptServer`: Socket-based automation (port 8000)
+  - `AutoInsuranceAction`: Result object with premium increase/warning letters
+- **Business Rules**:
+  - Age/claim-based premium calculation matrix
+  - Policy cancellation for 5+ claims
+  - Warning letter triggers (LTR1-3)
+
+### Data Models & Database Schema
+1. **Users Table**:
+   - `id` (PK), `username`, `password` (hashed), `created_at`
+2. **Books Table**:
+   - `id` (PK), `title`, `created_at`
+3. **Borrowers Table**:
+   - `id` (PK), `name`, `created_at`
+4. **Loans Table**:
+   - `id` (PK), `book_id` (FK), `borrower_id` (FK), `checkout_date`
+
+### API Endpoints Summary
+| Endpoint | Method | Purpose | Key Params |
+|----------|---------|---------|------------|
+| `/login` | POST | User auth | username, password |
+| `/register` | POST | User reg | username, password |
+| `/math` | POST | Math add | item_a, item_b |
+| `/fibonacci` | POST | Fibonacci | n |
+| `/registerbook` | POST | Add book | book |
+| `/lend` | POST | Loan book | book, borrower |
+
+### Testing Architecture
+1. **Unit Tests** (JUnit 5):
+   - Located in `src/test/java`
+   - Mockito for mocking
+   - JaCoCo for coverage
+2. **BDD Tests** (Cucumber/Behave):
+   - Feature files in `src/bdd_test/resources`
+   - Step definitions in `java/com/coveros/training/*`
+3. **API Tests** (Python/pytest):
+   - `requests` library for HTTP calls
+   - Database reset utilities
+4. **UI Tests** (Selenium):
+   - Cross-language support (Python, Java, JS)
+   - Grid support for parallel execution
+
+### CI/CD Pipeline (Jenkins)
+- **Stages**:
+  1. Build → Unit Tests → BDD Tests
+  2. Static Analysis (SonarQube) → Security Scans (OWASP)
+  3. Deploy to Test → API/UI Tests
+  4. Performance Tests (JMeter) → Mutation Tests (PITest)
+- **Quality Gates**:
+  - SonarQube coverage threshold
+  - OWASP vulnerability checks
+  - JMeter performance baselines
+
+### Configuration & Deployment
+- **Database Config**: 
+  - JDBC URL configurable (`jdbc:h2:mem:training`)
+  - Flyway migrations on startup
+- **Logging**: Log4j2 XML configuration
+- **Build Tools**:
+  - Gradle wrapper scripts for cross-platform builds
+  - Gretty plugin for hot-reload during dev
+- **Environment Settings**:
+  - `gradle.properties`: JVM tuning, chromedriver paths
+  - Separate configs for test/prod
+
+### Microservice Decomposition Candidates
+1. **Authentication Service**:
+   - Bounded context: Identity management
+   - Interfaces: Registration, login, password policies
+2. **Library Service**:
+   - Bounded context: Book lending lifecycle
+   - Interfaces: Catalog, checkout, search
+3. **Mathematics Service**:
+   - Bounded context: Computations
+   - Interfaces: Calculation APIs with validation
+4. **Desktop Automation Service**:
+   - Bounded context: UI automation
+   - Interfaces: Socket server, calculation engine
+5. **Shared Services**:
+   - Persistence abstraction
+   - Common utilities (validation, error handling)
+
+### Critical Dependencies
+- **Database**: H2 (migratable to PostgreSQL)
+- **Web Server**: Tomcat 9 (containerizable)
+- **Security**: OWASP DependencyCheck, Tomcat SSL
+- **Testing**: Selenium WebDriver, Cucumber JVM
+- **Build**: Gradle 7.0, Java 11
+
+This architecture provides clear domain boundaries suitable for microservice extraction, with well-defined APIs and testable interfaces. The persistence layer is abstracted to facilitate database changes, and all services are stateless except for the database interactions.

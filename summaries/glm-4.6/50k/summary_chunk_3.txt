@@ -1,0 +1,169 @@
+
+### Comprehensive Architectural Summary for Microservice Decomposition
+
+---
+
+#### **1. Authentication Service**
+- **Responsibilities**: User registration, login, credential validation, password strength validation
+- **Core Components**:
+  - `LoginServlet`: Handles HTTP POST requests for login (`/login`)
+  - `RegisterServlet`: Handles user registration (`/register`)
+  - `LoginUtils`: Validates user credentials via `IPersistenceLayer`
+  - `RegistrationUtils`: Processes registration with password entropy checks
+- **API Endpoints**:
+  - `POST /login` (username/password)
+  - `POST /register` (username/password)
+- **Business Logic**:
+  - Password entropy validation (minimum length, complexity)
+  - User existence checks before registration
+  - Session management via servlet attributes
+- **Data Models**:
+  - `User` (id, username)
+  - `PasswordResult` (entropy, time-to-crack metrics)
+  - `RegistrationResult` (status, messages)
+- **Dependencies**:
+  - Persists data via `IPersistenceLayer`
+  - Communicates with frontend via JSP (`ServletUtils.RESULT_JSP`)
+
+---
+
+#### **2. Library Management Service**
+- **Responsibilities**: Book/borrower registration, lending management, inventory tracking
+- **Core Components**:
+  - `LibraryLendServlet`: Book lending logic (`/lendbook`)
+  - `LibraryRegisterBookServlet`: Book registration (`/registerbook`)
+  - `LibraryRegisterBorrowerServlet`: Borrower registration (`/registerborrower`)
+  - `LibraryUtils`: Business logic for lending/registration
+- **API Endpoints**:
+  - `POST /lendbook` (book title, borrower name, date)
+  - `POST /registerbook` (book title)
+  - `POST /registerborrower` (borrower name)
+- **Business Logic**:
+  - Validates book/borrower existence before lending
+  - Prevents duplicate lending of checked-out books
+  - Catalog management (list/search books/borrowers)
+- **Data Models**:
+  - `Book` (id, title)
+  - `Borrower` (id, name)
+  - `Loan` (book, borrower, date, id)
+- **Dependencies**:
+  - Persists data via `IPersistenceLayer`
+  - Uses `LibraryActionResults` for status responses
+
+---
+
+#### **3. Mathematics Service**
+- **Responsibilities**: Algorithm computations (Fibonacci, Ackermann)
+- **Core Components**:
+  - `FibServlet`: Fibonacci calculations (`/fib`)
+  - `AckServlet`: Ackermann computations (`/ack`)
+- **API Endpoints**:
+  - `POST /fib` (algorithm choice, input `n`)
+  - `POST /ack` (algorithm choice, inputs `m`, `n`)
+- **Business Logic**:
+  - Supports recursive/iterative algorithms
+  - Handles large numbers with `BigInteger`
+- **Dependencies**: Stateless; no external data dependencies
+
+---
+
+#### **4. Persistence Layer**
+- **Responsibilities**: Database abstraction, migrations, CRUD operations
+- **Core Components**:
+  - `IPersistenceLayer`: Interface for DB operations
+  - `DbServlet`: Database management (`/flyway`)
+  - `SqlData`: Parameterized SQL execution
+- **API Endpoints**:
+  - `GET /flyway?action=clean|migrate`
+- **Data Models**:
+  - `ParameterObject` (data, type)
+  - Domain objects (`User`, `Book`, etc.)
+- **Configuration**:
+  - Flyway-managed migrations
+  - `EmptyDataSource` for test isolation
+
+---
+
+#### **5. Shared Utilities**
+- **Responsibilities**: Common operations, validation, string manipulation
+- **Core Components**:
+  - `StringUtils`: Null handling, JSON escaping
+  - `CheckUtils`: Input validation (e.g., positive integers)
+  - `DateUtils`: Date operations
+- **Key Logic**:
+  - String sanitization for JSON safety
+  - Input validation with clear error messages
+
+---
+
+#### **6. Frontend Integration**
+- **Architecture**: Servlet-based MVC with JSP rendering
+- **Endpoints**: RESTful JSON responses via `ServletUtils.RESTFUL_RESULT_JSP`
+- **UI Testing Frameworks**:
+  - **Behavior-Driven**: Behave (Python) with feature files
+  - **E2E Tests**: Selenium (Java/JS/C#/Python)
+  - **Page Object Models**: For maintainable UI interactions
+- **Key Workflows**:
+  - User registration/login
+  - Book lending lifecycle
+  - Algorithm computations
+
+---
+
+#### **7. Deployment & Configuration**
+- **Container**: Apache Tomcat
+- **Lifecycle Management**:
+  - `WebAppListener`: Initializes/cleans DB on startup
+  - Flyway migrations executed via `DbServlet`
+- **Logging**: SLF4J with error handling in servlets
+- **Test Isolation**: Mocked `IPersistenceLayer` and servlets
+
+---
+
+#### **8. Communication Patterns**
+- **Synchronous**: HTTP request/response via servlets
+- **Data Transfer**: JSON for UI, Java objects internally
+- **Error Handling**: Structured responses with status codes
+
+---
+
+#### **Key Microservice Decomposition Insights**
+1. **Bounded Contexts**:
+   - Authentication (user identity/security)
+   - Library (domain-specific lending logic)
+   - Mathematics (stateless computations)
+   - Persistence (data abstraction)
+
+2. **Data Ownership**:
+   - Each service owns its domain models
+   - Shared persistence layer could be split per-service
+
+3. **API Contracts**:
+   - RESTful HTTP endpoints with clear input/output schemas
+   - Async operations (e.g., migrations) via GET actions
+
+4. **Scalability**:
+   - Mathematics service: Highly scalable (stateless)
+   - Library service: May need sharding for large inventories
+   - Authentication: Cacheable sessions
+
+5. **Testing Strategy**:
+   - Unit tests with mocked dependencies
+   - Multi-language E2E tests for UI workflows
+   - Behavioral tests (Behave) for user journeys
+
+---
+
+### Recommended Microservice Split
+1. **Auth Service**  
+   `LoginServlet`, `RegisterServlet`, `LoginUtils`, `RegistrationUtils`
+2. **Library Service**  
+   `LibraryUtils`, all library-related servlets
+3. **Math Service**  
+   `FibServlet`, `AckServlet`, algorithm classes
+4. **Persistence Service**  
+   `IPersistenceLayer` implementations, `DbServlet`
+5. **Shared Library**  
+   Utility classes, domain objects
+
+This decomposition ensures loose coupling, domain-specific scaling, and independent deployment capabilities.
