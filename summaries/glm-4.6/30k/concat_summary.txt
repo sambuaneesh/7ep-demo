@@ -1,0 +1,731 @@
+=== summary_chunk_1.txt ===
+
+
+### Comprehensive Architectural Summary
+
+#### **Core Application Architecture**
+- **Framework**: Java-based monolithic web application using **Java Servlets** with **Gradle** as build system
+- **Runtime**: Apache Tomcat server (configured in `web.xml`)
+- **Frontend**: Static HTML/CSS/JS files in `src/main/webapp` with server-side rendering via JSP (`result.jsp`)
+- **Database**: H2 in-memory database with Flyway migrations (`src/main/resources/db/migration/`)
+
+---
+
+### **Key Business Domains & Components**
+
+#### 1. **Authentication System**
+- **Servlets**: 
+  - `LoginServlet.java` (handles user login)
+  - `RegisterServlet.java` (handles user registration)
+- **Domain Objects**:
+  - `User.java` (user entity)
+  - `RegistrationResult.java` & `PasswordResult.java` (operation outcomes)
+- **Utilities**: 
+  - `LoginUtils.java` & `RegistrationUtils.java` (validation/password hashing)
+- **Security**: Custom password validation with result enums (`PasswordResultEnums`)
+
+#### 2. **Library Management System**
+- **Servlets**:
+  - `LibraryRegisterBookServlet.java` & `LibraryRegisterBorrowerServlet.java`
+  - `LibraryLendServlet.java` (book lending)
+  - Search/listing servlets for books/borrowers
+- **Domain Objects**:
+  - `Book.java`, `Borrower.java`, `Loan.java`
+  - `LibraryActionResults.java` (operation status)
+- **Business Logic**: `LibraryUtils.java` (validates lending rules)
+
+#### 3. **Mathematics Service**
+- **Servlets**: 
+  - `MathServlet.java` (basic calculations)
+  - `FibServlet.java` (Fibonacci numbers)
+  - `AckServlet.java` (Ackermann function)
+- **Core Logic**:
+  - `Calculator.java`, `Fibonacci.java`, `Ackermann.java`
+  - Iterative implementations for performance
+- **Error Handling**: Rejects non-integer inputs/large numbers
+
+#### 4. **Expense Calculation**
+- **Logic**: `AlcoholCalculator.java` (estimates alcohol costs)
+- **Domain**: `AlcoholResult.java`, `DinnerPrices.java`
+
+#### 5. **Desktop Application (Auto Insurance)**
+- **UI**: Swing-based (`AutoInsuranceUI.java`)
+- **Business Logic**: `AutoInsuranceProcessor.java` (premium calculations)
+- **Automation**: `AutoInsuranceScriptServer.java` (socket-based test control on port 8000)
+- **Domain**: 
+  - `AutoInsuranceAction.java` (premium outcome)
+  - `WarningLetterEnum.java` (warning levels)
+
+---
+
+### **Data Persistence Layer**
+- **Interface**: `IPersistenceLayer.java`
+- **Implementation**: `PersistenceLayer.java` (uses `SqlData.java` for query execution)
+- **Database Schema**:
+  - Tables: `person`, `book`, `borrower`, `loan`
+  - Migrations: `V1__Create_person_table.sql`, `V2__Rest_of_tables_for_auth_and_library.sql`
+- **Connection**: H2 database at `jdbc:h2:./build/db/training`
+
+---
+
+### **Testing Architecture**
+#### **Test Types & Tools**
+| **Test Type**       | **Location**              | **Framework/Tool**      |
+|---------------------|---------------------------|-------------------------|
+| Unit Tests          | `src/test/java/`          | JUnit 5, Mockito        |
+| Integration Tests   | `src/integration_test/`   | H2 test DB             |
+| BDD Tests           | `src/bdd_test/`           | Cucumber (Java), Behave (Python) |
+| UI Tests            | `src/ui_tests/`           | Selenium, Selenified    |
+| API Tests           | `src/api_tests/`          | Python/pytest          |
+| Desktop Tests       | `desktop_app/src/test/`   | Custom socket client    |
+
+#### **Testing Infrastructure**
+- **Coverage**: JaCoCo reports (`build/reports/jacoco/`)
+- **Mutation Testing**: Pitest (`gradlew pitest`)
+- **Performance**: JMeter (docs mention integration)
+- **Security**: OWASP Dependency Check (`gradlew dependencyCheckAnalyze`)
+
+---
+
+### **API Interfaces**
+| **Endpoint**               | **Method** | **Purpose**                     | **Servlet**              |
+|----------------------------|------------|---------------------------------|--------------------------|
+| `/demo/math`               | POST       | Integer addition                 | `MathServlet.java`       |
+| `/demo/register`           | POST       | User registration               | `RegisterServlet.java`   |
+| `/demo/login`              | POST       | User authentication             | `LoginServlet.java`      |
+| `/demo/registerbook`       | POST       | Add book to library             | `LibraryRegisterBookServlet.java` |
+| `/demo/lend`               | POST       | Lend book to borrower           | `LibraryLendServlet.java` |
+
+---
+
+### **Configuration & Deployment**
+- **Build**: Gradle 7.0 (wrapper scripts `gradlew`)
+- **CI/CD**: Jenkins pipeline (`jenkins/Jenkinsfile`)
+  - Stages: Build → Test → SonarQube → Deploy
+- **Databases**: H2 (dev/test), configurable for external DBs
+- **Logging**: Log4j2 (`log4j2.xml`)
+- **Hot Swap**: Gretty plugin for development
+- **Static Analysis**: SonarQube (quality gate), Checker Framework (type safety)
+
+---
+
+### **Architectural Patterns & Frameworks**
+- **Layered Architecture**: Servlets → Business Logic → Persistence
+- **Dependency Injection**: Manual via constructors (e.g., `PersistenceLayer`)
+- **Database Migration**: Flyway versioned scripts
+- **Testing Pyramid**: Unit → Integration → E2E
+- **Frontend**: SPA patterns (`library.js`, `catalog.js`)
+
+---
+
+### **Key Dependencies**
+```groovy
+// Core (from build.gradle)
+implementation 'org.apache.commons:commons-lang3'
+implementation 'javax.servlet:javax.servlet-api'
+testImplementation 'org.mockito:mockito-core'
+testImplementation 'org.junit.jupiter:junit-jupiter'
+```
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Bounded Contexts**:
+   - Authentication (users/passwords)
+   - Library (books/borrowers/loans)
+   - Math (calculations)
+   - Expense tracking
+2. **Shared Components**:
+   - Persistence layer (could become a shared service)
+   - Utilities (`StringUtils.java`, `CheckUtils.java`)
+3. **Decoupling Opportunities**:
+   - Extract servlets → REST APIs (Spring Boot)
+   - Separate frontend (React/Vue)
+   - Database per service
+
+---
+
+### **Critical Artifacts for Decomposition**
+- **Database Schema**: `src/integration_test/resources/db_sample_files/`
+- **API Contracts**: SoapUI/Postman configs in `docs/api_testing/`
+- **Business Rules**: 
+  - Insurance premiums (`AutoInsuranceProcessor.java`)
+  - Library lending logic (`LibraryUtils.java`)
+- **Security**: Authentication flow (`LoginServlet.java`)
+
+=== summary_chunk_2.txt ===
+
+
+### Architectural Summary for Microservice Decomposition Analysis
+
+---
+
+#### **Core Application Components**
+1. **Java Web Application**
+   - **Framework**: Server-side rendering with Tomcat 9
+   - **Database**: H2 (file-based and in-memory modes)
+     - File location: `build/db/training.mv.db` (unit tests)
+     - Migrations managed via FlywayDB
+   - **Business Logic**: Domain-separated packages (e.g., `com.coveros.training.library`, `authentication`)
+   - **API Endpoints**: Java Servlets with `@WebServlet(urlPatterns = {"/path"})` annotations
+     - Examples: `/math`, `/register`, `/lend`, `/flyway` (DB reset)
+
+2. **Persistence Layer**
+   - Centralized access via `PersistenceLayer.java`
+   - Supports transactions, CRUD operations, and schema migrations
+   - H2-specific optimizations for PostgreSQL compatibility
+
+---
+
+#### **CI/CD Pipeline (Jenkins)**
+- **Orchestrator**: Jenkins (port 8080 on `jenkinsbox`)
+- **Pipeline Stages** (`Jenkinsfile`):
+  1. **Build**: Gradle WAR assembly
+  2. **Testing**:
+     - Unit tests (`test`)
+     - DB integration tests (`integrate`)
+     - BDD tests (`generateCucumberReports`)
+     - API tests (`runApiTests`)
+     - UI tests (`runBehaveTests`, Selenium)
+  3. **Static Analysis**: SonarQube (`sonarqube`, quality gates)
+  4. **Security**: OWASP Dependency Check
+  5. **Performance**: JMeter (50-user simulation)
+  6. **Deployment**: Token prod-deploy step
+- **Triggers**: Git post-receive hooks to `http://jenkinsbox:8080/demo`
+
+---
+
+#### **Testing Architecture**
+1. **Test Types & Locations**:
+   - **Unit Tests**: `src/test/java`
+   - **Integration Tests**: `src/integration_test/java`
+   - **BDD Tests**: `src/bdd_test/` (Cucumber + Java)
+   - **API Tests**: `src/api_tests/test_api.py` (Python/pytest)
+   - **UI Tests**: `src/ui_tests/` (Selenium/Behave)
+   - **Performance Tests**: JMeter (`demo.jmx`)
+
+2. **Test Environments**:
+   - **Jenkinsbox** (IP: `192.168.56.101`):
+     - CI/CD, Git repo, SonarQube (port 9000)
+     - H2O web server (port 80) serving reports
+   - **UITestbox** (IP: `192.168.56.102`):
+     - Tomcat (port 8080), Chrome, Chromedriver
+     - OWASP ZAP (port 8888 proxy)
+     - Selenium Grid support
+
+---
+
+#### **Security & Monitoring**
+1. **Security Scanning**:
+   - **OWASP ZAP**: Proxy for UI/API tests (reports at `/reports/zap_report.html`)
+   - **Dependency Analysis**: OWASP Dependency Check
+2. **Monitoring**:
+   - **JMX**: Tomcat monitored via JConsole (port 9999)
+   - **Logs**: Centralized in `/var/log/` (e.g., H2O, Jenkins)
+
+---
+
+#### **Service Communication**
+- **Internal API Calls**: HTTP POST/GET (e.g., `requests.post("%s/demo/math" % URL, data={...})`)
+- **VM Networking**:
+  - Host-only adapter: Inter-VM communication (e.g., Jenkins → UITestbox)
+  - NAT: External internet access
+- **SSH**: Passwordless between VMs (`PermitEmptyPasswords yes`)
+
+---
+
+#### **Deployment Infrastructure**
+1. **Virtual Machines**:
+   - **Jenkinsbox**: CentOS 7 (Jenkins, SonarQube, Git, H2O)
+   - **UITestbox**: CentOS 7 + KDE (Tomcat, Chrome, ZAP)
+2. **Configurations**:
+   - **Firewall/SELinux**: Disabled for ease of use
+   - **Hosts File**: Resolves `jenkinsbox`/`uitestbox` to IPs
+3. **SSL/TLS**: 
+   - Self-signed certs for Tomcat (port 8443)
+   - Generated via OpenSSL (`training.crt`, `.key`, `.p12`)
+
+---
+
+#### **Data Models & Key Business Logic**
+1. **Library Domain**:
+   - **Entities**: `Book`, `Borrower`, `Loan`
+   - **Actions**: Lend/borrow books, manage inventory
+2. **Authentication**:
+   - Password entropy validation (`RegistrationUtils.isPasswordGood()`)
+   - User registration/login via `RegistrationUtils`, `LoginUtils`
+3. **Math Services**:
+   - Ackermann function, Fibonacci, arithmetic operations
+4. **Alcohol Expense Calculator**:
+   - Splits restaurant bills (food vs. alcohol portions)
+
+---
+
+#### **Architectural Patterns & Best Practices**
+1. **Design Principles**:
+   - **Immutability**: Immutable data structures (e.g., `Book`, `Borrower`)
+   - **Null Avoidance**: Domain objects validate state
+   - **Domain-Driven Design**: Packages separated by business domain
+2. **Testing Strategy**:
+   - TDD/BDD collaboration (Gherkin scenarios)
+   - Mutation testing (`pitest`) for test quality validation
+3. **CI/CD Integration**:
+   - Git triggers Jenkins builds
+   - SonarQube enforces quality gates
+   - Automated security/performance testing
+
+---
+
+### Microservice Decomposition Insights
+1. **Candidate Services**:
+   - **Auth Service**: User registration/login (isolated credentials).
+   - **Library Service**: Book/borrower/loan management.
+   - **Math Service**: Pure computations (Ackermann, Fibonacci).
+   - **CI/CD Service**: Jenkins orchestration + monitoring.
+   - **Security Service**: OWASP integration.
+2. **Data Separation**:
+   - H2 DB schemas can be split per domain (auth, library, math).
+3. **Deployment Boundaries**:
+   - `uitestbox` isolates UI/security testing tools.
+   - `jenkinsbox` centralizes build/deployment tooling.
+
+This summary preserves all critical details for microservice analysis, highlighting clear service boundaries, data dependencies, and communication patterns.
+
+=== summary_chunk_3.txt ===
+
+
+## Architectural Summary: Codebase Chunk 3
+
+### **Core Components and Responsibilities**
+
+#### **1. Authentication Module**
+- **`LoginServlet`**: HTTP endpoint (`/login`) for user authentication
+- **`RegisterServlet`**: HTTP endpoint (`/register`) for user registration
+- **`LoginUtils`**: Business logic for credential validation
+- **`RegistrationUtils`**: User registration logic with password complexity checks (Nbvcxz library)
+- **Domain Objects**:
+  - `User`: User data model (name, id)
+  - `RegistrationResult`: Registration outcome status
+  - `PasswordResult`: Password security metrics (entropy, crack time)
+
+#### **2. Library Management Module**
+- **Servlets**:
+  - `LibraryBookListAvailableServlet`: List available books (`/listavailable`)
+  - `LibraryBookListSearchServlet`: Book CRUD/search (`/book`)
+  - `LibraryBorrowerListSearchServlet`: Borrower CRUD/search (`/borrower`)
+  - `LibraryLendServlet`: Book lending (`/lend`)
+  - `LibraryRegisterBookServlet`: Book registration (`/registerbook`)
+  - `LibraryRegisterBorrowerServlet`: Borrower registration (`/registerborrower`)
+- **`LibraryUtils`**: Core business logic for library operations
+- **Domain Objects**:
+  - `Book`: Book data model (title, id)
+  - `Borrower`: Borrower data model (name, id)
+  - `Loan`: Loan data model (book, borrower, date, id)
+  - `LibraryActionResults`: Operation outcome enums
+
+#### **3. Persistence Layer**
+- **`IPersistenceLayer`**: Interface for all database operations
+- **`PersistenceLayer`**: Implementation (referenced, not shown)
+- **`DbServlet`**: Database management (`/flyway`) with clean/migrate actions
+- **`EmptyDataSource`**: Null object pattern for testing
+- **Schema**:
+  - Tables: `BOOK`, `BORROWER`, `LOAN`, `USER`, `flyway_schema_history`
+  - Relationships: `LOAN` references `BOOK` and `BORROWER`
+  - Schema managed by Flyway migrations
+
+#### **4. Utilities**
+- **`ServletUtils`**: Request forwarding to JSPs (`result.jsp`, `restfulresult.jsp`)
+- **`StringUtils`**: JSON escaping, null safety
+- **`CheckUtils`**: Input validation (null/empty checks, invariants)
+
+---
+
+### **API Endpoints and Interfaces**
+| **Path**          | **Method** | **Purpose**                     | **Module**       |
+|--------------------|------------|---------------------------------|------------------|
+| `/login`          | POST       | User authentication             | Authentication   |
+| `/register`       | POST       | User registration               | Authentication   |
+| `/book`           | GET        | Book CRUD/search                | Library          |
+| `/borrower`       | GET        | Borrower CRUD/search            | Library          |
+| `/lend`           | POST       | Lend a book                     | Library          |
+| `/registerbook`   | POST       | Register new book               | Library          |
+| `/registerborrower`| POST      | Register new borrower           | Library          |
+| `/listavailable`  | GET        | List available books            | Library          |
+| `/flyway`         | GET        | Database management             | Persistence      |
+
+---
+
+### **Database Schema and Data Models**
+- **Schemas**:
+  - `ADMINISTRATIVE`: Flyway migrations
+  - `LIBRARY`: Books (`BOOK`), borrowers (`BORROWER`), loans (`LOAN`)
+  - `AUTH`: Users (`USER`)
+- **Key Relationships**:
+  - `LOAN.BOOK` → `BOOK.ID` (FK)
+  - `LOAN.BORROWER` → `BORROWER.ID` (FK)
+- **Domain Models**:
+  - **Book**: `{id, title}`
+  - **Borrower**: `{id, name}`
+  - **Loan**: `{id, book, borrower, borrow_date}`
+  - **User**: `{id, name, password_hash}`
+
+---
+
+### **Service Dependencies and Communication Patterns**
+- **Dependencies**:
+  - Library utils → Persistence layer
+  - Authentication utils → Persistence layer
+  - Servlets → Business logic utils
+- **Communication**:
+  - Synchronous HTTP requests (servlet-based)
+  - Direct method calls between layers (no async/messaging)
+  - Database-centric (H2 in tests, PostgreSQL implied)
+
+---
+
+### **Key Business Logic**
+1. **Authentication**:
+   - Password strength validation (entropy, crack time)
+   - Credential hashing (BCrypt implied)
+2. **Library Operations**:
+   - Book lending (check for existing loans)
+   - Entity registration (books/borrowers)
+   - Availability queries (exclude loaned books)
+3. **Persistence**:
+   - Flyway migrations for schema evolution
+   - Backup/restore via SQL scripts
+
+---
+
+### **Configuration and Deployment Details**
+- **Database**:
+  - H2 for testing (`./build/db/training`)
+  - Connection pooling (`JdbcConnectionPool`)
+  - Flyway for migrations
+- **Servlets**:
+  - Tomcat deployment (`@WebServlet`)
+  - Load-on-startup priority (`loadOnStartup=1`)
+- **Test Data**:
+  - SQL backups in `/resources/db_sample_files/`
+  - Versioned schemas (`v2_*.sql`)
+
+---
+
+### **Architectural Patterns and Frameworks**
+- **Layered Architecture**:
+  - Servlets (Web) → Utils (Business) → Persistence (Data)
+- **Domain-Driven Design**:
+  - Immutable domain objects with validation
+  - Explicit business logic in utils
+- **Dependency Injection**:
+  - Constructor injection in utils (`LoginUtils`, `LibraryUtils`)
+- **Testing Patterns**:
+  - Database backups for test state restoration
+  - Mock objects for exception testing
+- **Frameworks**:
+  - Servlet API (HTTP handling)
+  - Flyway (schema migrations)
+  - H2 (in-memory database)
+  - Nbvcxz (password security)
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Authentication Service**:
+   - Scope: User registration, login, password policies
+   - Endpoints: `/login`, `/register`
+   - DB: `AUTH.USER` table
+2. **Library Service**:
+   - Scope: Book/borrower CRUD, lending, availability
+   - Endpoints: `/book`, `/borrower`, `/lend`, `/listavailable`
+   - DB: `LIBRARY.*` tables
+3. **Shared Persistence**:
+   - Abstracted via `IPersistenceLayer`
+   - Could be a shared microservice or library
+4. **Common Utilities**:
+   - `ServletUtils`, `StringUtils`, `CheckUtils` as shared library
+   - Domain models in separate package
+
+**Key Considerations**:
+- Tight coupling between library operations and persistence
+- Database schema changes require coordination
+- Password policies (Nbvcxz) should be centralized in auth service
+
+=== summary_chunk_4.txt ===
+
+
+## Architectural Summary: Part 4 - Persistence Layer and Web Components
+
+### **Core Components & Responsibilities**
+1. **Persistence Layer (`PersistenceLayer.java`)**
+   - Centralized data access implementing `IPersistenceLayer`
+   - Database management via H2 in-memory DB (PostgreSQL mode)
+   - Micro-ORM implementation for CRUD operations
+   - Flyway integration for schema migrations
+   - Transaction handling (implicit via JDBC auto-commit)
+
+2. **Database Migration (`WebAppListener.java`)**
+   - Executes schema migration at app startup
+   - Manages DB lifecycle (clean/migrate via Flyway)
+
+3. **Web Infrastructure**
+   - **Servlets**: `LoginServlet`, `RegisterServlet`, library/book/borrower management endpoints
+   - **Static Resources**: HTML/CSS/JS for library UI (`library.html`, `library.js`)
+   - **Tomcat Integration**: Context initialization for DB setup
+
+---
+
+### **API Endpoints**
+| **Module** | **Endpoint** | **Method** | **Function** |
+|------------|--------------|------------|--------------|
+| **Auth** | `/login` | POST | User authentication |
+| | `/register` | POST | User registration |
+| **Library** | `/book` | GET/POST | Book search/create |
+| | `/borrower` | GET/POST | Borrower management |
+| | `/lend` | POST | Loan book to borrower |
+| | `/flyway` | POST | DB migration control |
+| **Admin** | `/console` | GET | H2 DB console access |
+
+---
+
+### **Database Schema**
+#### **LIBRARY Schema**
+```sql
+CREATE TABLE BOOK (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE BORROWER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE LOAN (
+  id SERIAL PRIMARY KEY,
+  book INT REFERENCES BOOK(id),
+  borrower INT REFERENCES BORROWER(id),
+  borrow_date DATE NOT NULL
+);
+```
+
+#### **AUTH Schema**
+```sql
+CREATE TABLE USER (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(100)
+);
+```
+
+---
+
+### **Data Models & Domain Objects**
+| **Domain** | **Core Objects** | **Key Fields** |
+|------------|------------------|----------------|
+| **Library** | `Book` | id, title |
+| | `Borrower` | id, name |
+| | `Loan` | id, book, borrower, borrow_date |
+| **Auth** | `User` | id, name, passwordHash |
+| **Result Types** | `LibraryActionResults`, `RegistrationResult` | status, messages |
+
+---
+
+### **Service Dependencies**
+```mermaid
+graph LR
+  A[Web Layer] --> B[Business Logic]
+  B --> C[Persistence Layer]
+  C --> D[H2 Database]
+  E[Flyway] --> C
+  F[Tomcat] --> A
+```
+
+---
+
+### **Key Business Logic**
+1. **Authentication Flow**
+   - SHA-256 password hashing
+   - Credential validation via `areCredentialsValid()`
+2. **Library Operations**
+   - Book lending (with conflict checks)
+   - Borrower/book registration
+   - Loan tracking by book/borrower
+3. **Migration Process**
+   - Clean/migrate schema on startup
+   - Backup/restore capabilities
+
+---
+
+### **Architectural Patterns**
+1. **Micro-ORM**
+   - Custom SQL execution framework (`SqlData`, `ParameterObject`)
+   - Type-safe parameter binding
+   - Result extraction via functional interfaces
+2. **MVC Architecture**
+   - Servlets as Controllers
+   - Domain objects as Models
+   - JSPs/HTML as Views
+3. **Dependency Injection**
+   - Constructor injection for `IPersistenceLayer`
+   - Static utilities for cross-cutting concerns (`CheckUtils`, `StringUtils`)
+
+---
+
+### **Configuration & Deployment**
+- **Database**: H2 in-memory (`jdbc:h2:mem:training`)
+- **Server**: Apache Tomcat (embedded via Maven)
+- **Migration**: Flyway with versioned SQL scripts (`V1__`, `V2__`)
+- **Logging**: Log4j2 (console output at INFO level)
+- **Build**: Maven-based project structure
+
+---
+
+### **Critical Considerations for Microservice Decomposition**
+1. **Domain Boundaries**
+   - Clear separation between **Library** (books/borrowers/loans) and **Auth** (users)
+   - Potential services:
+     - *Book Service*: Catalog management
+     - *Lending Service*: Loan lifecycle
+     - *User Service*: Authentication/registration
+2. **Database Splitting**
+   - Separate schemas per domain already exist
+   -需refactor shared connection pool logic
+3. **API Refactoring**
+   - Current servlets tightly coupled to persistence
+   -需implement RESTful APIs with DTOs
+4. **State Management**
+   - Migrate from in-memory H2 to persistent storage per service
+5. **Frontend Decoupling**
+   - `library.js` needs API gateway integration
+   - Consider moving to SPA architecture
+
+---
+
+### **Technology Stack**
+- **Core**: Java 11+, Servlet API, JDBC
+- **Persistence**: H2 Database, Flyway
+- **Web**: Tomcat, JSP, Vanilla JavaScript
+- **Testing**: JUnit, Mockito, Selenified (E2E)
+- **Security**: SHA-256 password hashing
+
+This architecture demonstrates a well-structured monolith with clear domain boundaries, making it suitable for decomposition into discrete microservices. The persistence layer's micro-ORM is a key abstraction that can be replaced with service-specific data access patterns during migration.
+
+=== summary_chunk_5.txt ===
+
+
+## Architectural Summary - Codebase Part 5
+
+### **Domain Objects & Core Entities**
+| Component | Responsibilities | Key Features |
+|-----------|------------------|--------------|
+| `Book` | Library book entity | ID, title fields; `createEmpty()`; JSON serialization via `toString()` |
+| `Borrower` | Library user entity | ID, name fields; `createEmpty()`; JSON output via `toOutputString()` |
+| `Loan` | Book lending record | Book/Borrower association, loan date; `createEmpty()` |
+
+---
+
+### **Mathematical Computation Services**
+| Component | Algorithms | APIs |
+|-----------|------------|------|
+| `Ackermann` | Recursive/iterative Ackermann function | `AckServlet` (HTTP POST) |
+| `Fibonacci` | Recursive/iterative Fibonacci | `FibServlet` (HTTP POST) |
+| `Calculator` | Basic arithmetic | `MathServlet` (HTTP POST) |
+| **Test Coverage** | Parameterized tests for edge cases | - Algorithm selection via request params<br>- JUnit parameterized suites |
+
+---
+
+### **Persistence Layer**
+| Component | Functionality | Test Details |
+|-----------|----------------|--------------|
+| `IPersistenceLayer` | Database operations abstraction | - `DbServlet` exposes `clean()`, `migrate()` via HTTP GET |
+| `SqlData` | SQL query construction | - Type-safe parameter binding<br>- Prepared statement handling |
+| `ParameterObject` | Generic parameter container | - Type-validated parameters<br>- Empty state detection |
+| `EmptyDataSource` | Null object pattern stub | - Throws `NotImplementedException` for all methods |
+
+---
+
+### **Web Layer & APIs**
+| Servlet | Endpoints | Request/Response |
+|---------|-----------|------------------|
+| `AckServlet` | `/demo` (POST) | Params: `ack_param_m/n`, `ack_algorithm_choice` |
+| `FibServlet` | `/demo` (POST) | Params: `fib_param_n`, `fib_algorithm_choice` |
+| `MathServlet` | `/demo` (POST) | Params: `item_a`, `item_b` |
+| `DbServlet` | `/demo` (GET) | Param: `action` (clean/migrate) |
+| **Response Handling** | Forward to `RESTFUL_RESULT_JSP` | - Error logging via SLF4J<br>- Result display on UI |
+
+---
+
+### **UI Testing Infrastructure**
+#### **Multi-Language Selenium Tests**
+| Language | Test Scenarios | Framework |
+|----------|----------------|-----------|
+| Java | Book lending, login, UI interactions | JUnit + WebDriver |
+| C# | End-to-end lending workflow | NUnit |
+| JavaScript | Core UI flows | Mocha + Selenium |
+| Python | Dropdown/autocomplete logic | Pytest |
+| **Key Tests** | - Book/borrower registration<br>- Quote handling in data<br>- Dynamic UI elements (dropdown/autocomplete) | Page Object Model pattern |
+
+#### **BDD Tests (Behave/Python)**
+| Feature | Scenarios | Coverage |
+|---------|-----------|----------|
+| Authentication | User registration/login | UI workflow validation |
+| Librarian UI | Book checkout process | `@given/@when/@then` steps |
+| **Environment** | - Chrome WebDriver<br>- Database reset via `/demo/flyway` | Browser automation config in `environment.py` |
+
+---
+
+### **Deployment & Configuration**
+| Component | Details |
+|-----------|----------|
+| `WebAppListener` | - Context init triggers `cleanAndMigrateDatabase()`<br>- Tomcat lifecycle integration |
+| Database Initialization | Flyway migration via HTTP call to `/demo/flyway` |
+| UI Test Execution | - Cross-language test runners<br>- Chrome WebDriver dependency<br>- Local server requirement (`localhost:8080`) |
+
+---
+
+### **Architectural Patterns**
+1. **Servlet-Based API Layer**  
+   - Stateless HTTP endpoints for business logic
+   - Request routing via parameters (`algorithm_choice`)
+
+2. **Domain-Driven Design**  
+   - Clear entity boundaries (Book/Borrower/Loan)
+   - Domain logic separation in `mathematics` package
+
+3. **Persistence Abstraction**  
+   - Interface-based data access (`IPersistenceLayer`)
+   - SQL builder pattern (`SqlData`)
+
+4. **Multi-Tier Testing**  
+   - Unit tests: JUnit/EqualsVerifier for domain objects
+   - UI tests: Selenium/Behave across languages
+   - Integration tests: Servlet mocking with Mockito
+
+---
+
+### **Microservice Decomposition Insights**
+1. **Candidate Services**  
+   - **Library Service**: Manages books, borrowers, loans  
+   - **Math Service**: Provides calculation algorithms  
+   - **Auth Service**: Handles user registration/login  
+   - **Database Migration Service**: Flyway management  
+
+2. **Decompression Points**  
+   - Servlet endpoints → RESTful microservice APIs  
+   - Domain objects → Shared libraries between services  
+   - UI tests → Contract testing across service boundaries  
+
+3. **Data Flow**  
+   ```mermaid
+   Client → UI → Servlet → Service → Persistence
+              ↓
+        Selenium/Behave Tests
+   ```
+
+4. **Key Considerations**  
+   - Stateless servlets enable easy containerization  
+   - Algorithm selection (recursive/iterative) suitable for feature flags  
+   - UI test suite validates service integration end-to-end  
+
+This summary preserves critical architectural details for analyzing service boundaries, API contracts, and deployment topology in a microservices migration.
