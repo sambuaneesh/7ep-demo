@@ -1,0 +1,165 @@
+### Architectural Summary for Microservice Decomposition Analysis
+
+#### Component Names and Responsibilities
+
+1. **PersistenceLayer**
+   - **Responsibility**: Manages database interactions including CRUD operations for books, borrowers, and loans. Also handles authentication-related database operations such as saving and validating users.
+   - **Interfaces**: Implements `IPersistenceLayer`.
+   - **Communication Patterns**: Uses JDBC for direct database access and FlywayDB for database migrations.
+
+2. **ParameterObject**
+   - **Responsibility**: A simple POJO to encapsulate parameters for SQL statements, holding both the data and its type.
+   - **Communication Patterns**: Used within `PersistenceLayer` for parameterized queries.
+
+3. **SqlData**
+   - **Responsibility**: Encapsulates SQL statement details and provides methods to apply parameters and extract results from `ResultSet`.
+   - **Communication Patterns**: Used within `PersistenceLayer` for executing SQL statements.
+
+4. **SqlRuntimeException**
+   - **Responsibility**: Custom exception class for wrapping SQL exceptions.
+   - **Communication Patterns**: Thrown in `PersistenceLayer` when SQL operations fail.
+
+5. **WebAppListener**
+   - **Responsibility**: Initializes the application context by cleaning and migrating the database using Flyway.
+   - **Communication Patterns**: Implements `ServletContextListener` to hook into Tomcat lifecycle events.
+
+6. **LibraryUtils**
+   - **Responsibility**: Provides higher-level library business logic such as lending books, registering borrowers, and deleting books or borrowers.
+   - **Communication Patterns**: Interacts with `PersistenceLayer` for data operations.
+
+7. **LoginUtils**
+   - **Responsibility**: Handles user authentication logic, including checking if credentials are valid and determining if a user is already registered.
+   - **Communication Patterns**: Interacts with `PersistenceLayer` for data operations.
+
+8. **RegistrationUtils**
+   - **Responsibility**: Manages user registration logic, including validating passwords and checking for existing users.
+   - **Communication Patterns**: Interacts with `PersistenceLayer` for data operations.
+
+9. **Servlets**
+   - **Responsibility**: Expose web endpoints for user interaction, including login, registration, lending books, and searching for books and borrowers.
+   - **Communication Patterns**: Interact with `LibraryUtils`, `LoginUtils`, and `RegistrationUtils` for business logic.
+
+#### API Endpoints and Interfaces
+
+1. **Endpoints Catalog**
+   - `/math`: Endpoint to perform addition of two integers.
+   - `/fibonacci`: Endpoint to calculate the nth Fibonacci number using different algorithms.
+   - `/ackermann`: Endpoint to calculate the Ackermann function using different algorithms.
+   - `/book`: Endpoint to list and search books by title or ID.
+   - `/borrower`: Endpoint to list and search borrowers by name or ID.
+   - `/login`: Endpoint to authenticate a librarian.
+   - `/register`: Endpoint to register a new librarian.
+   - `/lend`: Endpoint to lend a book to a borrower.
+   - `/registerbook`: Endpoint to register a new book.
+   - `/registerborrower`: Endpoint to register a new borrower.
+   - `/flyway`: Endpoint to manage database migrations (clean, migrate, clean and migrate).
+
+2. **JSP Pages**
+   - `/restfulresult.jsp`: Displays RESTful API results.
+   - `/result.jsp`: Displays general operation results with a return link.
+
+3. **HTML Pages**
+   - `/index.html`: Main entry point with links to other functionalities.
+   - `/library.html`: Form-based UI for librarian actions.
+   - `/endpointcatalog.html`: Catalog of available endpoints.
+   - `/dbhelp.html`: Help page for database connection.
+
+#### Database Schemas and Data Models
+
+1. **Schema: LIBRARY**
+   - **Table: BOOK**
+     - `id`: Serial, Primary Key
+     - `title`: VARCHAR(100), Not Null
+   - **Table: BORROWER**
+     - `id`: Serial, Primary Key
+     - `name`: VARCHAR(100), Not Null
+   - **Table: LOAN**
+     - `id`: Serial, Primary Key
+     - `book`: INT, Not Null, Foreign Key referencing BOOK(id)
+     - `borrower`: INT, Not Null, Foreign Key referencing BORROWER(id)
+     - `borrow_date`: DATE, Not Null
+
+2. **Schema: AUTH**
+   - **Table: USER**
+     - `id`: Serial, Primary Key
+     - `name`: VARCHAR(100), Not Null
+     - `password_hash`: VARCHAR(100)
+
+3. **Data Models**
+   - **Book**: Represents a book with `id` and `title`.
+   - **Borrower**: Represents a borrower with `id` and `name`.
+   - **Loan**: Represents a loan record with `book`, `borrower`, `id`, and `borrow_date`.
+   - **User**: Represents an authenticated user with `name` and `id`.
+
+#### Service Dependencies and Communication Patterns
+
+- **PersistenceLayer** depends on:
+  - `DataSource` for database connections.
+  - `Flyway` for database migrations.
+  - `ParameterObject` for parameterized queries.
+  - `SqlData` for encapsulating SQL statement details.
+- **LibraryUtils** depends on:
+  - `PersistenceLayer` for database operations.
+- **LoginUtils** depends on:
+  - `PersistenceLayer` for credential validation.
+- **RegistrationUtils** depends on:
+  - `PersistenceLayer` for checking existing users and saving new users.
+- **Servlets** depend on:
+  - `LibraryUtils`, `LoginUtils`, and `RegistrationUtils` for business logic.
+  - `HttpServletRequest` and `HttpServletResponse` for handling HTTP requests and responses.
+  - `RequestDispatcher` for forwarding requests to JSP pages.
+
+#### Key Business Logic and Algorithms
+
+1. **Library Operations**
+   - **Lending Books**: Checks if the book is already borrowed, then registers a new loan.
+   - **Registering Borrowers**: Ensures the borrower is not already registered, then saves the new borrower.
+   - **Deleting Books/Borrowers**: Validates the existence of the book/borrower before deletion.
+
+2. **Authentication**
+   - **User Registration**: Validates password strength, checks for existing users, and saves new users with hashed passwords.
+   - **Credential Validation**: Compares hashed passwords stored in the database with the provided password hash.
+
+3. **Database Migration**
+   - **FlywayDB**: Cleans and migrates the database schema based on SQL scripts located in `src/main/resources/db/migration`.
+
+#### Configuration and Deployment Details
+
+1. **Logging Configuration**
+   - **File**: `log4j2.xml`
+   - **Details**: Configures logging to the console with an INFO level.
+
+2. **Database Configuration**
+   - **File**: `src/main/resources/db/README.txt`
+   - **Details**: Specifies Flyway migration scripts for schema management.
+
+3. **Tomcat Configuration**
+   - **File**: `src/main/webapp/WEB-INF/web.xml`
+   - **Details**: Configures servlets and sets up the H2 database console.
+
+4. **Testing Configuration**
+   - **Integration Tests**: Use Mockito to mock external dependencies and test servlet endpoints.
+   - **Unit Tests**: Test utility classes and business logic without external dependencies.
+
+#### Architectural Patterns and Frameworks Used
+
+1. **Micro ORM**: Simplistic ORM implementation within `PersistenceLayer` to abstract SQL execution.
+2. **Dependency Injection**: Through constructor injection in `PersistenceLayer` and field injection in servlets.
+3. **FlywayDB**: For database schema migrations.
+4. **JDBC**: For direct database access.
+5. **JUnit and Mockito**: For unit and integration testing.
+6. **Servlet API**: For creating web endpoints.
+7. **H2 Database**: In-memory database for development and testing.
+8. **Logging with Log4j2**: For logging application events.
+
+### Summary of Critical Information for Microservice Decomposition
+
+- **PersistenceLayer**: Could be decomposed into separate services for library and authentication data management.
+- **LibraryUtils**: Business logic for library operations could be extracted into a separate service.
+- **LoginUtils**: Authentication logic could be separated into its own service.
+- **RegistrationUtils**: User registration logic could be moved to a dedicated service.
+- **Servlets**: Each servlet could potentially be a separate microservice exposing RESTful APIs.
+- **Database**: Separate schemas for library and authentication suggest potential separation into distinct databases.
+- **Testing**: Existing tests can be leveraged to ensure that each microservice works correctly in isolation and integrates properly with others.
+
+This summary provides a comprehensive overview of the components, their responsibilities, communication patterns, and configuration details, enabling informed decisions for microservice decomposition.

@@ -1,0 +1,128 @@
+### Architectural Summary of Codebase Chunk 2
+
+#### Components and Responsibilities
+
+1. **Authentication Module**
+   - **LoginServlet**: Provides an API endpoint (`/login`) for user authentication. It handles HTTP POST requests containing username and password, validates credentials, and forwards the result.
+   - **LoginUtils**: Contains business logic to determine if credentials are valid for authentication. Uses `IPersistenceLayer` to interact with the database.
+   - **RegisterServlet**: Provides an API endpoint (`/register`) for registering new users. Handles HTTP POST requests, processes registration, and forwards the result.
+   - **RegistrationUtils**: Contains business logic for evaluating registration attempts. Checks username uniqueness, password complexity, and saves credentials to the database.
+   - **Domain Objects**:
+     - **User**: Represents a user in the system with attributes like `name` and `id`.
+     - **RegistrationResult**: Holds results of user registration attempts.
+     - **PasswordResult**: Holds results of password complexity checks.
+
+2. **Cartesian Product Module**
+   - **CartesianProduct**: Currently lacks implementation. Should calculate the Cartesian product of multiple sets.
+   - **No Servlets**: There are no API endpoints defined for this module.
+
+3. **Expenses Module**
+   - **AlcoholCalculator**: Currently lacks implementation. Should calculate the portion of a restaurant check that is alcohol-related.
+   - **AlcoholResult**: Holds results of alcohol expense calculations.
+   - **DinnerPrices**: Data model representing dinner prices including subtotal, food total, tip, and tax.
+   - **No Servlets**: There are no API endpoints defined for this module.
+
+4. **Library Module**
+   - **LibraryBookListAvailableServlet**: Provides an API endpoint (`/listavailable`) to list all books available for borrowing. Handles HTTP GET requests.
+   - **LibraryBookListSearchServlet**: Provides an API endpoint (`/book`) to list all books or search for books by title or ID. Handles HTTP GET requests.
+   - **LibraryBorrowerListSearchServlet**: Provides an API endpoint (`/borrower`) to list all borrowers or search for borrowers by name or ID. Handles HTTP GET requests.
+   - **LibraryLendServlet**: Provides an API endpoint (`/lend`) to lend a book to a borrower. Handles HTTP POST requests.
+   - **LibraryRegisterBookServlet**: Provides an API endpoint (`/registerbook`) to register a new book with the library. Handles HTTP POST requests.
+   - **LibraryRegisterBorrowerServlet**: Provides an API endpoint (`/registerborrower`) to register a new borrower with the library. Handles HTTP POST requests.
+   - **LibraryUtils**: Contains business logic for handling library needs, including registering books and borrowers, lending books, and searching for loans.
+   - **Domain Objects**:
+     - **Book**: Represents a book in the library with attributes like `title` and `id`.
+     - **Borrower**: Represents a borrower in the library with attributes like `name` and `id`.
+     - **Loan**: Represents a loan of a book to a borrower with attributes like `checkoutDate`, `book`, `borrower`, and `id`.
+     - **LibraryActionResults**: Enum representing possible results of library business functions.
+
+5. **Mathematics Module**
+   - **AckServlet**: Provides an API endpoint (`/ackermann`) to calculate Ackermann's function using either recursive or tail-recursive algorithms. Handles HTTP POST requests.
+   - **FibServlet**: Provides an API endpoint (`/fibonacci`) to calculate Fibonacci numbers using either recursive or tail-recursive algorithms. Handles HTTP POST requests.
+   - **MathServlet**: Provides an API endpoint (`/math`) to perform simple addition of two integers. Handles HTTP POST requests.
+   - **Ackermann**: Static utility class to calculate Ackermann's function recursively.
+   - **AckermannIterative**: Interface and implementation for calculating Ackermann's function using a tail-recursive approach.
+   - **Fibonacci**: Static utility class to calculate Fibonacci numbers recursively.
+   - **FibonacciIterative**: Class containing iterative algorithms for calculating Fibonacci numbers.
+   - **Calculator**: Utility class with methods for adding integers, doubles, and pairs. Also includes methods for testing stubs and mocks.
+
+6. **Persistence Module**
+   - **DbServlet**: Provides an API endpoint (`/flyway`) to manage database state, including cleaning, migrating, and restoring the database. Handles HTTP GET requests.
+   - **IPersistenceLayer**: Interface defining methods for database interactions, ensuring that only this interface interacts with the database.
+   - **PersistenceLayer**: Implementation of `IPersistenceLayer` using H2 in-memory database. Manages CRUD operations and database migrations.
+   - **EmptyDataSource**: Provides an empty implementation of `DataSource` for testing purposes.
+   - **SqlData**: Encapsulates SQL statements and parameters for easier execution.
+   - **SqlRuntimeException**: Custom exception for handling SQL errors.
+
+7. **Helpers Module**
+   - **AssertionException**: Thrown when an assertion fails.
+   - **CheckUtils**: Helper methods to assert conditions, throwing exceptions if conditions are not met.
+   - **ServletUtils**: Helper methods to forward requests to JSP pages.
+   - **StringUtils**: Helper methods for string manipulation, including escaping for JSON.
+
+8. **Tomcat Configuration Module**
+   - **WebAppListener**: Configures the application at startup, cleaning and migrating the database using Flyway.
+
+#### API Endpoints and Interfaces
+
+- **Authentication**
+  - `/login`: POST request for user authentication.
+  - `/register`: POST request for user registration.
+- **Library**
+  - `/listavailable`: GET request to list all available books.
+  - `/book`: GET request to list or search books by title or ID.
+  - `/borrower`: GET request to list or search borrowers by name or ID.
+  - `/lend`: POST request to lend a book to a borrower.
+  - `/registerbook`: POST request to register a new book.
+  - `/registerborrower`: POST request to register a new borrower.
+- **Mathematics**
+  - `/ackermann`: POST request to calculate Ackermann's function.
+  - `/fibonacci`: POST request to calculate Fibonacci numbers.
+  - `/math`: POST request to add two integers.
+- **Persistence**
+  - `/flyway`: GET request to manage database state.
+
+#### Database Schemas and Data Models
+
+- **Schema**: The application uses three schemas: `ADMINISTRATIVE`, `AUTH`, and `LIBRARY`.
+- **Tables**:
+  - `ADMINISTRATIVE.flyway_schema_history`: Tracks Flyway migrations.
+  - `AUTH.USER`: Stores user credentials with `name` and `password_hash`.
+  - `LIBRARY.BORROWER`: Stores borrower details with `name`.
+  - `LIBRARY.BOOK`: Stores book details with `title`.
+  - `LIBRARY.LOAN`: Tracks book loans with references to `book` and `borrower`.
+
+#### Service Dependencies and Communication Patterns
+
+- **PersistenceLayer**: Acts as the single point of contact for database operations. All modules that require database access interact with `PersistenceLayer` through `IPersistenceLayer`.
+- **Logging**: SLF4J is used for logging across all modules.
+- **Communication**: Modules communicate via HTTP requests to servlets. The servlets then delegate the business logic to utility classes and return results.
+
+#### Key Business Logic and Algorithms
+
+- **Authentication**: Validates user credentials and manages user registration.
+- **Library**: Manages book and borrower registrations, lends books, and searches for available books.
+- **Mathematics**: Implements recursive and iterative algorithms for calculating Ackermann's function and Fibonacci numbers. Also includes basic arithmetic operations.
+- **Persistence**: Manages database schema migrations and data operations using Flyway and H2.
+
+#### Configuration and Deployment Details
+
+- **Logging**: Configured using Log4j2 with INFO level logging.
+- **Database**: Uses H2 in-memory database for testing and development.
+- **Tomcat**: Configured to disable URL-based sessions and use cookies for session tracking. Includes a servlet for the H2 console.
+- **Web Application**: Deployed as a WAR file, with JSP pages for displaying results and HTML forms for user interaction.
+
+#### Architectural Patterns and Frameworks Used
+
+- **Singleton Pattern**: Used in servlets to instantiate utility classes like `LibraryUtils` and `LoginUtils`.
+- **Factory Method Pattern**: Methods like `createEmpty()` in utility classes provide instances with default or empty configurations.
+- **Flyway for Database Migration**: Manages database schema changes.
+- **H2 Database**: In-memory database for development and testing.
+- **Cucumber for Behavior-Driven Development**: Used for writing and executing tests in Gherkin language.
+- **Servlet API**: Used for creating web applications.
+- **SLF4J for Logging**: Provides a logging facade for various logging frameworks.
+- **Apache Commons Lang**: Used for object utilities and builder patterns.
+- **Nbvcxz**: Password strength estimation library.
+- **Tail Recursion**: Implemented for Ackermann's function to optimize recursive calls.
+
+This summary captures the essential architectural information needed for accurate microservice decomposition analysis. Each module can potentially be decomposed into independent microservices based on their responsibilities and dependencies.
