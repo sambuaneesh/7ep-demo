@@ -1,0 +1,308 @@
+<think>
+Okay, I'm trying to create a comprehensive architectural summary for this codebase part, focusing on microservice decomposition. Let me start by going through each file and see what components, endpoints, data models, dependencies, and other Arch details are present.
+
+First, looking at the BDD test files for Authentication and Library. The Login and Register Servlets handle user operations. There's a LoginServlet and a RegisterServlet for handling login and registration. The LoginUtils class seems key here, using PersistenceLayer to check credentials. So maybe the authentication service includes LoginServlet, RegisterServlet, maybe their utilities, and the User data model.
+
+Then there are several persistence-related files. The PersistenceLayer is an interface with an implementation. The integration tests use data from various files like v2_one_user.sql, which I think are database schemas. The Library service might have persistence methods for books and borrowers. Like IPersistenceLayer has methods for saveNewUser, getBorrower, listAvailableBooks, etc. The implementation in PersistenceLayer handles SQL execution, maybe using Flyway for migrations.
+
+In the Library package, there's the LibraryBookListAvailableServlet, which lists available books. The LibraryUtils class here acts as a business layer: methods for registerBook, registerBorrower, lendBook, deleteBook, deleteBorrower. So the library service could be split into multiple components, using persistence layer calls. Also, there's a loan handling here.
+
+The math-related part includes Ackermann and Fibonacci calculations, each with servlets (AckServlet, FibServlet), utilities (Ackermann, FibonacciIterative, etc), and step definitions for BDD. They use the PersistenceLayer as well? Wait, no, Ackermann and Fibonacci in the main src don't have DB interactions directly. The math service could be separated as these are purely mathematical and don't rely on external services.
+
+The domain objects for the library are Book, Borrower, Loan. Auth has User. Each has their own fields and methods. These would be part of the data models for their respective services.
+
+Service dependencies: The library and authentication services heavily depend on the persistence layer, and maybe there's some communication between them. For example, when a librarian lends a book (LibraryLendServlet) it uses the persistence layer, which might also relate to authentication (checking user credentials). But looking at the code, RegisterServlet and LoginServlet are in auth, and they probably handle their own domain. So services might be Library (handling books, borrowers, loans) and Authentication (handling user registration, login).
+
+Other components: The Math service has its own servlets and calculators. The main architecture might be centralized with servlets handling endpoints but services can be grouped.
+
+Testing components: There's SelenifiedSample for UI testing, which probably involves testing these services as a whole. But for decomposition, the tests indicate how components interact.
+
+The Flyway migration scripts suggest a DB schema for auth (user table), library (borrower, book, loan tables), and administrative. Maybe the persistence layer uses H2 in-memory DB with Flyway for migrations.
+
+So for microservices, we can identify:
+
+1. **Authentication Service**  
+   - Contains User data model.  
+   - Components: LoginServlet, RegisterServlet, LoginUtils, RegistrationUtils.  
+   - Persistence Interaction: saveNewUser, updateUserWithPassword, searchForUser.  
+   - External Dependencies: PersistenceLayer, Nbvcxz for password entropy.
+
+2. **Library Management Service**  
+   - Components: LibraryUtils, various Servlets for managing books and borrowers.  
+   - Handles book registration, checkouts, borrower registration, and searches.  
+   - Data Models: Borrower, Book, Loan.  
+   - Uses PersistenceLayer for DB operations.
+
+3. **Math Calculation Service**  
+   - Servlet: AckServlet, FibServlet, MathServlet.  
+   - Utilities: Ackermann, Fibonacci, FibonacciIterative.  
+   - No DB dependency (except in some tests, but real usage doesn't require it).
+
+4. **Persistence Layer**  
+   - Shared between services.  
+   - Contains database schema, uses Flyway for migrations.  
+   - Dependencies on H2, SQL processing, and exceptions handling.
+
+Now, the Persistence Layer might need to be a separate core component if services don't reuse it, but in this code, it seems to be part of the Library and Authentication services as a shared abstraction. Wait, the PersistenceLayer is in the persistence package, and both services use it? The LoginServlet uses LoginUtils which has a PersistenceLayer instance. The Library services also use PersistenceLayer, but it's possible to split the persistence interfaces and implementations into separate services if they are shared.
+
+Wait, from the code, the **PersistenceLayer** interface and its implementation are in a shared package, so for decomposition, it might be a shared library or a separate service for DB access.
+
+But in a microservice approach, sharing the same DB or having separate DBs depends on domain boundaries. Here, the auth and library are in the same schema with different tables, but in microservices, they would probably be separate, each with their own DB.
+
+But looking at the current code, the library and authentication services are using the same DB schemas and are part of a monolith. However, the persistence layer is abstracted. So when decomposing, each service would have its own persistence layer and its own DB.
+
+So, the main services would be:
+
+- **Authentication Service**  
+  - Responsible for user registration and login.  
+  - Uses its own DB schema (user table).  
+  - Servlets: LoginServlet, RegisterServlet.  
+  - Utilities: LoginUtils, RegistrationUtils.  
+  - Depends on PersistenceLayer for user-related DB operations.
+
+- **Library Management Service**  
+  - Manages books, loans, and borrowers.  
+  - Servlets: LibraryBookListAvailableServlet, LibraryBookListSearchServlet, etc.  
+  - Domain: Book, Borrower, Loan.  
+  - Uses PersistenceLayer (different DB schema, perhaps library tables).  
+  - Services may use math services, but based on the given code, the math is a separate endpoint.
+
+- **Math Service**  
+  - Provides Fibonacci and Ackermann calculations.  
+  - Has servlets to receive requests.  
+  - Doesn't need DB.  
+  - Independent of other services.
+
+Other observations: Math service uses the same servlet structure, but functionality is standalone. Library and Auth services are integrated with a shared DB, but with separate tables.
+
+Another thing: The PersistenceLayer seems to be handling both library and authentication DB interactions. For decomposition, the persistence layer would be split into separate services handling their own DBs. Alternatively, perhaps an auth service would have its own persistence interface, and the library service would have another one, using separate DBs.
+
+Service Communication Patterns: Since the original is a monolith with a single DB, services would communicate via internal API calls. For instance, a Library service could call an Auth service's API when a user is involved in operations (like lending a book), and vice versa. The current code might not have that as it's a monolith, so the logic is internal, but in microservices, HTTP REST API calls would be needed.
+
+Also, from looking at the integration tests, there's the CartesianProduct and AlcoholCalculations features, but in this part of the codebase (part 2 of 3), the algebra is handled, and the actual code for those seems not to be present here. Wait, the files for those are in the bdd test resources but the implementation in the given code is minimal (like the Calculator class does some simple math and Fibonacci. But the actual complex calculation of the Cartesian product is in a TODO class (CartesianProduct), and AlcoholCalculator has a to-be-implemented method that returns empty. So those may be part of another service in this codebase but not in part 2. Wait the user mentioned this is part 2 of 3, but given all the files included here. Maybe ignore those parts as they are not fully implemented in this part. Focus on the currently implemented ones.
+
+Configuration: The WebAppListener initializes the persistence layer, handling DB clean and migrations on startup. The DB configuration uses H2 in-memory, but this can be adjusted.
+
+So, putting it all together, the key microservices based on this chunk are Authentication, Library Management, and Math Calculation, each with their own business logic, API endpoints, and persistence. The persistence layer is separated as an interface, but in a monolith, they use a single DB but logical separation through schemas. In a microservices scenario, each service would have its own DB instance and possibly REST APIs for inter-service communication.
+</think>
+
+## Architectural Summary for Microservice Decomposition - Codebase Part 2
+
+### 1. Core Services
+#### a. **Authentication Service**
+- **Responsibilities**:  
+  - User registration validation  
+  - Credential authentication  
+  - Password complexity enforcement  
+
+- **Endpoints**:  
+  - POST `/register` → Registers a new user  
+  - POST `/login` → Authenticates a user  
+
+- **Key Components**:  
+  - `User` domain object  
+  - `RegistrationUtils` (Business logic for password validation and registration)  
+  - `LoginUtils` (Credential verification logic)  
+  - `RegisterServlet` and `LoginServlet` as API handlers  
+
+#### b. **Library Management Service**
+- **Responsibilities**:  
+  - Book/borrower registration  
+  - Loan processing (checkout, deletion of books/borrowers)  
+  - Borrower and book search/list operations  
+
+- **Endpoints**:  
+  - POST `/registerbook` → Creates a new book  
+  - POST `/registerborrower` → Creates a new borrower  
+  - POST `/lend` → Loans a book to a registered borrower  
+  - GET `/book?id=` → Book lookup by title or ID  
+  - GET `/borrower?id=` → Borrower lookup by name or ID  
+  - GET `/listavailable` → Retrieves currently available books  
+
+- **Key Components**:  
+  - `LibraryUtils` (Business logic for all operations)  
+  - `Book`, `Borrower`, `Loan` domain objects  
+  - `LibraryBookListAvailableServlet`, `LibraryBookListSearchServlet`, `LibraryLendServlet`, etc.  
+
+#### c. **Math Calculation Service**
+- **Responsibilities**:  
+  - Arithmetic (addition of integers)  
+  - Fibonacci calculations using recursive/iterative algorithms  
+  - Ackermann function execution with recursive/tail-recursive variants  
+
+- **Endpoints**:  
+  - POST `/math` → Basic addition of numbers  
+  - POST `/fibonacci` → Nth Fibonacci number calculation  
+  - POST `/ackermann` → Ackermann function execution  
+
+- **Key Components**:  
+  - `Ackermann` (Recursive and TailRecursive implementations)  
+  - `Fibonacci` (Recursive/iterative methods)  
+
+---
+
+### 2. **Persistence Layer** (Shared Infrastructure)
+- **Role**: Centralized data persistence for library and authentication data  
+- **Database Schema**:  
+  - Tables created via Flyway migrations (`V1__Create_person_table`, `V2__Rest_of_tables_for_auth_and_library`)  
+  - Core tables:  
+    - `auth.USER` (id, username, hashed password)  
+    - `library.BORROWER` (id, name)  
+    - `library.BOOK` (id, title)  
+    - `library.LOAN` (id, book_id, borrower_id, borrow_date)  
+    - Relationships enforced via foreign keys  
+
+- **Key Components**:  
+  - `IPersistenceLayer` (Interface for all database operations)  
+  - `PersistenceLayer` (H2-JDBC implementation using Flyway for schema management)  
+  - `SqlData` (SQL command abstraction with parametric queries)  
+  - `DbServlet` (Exposed for reset/migration operations)  
+
+- **Constraints**:  
+  - H2 in-memory database with `MODE=PostgreSQL` compatibility  
+  - Default schemas: `ADMINISTRATIVE`, `AUTH`, `LIBRARY`  
+  - Uses sequences for auto-incrementing IDs (each entity has separate sequences)  
+
+---
+
+### 3. **Service Dependencies**
+- **User Management** (Authentication):  
+  - Depends on `PersistenceLayer` for user registration and password storage  
+  - Communicates with DB through SQL queries via Flyway  
+
+- **Library Operations**:  
+  - Depends on `PersistenceLayer` for borrower, book, and loan operations  
+  - Enforces business rules after persistence operations (e.g., checking loan availability)  
+
+- **Math Operations**:  
+  - No dependencies on persistence or external services  
+  - Uses algorithm-specific logic (Ackermann, Fibonacci) for calculations  
+
+---
+
+### 4. **Communication Patterns**
+- **Internal**:  
+  - Servlets route API calls to business logic (`LibraryUtils`, `RegistrationUtils`)  
+  - Business logic performs validation and delegates to persistence layer  
+- **Inter-Service**:  
+  - Not directly applicable (monolithic context assumed here)  
+  - Future implementation would involve service-to-service API calls (REST or gRPC)  
+
+---
+
+### 5. **Key Algorithms / Business Logic**
+- **Password Complexity Check**:  
+  - Utilizes **`nbvcxz`** library to calculate entropy of provided passwords  
+  - Thresholds: Min 10 characters (too short), Max 100 characters (too long)  
+
+- **Ackermann Function**:  
+  - Naive recursive approach (potentially stack-heavy)  
+  - Optimized tail-recursive version with a stack implementation using `TailRecursive` interface  
+  - Handles large integers via `BigInteger` to avoid overflow  
+
+- **Fibonacci Sequence**:  
+  - O(2^n) time recursive algorithm (`Fibonacci.java`)  
+  - O(n) logarithmic time algorithm (`FibonacciIterative.java`) using matrix exponentiation  
+  - Returns `BigInteger` for high-number calculations  
+
+---
+
+### 6. **Data Models**
+- **Authentication.Models**  
+  ```json
+  {
+    "User": { "id": <int>, "name": <string>, "password_hash": <string> }
+  }
+  ```
+
+- **Library.Models**  
+  ```json
+  {
+    "Borrower": { "id": <int>, "name": <string> },
+    "Book": { "id": <int>, "title": <string> },
+    "Loan": { "id": <int>, "book_id": <int>, "borrower_id": <int>, "borrow_date": <date> }
+  }
+  ```
+
+---
+
+### 7. **Deployment Configuration**
+- **Java Servlet Container**:  
+  - TOMCAT initialized via `WebAppListener`  
+  - Configuration in `WEB-INF/web.xml`  
+- **Database**:  
+  - In-memory **H2** database  
+  - Connection string: `jdbc:h2:mem:training;MODE=PostgreSQL`  
+  - Backup/restore: SQL scripts in database (`v2_one_user.sql`, etc.) used in integration tests  
+
+---
+
+### 8. **Architectural Observations**
+- **Servlet Layer Isolation**:  
+  - REST API endpoints (`/fibonacci`, `/login`, etc.) encapsulated in servlets  
+  - Central HTTP handler (`ServletUtils`) forward responses to appropriate JSP fragments  
+
+- **Business Layer**:  
+  - Encapsulated in `Utils` classes (`RegistrationUtils`, `LibraryUtils`)  
+  - Uses **Factory Pattern** to provide mock/in-memory versions for testing  
+
+- **Database Abstraction**:  
+  - DB operations are centralized in the `IPersistenceLayer` implementation  
+  - `PersistenceLayer` abstracts raw SQL via a **Micro ORM** (e.g., `SqlData`)  
+  - Migration scripts use **Flyway** for schema management  
+
+- **Input/Output Handling**:  
+  - Raw input from HTTP is validated (non-null, correct types)  
+  - JSON-escaped output via `StringUtils.escapeForJson()` for user-facing servlets  
+
+---
+
+### 9. **Decomposition Candidates**
+#### a. **Authentication Microservice**  
+- Endpoints:  
+  - **`/register`**, **`/login`**  
+- Business Logic Boundary:  
+  - User registration and login validation, using Flyway-managed database table  
+- DB Schema:  
+  - `auth.USER` table  
+
+#### b. **Library Management Microservice**  
+- Endpoints:  
+  - **`/book`**, **`/borrower`**, **`/lend`**, **`/listavailable`**, **`/registerbook`**, **`/registerborrower`**  
+- Business Logic Boundary:  
+  - Loan processing, book availability tracking, CRUD operations for books/borrowers  
+- DB Schema:  
+  - `library.BORROWER`, `library.BOOK`, `library.LOAN` tables  
+
+#### c. **Math Microservice**  
+- Endpoints:  
+  - **`/math`**, **`/fibonacci`**, **`/ackermann`**  
+- Business Logic Boundary:  
+  - Mathematical logic that must be tested independently of persistence  
+- DB Usage:  
+  - No database persistence, input validation only  
+
+#### d. **Persistence Layer** (Could be a shared infrastructure service)  
+- Exposes Flyway DB schemas (`/flyway`) for startup  
+- Schemas: `AUTH`, `LIBRARY`, `ADMINISTRATIVE`  
+- Supports backup/restore as part of integration testing  
+
+---
+
+### 10. **Future Refactoring Opportunities**
+- Decouple Flyway usage to a dedicated schema management component  
+- Implement authentication-to-library relationships using HTTP (e.g., JWT verification instead of internal logic)  
+- Extract logging and error handling into a common helper component  
+- Convert shared models like `Book`, `Borrower`, `User` into service-specific models to avoid cross-service coupling  
+
+---
+
+### 11. **Critical Assumptions**
+- No cross-service dependencies (simplifies decomposition)  
+- Persistence layer is the only source of truth for service data  
+- Math components are isolated and have no database impact in their implemented form  
+- Password entropy check is a hardcoded policy that could be decoupled  
+
+---
+
+This summary provides sufficient architectural information to decompose services while preserving database relationships, input/output flows, and implementation-specific logic (e.g., password entropy, Ackermann tail recursion). Each proposed microservice can use REST/HTTP for external communication and internal DB for persistence.

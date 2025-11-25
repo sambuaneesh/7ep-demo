@@ -1,0 +1,195 @@
+<think>
+Okay, let's dive into this codebase chunk. The user wants a comprehensive architectural summary for microservice decomposition analysis. I need to go through each file and extract the necessary info. 
+
+First, the persistence layer tests in Java. These tests interact with a database, using a test database setup with H2. The IPersistenceLayer interface is used here, and the tests cover operations like saving borrowers, books, loans, and user authentication. 
+
+Looking at the SQL files in the resources, there's a schema with Flyway migration scripts. The tables for LIBRARY (BORROWER, BOOK, LOAN) and AUTH (USER) are present. There are foreign key constraints between these tables. The Flyway setup manages schema versions, which is important for database consistency.
+
+In the main Java code, there are several packages. The authentication package has servlets for login and registration. The LoginServlet uses LoginUtils, which in turn relies on the persistence layer to check credentials. The RegistrationUtils includes password validation logic using Nbvcxz for entropy checks. 
+
+The library package has servlets for handling books and borrowers. Each servlet (like LibraryRegisterBookServlet) delegates to LibraryUtils, which again uses the persistence layer. The LibraryUtils class handles business logic like lending a book, ensuring that the book and borrower exist and the book isn't already checked out.
+
+The mathematics package includes servlets for mathematical operations like Fibonacci and Ackermann functions, which seem to be separate from the library and authentication logic. 
+
+The persistence package contains the IPersistenceLayer interface, which defines all database interactions for library, authentication, and utility functions. The actual implementation in PersistenceLayer would handle these via JDBC. There's an EmptyDataSource for testing or mocking purposes.
+
+Looking at communication, the servlets depend on utils classes which depend on the persistence layer. The persistence layer interacts with a database. The Flyway migrations handle schema changes. 
+
+For microservice decomposition, the library, authentication, and mathematics modules could potentially be separate services. The library and authentication both interact with their own databases, but maybe they can be split. However, the database schema is tied in Flyway migrations, which might be a point of coupling. 
+
+Need to note all the dependencies between components, like how the servlets depend on utils that depend on persistence. Also, the REST endpoints are in the servlets, so those APIs would be part of the service interfaces.
+
+For database decomposition, each microservice would need its own database. However, the current schema is all in one. Migrating to separate databases would require splitting the Flyway scripts and ensuring data consistency. 
+
+Key business logic includes password validation in registration and loan management in the library. The persistence layer is the central part, handling CRUD operations and transactions.
+
+Configuration details involve the H2 database in tests and the Flyway setup for migrations. Deployment would involve a database setup similar to H2, maybe a real PostgreSQL instance in production.
+
+Architectural patterns used include Layered architecture (servlets -> utils -> persistence), using JPA or JDBC for data access, Flyway for schema migrations, and REST APIs via servlets.
+
+I need to structure all this into a summary that includes each component's responsibilities, API endpoints, database schema (tables, relationships, Flyway versioning), service dependencies, business logic, and deployment details. Also, note that some components like mathematics might be standalone, while others could benefit from splitting.
+</think>
+
+### **Architectural Summary of Codebase Chunk 3 (Persistence & Library Logic)**
+
+---
+
+#### **Component Overview**
+1. **Persistence Layer (`IPersistenceLayer`)**
+   - **Responsibility**: Centralized database access for:
+     - **Library Management**: Books, borrowers, loans.
+     - **User Authentication**: User credentials and registration.
+     - **Database Utility**: Schema migration, backups/restores.
+   - **Key Methods**:
+     - CRUD operations for `Book`, `Borrower`, `Loan`, `User`.
+     - `runBackup`, `runRestore`, `cleanAndMigrateDatabase` for schema management.
+   - **Dependency**: Uses H2 as a test database (JDBC) in integration tests; likely PostgreSQL in production (via Flyway).
+
+2. **Authentication Subsystem**
+   - **Components**:
+     - **`LoginServlet` & `RegisterServlet`**: REST endpoints for user authentication and registration.
+     - **`LoginUtils` & `RegistrationUtils`**: Business logic for credential validation and password complexity checking.
+   - **Key Logic**:
+     - Password validation via entropy estimation (library `Nbvcxz`).
+     - Authentication checks using `PersistenceLayer#areCredentialsValid`.
+
+3. **Library Subsystem**
+   - **Components**:
+     - **Servlets**: `LibraryBookListSearchServlet`, `LibraryBorrowerListSearchServlet`, `LibraryLendServlet`, etc.
+     - **`LibraryUtils`**: Business logic for book lending, borrower registration, and availability checks.
+   - **Key Logic**:
+     - Enforces rules like "a book cannot be checked out if already loaned".
+     - Maintains relationships via `PersistenceLayer` (e.g., linking `LOAN` to books/borrowers via foreign keys).
+
+4. **Database Schema (Flyway-Managed)**
+   - **Tables**:
+     - `LIBRARY.BORROWER` (id, name)
+     - `LIBRARY.BOOK` (id, title)
+     - `LIBRARY.LOAN` (id, book_id, borrower_id, borrow_date)
+     - `AUTH.USER` (id, name, password_hash)
+   - **Constraints**:
+     - Foreign keys (`LOAN.BOOK → BOOK.ID`, `LOAN.BORROWER → BORROWER.ID`).
+     - Primary keys on `id` in all tables.
+   - **Versioning**:
+     - Managed via `FLYWAY_SCHEMA_HISTORY` table.
+     - `V1__Create_person_table.sql`: Initial schema.
+     - `V2__Rest_of_tables_for_auth_and_library.sql`: Adds authentication and loan tables.
+
+5. **Utilities**
+   - **Servlet Helpers**: `ServletUtils`, `StringUtils` for JSON formatting, request handling.
+   - **Validation**: `CheckUtils` for null/empty checks and application invariants.
+   - **Testing**: `EmptyDataSource`, mocks for `PersistenceLayer` in integration tests.
+
+---
+
+#### **API Endpoints**
+| **Component**               | **Endpoints**                            | **Methods**          | **Functionality**                                  |
+|-----------------------------|------------------------------------------|----------------------|----------------------------------------------------|
+| **LoginServlet**            | `/login`                                 | POST                 | Validates user credentials                         |
+| **RegisterServlet**         | `/register`                              | POST                 | Registers a new user with complex password rules   |
+| **LibraryBookListSearch**   | `/book`                                  | GET                  | Lists books or searches by ID/Title                |
+| **LibraryBorrowerListSearch**| `/borrower`                              | GET                  | Lists borrowers or searches by ID/Name             |
+| **LibraryLendServlet**      | `/lend`                                  | POST                 | Lends a book to a borrower                         |
+| **LibraryRegisterBook**     | `/registerbook`                          | POST                 | Registers a new book                               |
+| **LibraryRegisterBorrower** | `/registerborrower`                      | POST                 | Registers a new borrower                           |
+| **DbServlet**               | `/flyway?action=clean|migrate`           | GET                  | Database cleaning/migration/reset                  |
+
+---
+
+#### **Database Schema & Data Models**
+
+1. **Library Tables**:
+   - **Book**:
+     - `id` (Serial): Primary key
+     - `title` (VARCHAR 100)
+   - **Borrower**:
+     - `id` (Serial): Primary key
+     - `name` (VARCHAR 100)
+   - **Loan**:
+     - `id` (Serial): Primary key
+     - `book` (Foreign Key → `BOOK.ID`)
+     - `borrower` (Foreign Key → `BORROWER.ID`)
+     - `borrow_date` (DATE)
+
+2. **Authentication Table**:
+   - **User**:
+     - `id` (Serial): Primary key
+     - `name` (VARCHAR 100)
+     - `password_hash` (VARCHAR 100)
+
+3. **Constraints & Indexes**:
+   - Foreign Key Constraints (`ON DELETE CASCADE` for Loans).
+   - Index on `flyway_schema_history.success` for migration tracking.
+
+4. **Sample Data** (from test SQL scripts):
+   - `v2_one_book_one_borrower.sql`: "The DevOps Handbook" (ID 1), Borrower "alice" (ID 1).
+   - `v2_three_books_three_borrowers.sql`: Books "a", "b", "c"; Borrowers "alice", "bob", "carol".
+
+---
+
+#### **Service Dependencies & Communication Patterns**
+
+1. **Component Dependencies**:
+   - **Servlets** → **Utils** (e.g., `LoginServlet` → `LoginUtils`).
+   - **Utils** → **PersistenceLayer** (e.g., `RegistrationUtils` → `IPersistenceLayer`).
+   - **PersistenceLayer** directly interacts with the database (JDBC).
+
+2. **Communication Patterns**:
+   - **REST API**: Servlet-based endpoints (GET/POST).
+   - **Database Calls**: Synchronous, via JDBC (CRUD operations).
+   - **Mocking**: Integration tests use `Mockito` to mock `DataSource` and simulate exceptions/edge cases.
+
+3. **Key Interactions**:
+   - `RegistrationUtils.processRegistration()` triggers password validation and database save.
+   - `LibraryUtils.lendBook()` checks for existing loans via `PersistenceLayer`.
+
+---
+
+#### **Key Business Logic & Algorithms**
+1. **Password Complexity**:
+   - Checks min length (10), max length (100), and entropy using `Nbvcxz`.
+   - Returns detailed feedback (e.g., "time to crack" for weak passwords).
+
+2. **Book Availability**:
+   - `LibraryUtils.listAvailableBooks()` filters books not present in `LOAN` table.
+
+3. **Ackermann & Fibonacci Math**:
+   - **Tail-recursive** and *iterative* implementations for performance.
+   - Exposed via `/ackermann` and `/fibonacci` endpoints.
+
+---
+
+#### **Configuration & Deployment Details**
+- **Database**:
+  - **Test**: H2 in-memory database (`jdbc:h2:./build/db/training`).
+  - **Prod**: PostgreSQL (implied by Flyway schema).
+- **Flyway Migrations**:
+  - Schema migrations in `src/main/resources/db/migration/`.
+  - Scripts prefixed with version numbers (e.g., `V1__Create_person_table.sql`).
+- **Logging**:
+  - SLF4J with log output for critical operations (e.g., authentication success/failure).
+
+---
+
+#### **Architectural Patterns & Frameworks**
+1. **Layered Architecture**:
+   - Servlet layer (HTTP) → Business logic layer (Utils) → Persistence layer → Database.
+2. **Flyway for Schema Versioning**:
+   - Ensures consistent database state across environments.
+3. **Mocking Infrastructure**:
+   - `Mockito` for unit/integration testing of database interactions.
+4. **Singleton/Data Transfer Objects (DTOs)**:
+   - Immutable domain objects (e.g., `Book`, `Borrower`, `User`) with builder/equals logic.
+
+---
+
+### **Summary for Microservice Decomposition**
+| **Candidate for Independent Service** | **Rationale**                                                                 |
+|---------------------------------------|-------------------------------------------------------------------------------|
+| **Authentication**                    | Decouplable from library logic. Requires separate DB and schema.              |
+| **Library Management**                | Requires own DB for books/borrowers/loans. Can be split if multi-tenant.       |
+| **Maths Operations**                  | Stateless and standalone. Can be exposed as a shared utility service.         |
+
+**Coupling Points**: 
+- Shared `PersistenceLayer` across modules.
+- Flyway schema for `AUTH` and `LIBRARY` is interdependent; decomposing would require separate schema management.

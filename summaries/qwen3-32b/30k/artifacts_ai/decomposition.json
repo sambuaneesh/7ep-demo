@@ -1,0 +1,148 @@
+{
+  "tool": {
+    "decomposition": {
+      "Authentication Service": [
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegisterServlet"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "User"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        },
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "CheckUtils"
+        }
+      ],
+      "Library Management Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryUtils"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "Loan"
+        },
+        {
+          "id": "LibraryActionResults"
+        }
+      ],
+      "Mathematical Operations Service": [
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "Fibonacci"
+        },
+        {
+          "id": "FibonacciIterative"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "FunctionalField"
+        }
+      ],
+      "Persistence & Database Service": [
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "EmptyDataSource"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "ParameterObject"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "NotImplementedException"
+        }
+      ],
+      "Shared Infrastructure & Utilities": [
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "StringUtils"
+        },
+        {
+          "id": "WebAppListener"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "FunctionalField"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "tool": {
+    "decomposition": {
+      "Library Management Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryUtils"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "Loan"
+        },
+        {
+          "id": "LibraryActionResults"
+        }
+      ],
+      "Authentication Service": [
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "RegisterServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "User"
+        },
+        {
+          "id": "RegistrationResult"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        }
+      ],
+      "Mathematical Operations Service": [
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "Fibonacci"
+        },
+        {
+          "id": "FibonacciIterative"
+        },
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "FunctionalField"
+        }
+      ],
+      "Testing Infrastructure Service": [
+        {
+          "id": "SelenifiedSample"
+        },
+        {
+          "id": "ApiCalls"
+        },
+        {
+          "id": "CartesianProduct"
+        },
+        {
+          "id": "CartesianProductStepDefs"
+        },
+        {
+          "id": "WebAppListener"
+        },
+        {
+          "id": "DinnerPrices"
+        },
+        {
+          "id": "AlcoholCalculator"
+        },
+        {
+          "id": "AlcoholResult"
+        }
+      ],
+      "Persistence Service": [
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "ConnectionPool"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "ParameterObject"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "NotImplementedException"
+        },
+        {
+          "id": "EmptyDataSource"
+        }
+      ],
+      "Common Utilities Service": [
+        {
+          "id": "StringUtils"
+        },
+        {
+          "id": "DateUtils"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "SingleQuote"
+        },
+        {
+          "id": "DoubleQuote"
+        },
+        {
+          "id": "Backslash"
+        },
+        {
+          "id": "NewLine"
+        },
+        {
+          "id": "CarriageReturn"
+        },
+        {
+          "id": "Tab"
+        },
+        {
+          "id": "Backspace"
+        },
+        {
+          "id": "FormFeed"
+        },
+        {
+          "id": "Logger"
+        },
+        {
+          "id": "SerializationVersionUID"
+        },
+        {
+          "id": "ResultConstants"
+        },
+        {
+          "id": "ResultJspPath"
+        },
+        {
+          "id": "RestfulResultJspPath"
+        }
+      ]
+    }
+  }
+}

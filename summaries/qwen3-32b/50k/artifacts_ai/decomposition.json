@@ -1,0 +1,168 @@
+{
+  "tool": {
+    "decomposition": {
+      "Authentication Service": [
+        {
+          "id": "LoginServlet"
+        },
+        {
+          "id": "LoginUtils"
+        },
+        {
+          "id": "RegistrationServlet"
+        },
+        {
+          "id": "RegistrationUtils"
+        },
+        {
+          "id": "PasswordResult"
+        },
+        {
+          "id": "PasswordResultEnums"
+        },
+        {
+          "id": "RegistrationResult"
+        },
+        {
+          "id": "RegistrationStatusEnums"
+        },
+        {
+          "id": "User"
+        }
+      ],
+      "Library Service": [
+        {
+          "id": "LibraryBookListAvailableServlet"
+        },
+        {
+          "id": "LibraryBookListSearchServlet"
+        },
+        {
+          "id": "LibraryBorrowerListSearchServlet"
+        },
+        {
+          "id": "LibraryLendServlet"
+        },
+        {
+          "id": "LibraryRegisterBookServlet"
+        },
+        {
+          "id": "LibraryRegisterBorrowerServlet"
+        },
+        {
+          "id": "Book"
+        },
+        {
+          "id": "Borrower"
+        },
+        {
+          "id": "Loan"
+        },
+        {
+          "id": "LibraryActionResults"
+        },
+        {
+          "id": "LibraryUtils"
+        }
+      ],
+      "Mathematics Service": [
+        {
+          "id": "AckServlet"
+        },
+        {
+          "id": "FibServlet"
+        },
+        {
+          "id": "MathServlet"
+        },
+        {
+          "id": "Ackermann"
+        },
+        {
+          "id": "AckermannIterative"
+        },
+        {
+          "id": "TailRecursive"
+        },
+        {
+          "id": "Calculator"
+        },
+        {
+          "id": "FunctionalField"
+        }
+      ],
+      "Auto Insurance Desktop Service": [
+        {
+          "id": "AutoInsuranceUI"
+        },
+        {
+          "id": "AutoInsuranceAction"
+        },
+        {
+          "id": "InvalidClaimsException"
+        },
+        {
+          "id": "AutoInsuranceProcessor"
+        },
+        {
+          "id": "AutoInsuranceScriptClient"
+        },
+        {
+          "id": "AutoInsuranceScriptServer"
+        },
+        {
+          "id": "AlcoholCalculator"
+        },
+        {
+          "id": "AlcoholResult"
+        },
+        {
+          "id": "DinnerPrices"
+        },
+        {
+          "id": "CartesianProduct"
+        }
+      ],
+      "Shared Persistence Service": [
+        {
+          "id": "DbServlet"
+        },
+        {
+          "id": "IPersistenceLayer"
+        },
+        {
+          "id": "PersistenceLayer"
+        },
+        {
+          "id": "EmptyDataSource"
+        },
+        {
+          "id": "SqlData"
+        },
+        {
+          "id": "SqlRuntimeException"
+        },
+        {
+          "id": "ParameterObject"
+        }
+      ],
+      "Shared Infrastructure Service": [
+        {
+          "id": "ServletUtils"
+        },
+        {
+          "id": "StringUtils"
+        },
+        {
+          "id": "CheckUtils"
+        },
+        {
+          "id": "AssertionException"
+        },
+        {
+          "id": "WebAppListener"
+        }
+      ]
+    }
+  }
+}
